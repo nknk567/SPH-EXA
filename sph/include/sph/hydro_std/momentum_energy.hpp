@@ -71,6 +71,8 @@ void computeMomentumEnergyStdImpl(size_t startIndex, size_t endIndex, Dataset& d
     const auto* wh  = d.wh.data();
     const auto* whd = d.whd.data();
 
+    const auto* dark = d.dark.data();
+
     const T K         = d.K;
     const T sincIndex = d.sincIndex;
 
@@ -79,6 +81,13 @@ void computeMomentumEnergyStdImpl(size_t startIndex, size_t endIndex, Dataset& d
 #pragma omp parallel for schedule(static) reduction(min : minDt)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
+        if (d.dark[i] == 1.0) {
+            du[i] = 0.0;
+            grad_P_x[i] = 0.0;
+            grad_P_y[i] = 0.0;
+            grad_P_z[i] = 0.0;
+            continue;
+        }
         size_t ni = i - startIndex;
 
         T maxvsignal = 0;

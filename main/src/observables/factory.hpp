@@ -95,6 +95,7 @@ void findH5Attribute(const std::string& fname, const std::string& attributeToRea
 template<class Dataset>
 std::unique_ptr<IObservables<Dataset>> observablesFactory(const std::string& testCase, std::ofstream& constantsFile)
 {
+    return std::make_unique<TimeAndEnergy<Dataset>>(constantsFile);
 #ifdef SPH_EXA_HAVE_H5PART
 
     std::string    khGrowthRate = "KelvinHelmholtzGrowthRate";

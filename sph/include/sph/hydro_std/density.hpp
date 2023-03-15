@@ -56,6 +56,8 @@ void computeDensityImpl(size_t startIndex, size_t endIndex, Dataset& d, const cs
     const auto* wh  = d.wh.data();
     const auto* whd = d.whd.data();
 
+    const auto* dark = d.dark.data();
+
     auto* rho = d.rho.data();
 
     const T K         = d.K;
@@ -64,6 +66,7 @@ void computeDensityImpl(size_t startIndex, size_t endIndex, Dataset& d, const cs
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; i++)
     {
+        if (dark[i] == 1.0) continue;
         size_t ni = i - startIndex;
 
         unsigned nc = std::min(neighborsCount[i], d.ngmax);

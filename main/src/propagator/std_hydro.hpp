@@ -68,7 +68,7 @@ class HydroProp final : public Propagator<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1">;
+    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "dark">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -121,6 +121,7 @@ public:
 
     void step(DomainType& domain, DataType& simData) override
     {
+
         timer.start();
         sync(domain, simData);
         timer.step("domain::sync");
@@ -130,7 +131,15 @@ public:
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
+        if (simData.hydro.iteration == 1) {
+            std::cout << "Dark " << simData.hydro.dark[0] << std::endl;
 
+        }
+        size_t n_gas = 0;
+        for (size_t i = first; i < last; i++) {
+            if (d.dark[i] == 0) n_gas++;
+        }
+        std::cout << "n_gas " << n_gas << std::endl;
         transferToHost(d, first, first + 1, {"m"});
         fill(get<"m">(d), 0, first, d.m[first]);
         fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);

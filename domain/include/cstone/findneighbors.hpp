@@ -101,7 +101,8 @@ HOST_DEVICE_FUN unsigned findNeighbors(LocalIndex i,
                                        const OctreeNsView<T, KeyType>& tree,
                                        const Box<T>& box,
                                        unsigned ngmax,
-                                       LocalIndex* neighbors)
+                                       LocalIndex* neighbors,
+                                       const T* dark)
 {
     T xi = x[i];
     T yi = y[i];
@@ -148,7 +149,7 @@ HOST_DEVICE_FUN unsigned findNeighbors(LocalIndex i,
         }
     };
 
-    auto searchBox = [i, particle, radiusSq, &tree, x, y, z, ngmax, neighbors, &numNeighbors, &box](TreeNodeIndex idx)
+    auto searchBox = [i, particle, radiusSq, &tree, x, y, z, ngmax, neighbors, &numNeighbors, &box, dark](TreeNodeIndex idx)
     {
         TreeNodeIndex leafIdx    = tree.internalToLeaf[idx];
         LocalIndex firstParticle = tree.layout[leafIdx];
@@ -159,8 +160,10 @@ HOST_DEVICE_FUN unsigned findNeighbors(LocalIndex i,
             if (j == i) { continue; }
             if (distanceSq<false>(x[j], y[j], z[j], particle[0], particle[1], particle[2], box) < radiusSq)
             {
-                if (numNeighbors < ngmax) { neighbors[numNeighbors] = j; }
-                numNeighbors++;
+                if (dark[j] == 0.0) {
+                    if (numNeighbors < ngmax) { neighbors[numNeighbors] = j; }
+                    numNeighbors++;
+                }
             }
         }
     };

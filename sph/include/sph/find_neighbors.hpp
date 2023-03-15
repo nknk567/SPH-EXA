@@ -10,7 +10,7 @@ using cstone::LocalIndex;
 template<class T, class KeyType>
 void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex firstId, LocalIndex lastId,
                       const cstone::Box<T>& box, const cstone::OctreeNsView<T, KeyType>& treeView, unsigned ng0,
-                      unsigned ngmax, LocalIndex* neighbors, unsigned* nc)
+                      unsigned ngmax, LocalIndex* neighbors, unsigned* nc, const T* dark)
 {
     LocalIndex numWork = lastId - firstId;
 
@@ -23,13 +23,17 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
     for (LocalIndex i = 0; i < numWork; ++i)
     {
         LocalIndex id = i + firstId;
-        nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
+        if (dark[id] == 1.0) {
+            nc[i] = 0;
+            continue;
+        }
+        nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax, dark);
 
         int iteration = 0;
         while (ngmin > nc[i] || nc[i] > ngmax && iteration++ < maxIteration)
         {
             h[id] = updateH(ng0, nc[i], h[id]);
-            nc[i] = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
+            nc[i] = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax, dark);
         }
         numFails += (iteration == maxIteration);
     }
@@ -49,8 +53,10 @@ void findNeighborsSfc(size_t startIndex, size_t endIndex, Dataset& d, const csto
 
     if (d.ng0 > d.ngmax) { throw std::runtime_error("ng0 should be smaller than ngmax\n"); }
 
-    findNeighborsSph(d.x.data(), d.y.data(), d.z.data(), d.h.data(), startIndex, endIndex, box, d.treeView.nsView(),
-                     d.ng0, d.ngmax, d.neighbors.data(), d.nc.data() + startIndex);
+
+    findNeighborsSph(d.x.data(), d.y.data(), d.z.data(), d.h.data(), startIndex, endIndex, box, d.treeView.nsView(), d.ng0,
+                     d.ngmax, d.neighbors.data(), d.nc.data() + startIndex, d.dark.data());
+
 }
 
 } // namespace sph

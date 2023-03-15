@@ -44,7 +44,7 @@ set_target_properties(grackle PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Language specific compilation flags.
 target_compile_options(grackle PRIVATE
-    $<$<COMPILE_LANGUAGE:Fortran>:-fno-second-underscore -ffixed-line-length-132>
+    $<$<COMPILE_LANGUAGE:Fortran>:>#-fno-second-underscore -ffixed-line-length-132>
 )
 
 configure_file(grackle_deps/version.h.in ${CMAKE_BINARY_DIR}/extern/grackle/grackle_deps/version.h)

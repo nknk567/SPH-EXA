@@ -10,11 +10,12 @@ namespace sph
 {
 
 template<class T>
-void updateSmoothingLengthCpu(size_t startIndex, size_t endIndex, unsigned ng0, const unsigned* nc, T* h)
+void updateSmoothingLengthCpu(size_t startIndex, size_t endIndex, unsigned ng0, const unsigned* nc, T* h, T* dark)
 {
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; i++)
     {
+        if (dark[i] == 1.0) continue;
         h[i] = updateH(ng0, nc[i], h[i]);
 
 #ifndef NDEBUG
@@ -30,7 +31,7 @@ void updateSmoothingLength(size_t startIndex, size_t endIndex, Dataset& d)
     {
         updateSmoothingLengthGpu(startIndex, endIndex, d.ng0, rawPtr(d.devData.nc), rawPtr(d.devData.h));
     }
-    else { updateSmoothingLengthCpu(startIndex, endIndex, d.ng0, rawPtr(d.nc), rawPtr(d.h)); }
+    else { updateSmoothingLengthCpu(startIndex, endIndex, d.ng0, rawPtr(d.nc), rawPtr(d.h), rawPtr(d.dark)); }
 }
 
 } // namespace sph

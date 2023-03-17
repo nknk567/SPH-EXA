@@ -38,6 +38,7 @@
 #include "io/factory.hpp"
 #include "isim_init.hpp"
 
+#include "cooling/init_chemistry.h"
 namespace sphexa
 {
 
@@ -91,7 +92,7 @@ public:
         reader->setStep(h5_fname, -1);
 
         auto box = restoreHydroData(reader.get(), rank, simData.hydro);
-
+        cooling::initChemistryData(simData.chem, simData.hydro.x.size());
         reader->closeStep();
 
         return box;

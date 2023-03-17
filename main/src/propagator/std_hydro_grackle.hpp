@@ -206,6 +206,7 @@ public:
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
+            if (d.dark[i] == 1.0) continue;
             bool haveMui = !d.mui.empty();
             T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 

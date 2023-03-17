@@ -141,7 +141,7 @@ public:
         }
         std::cout << "n_gas " << n_gas << std::endl;
         transferToHost(d, first, first + 1, {"m"});
-        domain.exchangeHalos(std::tie(get<"m">(d)), get<"ax">(d), get<"ay">(d));
+        domain.exchangeHalos(get<"m", "dark">(d), get<"ax">(d), get<"ay">(d));
         //domain.exchangeHalos(get<"m">(d), get<"ax">(d), get<"ay">(d));
         //fill(get<"m">(d), 0, first, d.m[first]);
         //fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);

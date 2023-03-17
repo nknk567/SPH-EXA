@@ -40,6 +40,7 @@
 #include "io/factory.hpp"
 #include "isim_init.hpp"
 
+#include "cooling/init_chemistry.h"
 namespace sphexa
 {
 
@@ -108,7 +109,7 @@ public:
                 reader->fileAttribute(attr, &constants_[attr], sz);
             }
         }
-
+        cooling::initChemistryData(simData.chem, simData.hydro.x.size());
         reader->closeStep();
 
         return box;

@@ -157,48 +157,12 @@ public:
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-<<<<<<< HEAD
-=======
-        transferToHost(d, first, first + 1, {"m"});
-        domain.exchangeHalos(get<"m", "dark">(d), get<"ax">(d), get<"ay">(d));
+
         size_t n_gas = 0;
         for (size_t i = first; i < last; i++) {
             if (d.dark[i] == 0) n_gas++;
         }
-        //fill(get<"m">(d), 0, first, d.m[first]);
-       // fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
 
-        findNeighborsSfc(first, last, d, domain.box());
-        timer.step("FindNeighbors");
-
-        computeDensity(first, last, d, domain.box());
-        timer.step("Density");
-
-        computeEOS_HydroStd(first, last, d);
-        timer.step("EquationOfState");
-        domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
-
-        timer.step("mpi::synchronizeHalos");
-
-        computeIAD(first, last, d, domain.box());
-        timer.step("IAD");
-
-        domain.exchangeHalos(get<"c11", "c12", "c13", "c22", "c23", "c33">(d), get<"ax">(d), get<"ay">(d));
-
-        timer.step("mpi::synchronizeHalos");
-
-        computeMomentumEnergySTD(first, last, d, domain.box());
-        timer.step("MomentumEnergyIAD");
-
-        if (d.g != 0.0)
-        {
-            mHolder_.upsweep(d, domain);
-            timer.step("Upsweep");
-            mHolder_.traverse(d, domain);
-            timer.step("Gravity");
-        }
-
->>>>>>> 8e146d69 (grackle propagator: add halo exchange for mass)
         computeTimestep(first, last, d);
         timer.step("Timestep");
 

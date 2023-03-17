@@ -71,7 +71,7 @@ class HydroGrackleProp final : public Propagator<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1">;
+    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "dark">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -88,8 +88,8 @@ public:
     HydroGrackleProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
-        constexpr float                 ms_sim = 1e16;
-        constexpr float                 kp_sim = 46400.;
+        constexpr float                 ms_sim = 1e9;//1e16;
+        constexpr float                 kp_sim = 1.0;//46400.;
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
         grackleOptions["with_radiative_cooling"] = 1;
@@ -157,8 +157,13 @@ public:
         size_t last  = domain.endIndex();
 
         transferToHost(d, first, first + 1, {"m"});
-        fill(get<"m">(d), 0, first, d.m[first]);
-        fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
+        domain.exchangeHalos(get<"m", "dark">(d), get<"ax">(d), get<"ay">(d));
+        size_t n_gas = 0;
+        for (size_t i = first; i < last; i++) {
+            if (d.dark[i] == 0) n_gas++;
+        }
+        //fill(get<"m">(d), 0, first, d.m[first]);
+       // fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
 
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");

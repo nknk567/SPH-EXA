@@ -48,8 +48,9 @@ using namespace sph;
 using cstone::FieldList;
 
 template<class DomainType, class DataType>
-class HydroProp final : public Propagator<DomainType, DataType>
+class HydroProp : public Propagator<DomainType, DataType>
 {
+protected:
     using Base = Propagator<DomainType, DataType>;
     using Base::timer;
 
@@ -119,32 +120,13 @@ public:
         d.treeView = domain.octreeNsViewAcc();
     }
 
-    void step(DomainType& domain, DataType& simData) override
+    void computeForces(DomainType& domain, DataType& simData)
     {
-
-        timer.start();
-        sync(domain, simData);
-        timer.step("domain::sync");
-
-        auto& d = simData.hydro;
-        d.resize(domain.nParticlesWithHalos());
-        resizeNeighbors(d, domain.nParticles() * d.ngmax);
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
-        if (simData.hydro.iteration == 1) {
-            std::cout << "Dark " << simData.hydro.dark[0] << std::endl;
+        auto&  d     = simData.hydro;
 
-        }
-        size_t n_gas = 0;
-        for (size_t i = first; i < last; i++) {
-            if (d.dark[i] == 0) n_gas++;
-        }
-        std::cout << "n_gas " << n_gas << std::endl;
-        transferToHost(d, first, first + 1, {"m"});
-        domain.exchangeHalos(get<"m", "dark">(d), get<"ax">(d), get<"ay">(d));
-        //domain.exchangeHalos(get<"m">(d), get<"ax">(d), get<"ay">(d));
-        //fill(get<"m">(d), 0, first, d.m[first]);
-        //fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
+        resizeNeighbors(d, domain.nParticles() * d.ngmax);
 
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
@@ -155,14 +137,12 @@ public:
         timer.step("EquationOfState");
 
         domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
-
         timer.step("mpi::synchronizeHalos");
 
         computeIAD(first, last, d, domain.box());
         timer.step("IAD");
 
         domain.exchangeHalos(get<"c11", "c12", "c13", "c22", "c23", "c33">(d), get<"ax">(d), get<"ay">(d));
-
         timer.step("mpi::synchronizeHalos");
 
         computeMomentumEnergySTD(first, last, d, domain.box());
@@ -175,6 +155,26 @@ public:
             mHolder_.traverse(d, domain);
             timer.step("Gravity");
         }
+    }
+
+    void step(DomainType& domain, DataType& simData) override
+    {
+        timer.start();
+
+        sync(domain, simData);
+        timer.step("domain::sync");
+
+        auto& d = simData.hydro;
+        d.resize(domain.nParticlesWithHalos());
+        size_t first = domain.startIndex();
+        size_t last  = domain.endIndex();
+
+        // fill mass halos under the assumption that all particles have equal masses
+        transferToHost(d, first, first + 1, {"m"});
+        fill(get<"m">(d), 0, first, d.m[first]);
+        fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
+
+        computeForces(domain, simData);
 
         computeTimestep(first, last, d);
         timer.step("Timestep");

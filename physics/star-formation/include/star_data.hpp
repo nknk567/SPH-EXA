@@ -102,3 +102,4 @@ private:
 } // namespace star_formation
 
 #endif // SPHEXA_STAR_DATA_HPP
+

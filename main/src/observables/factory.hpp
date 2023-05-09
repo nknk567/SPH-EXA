@@ -66,8 +66,10 @@ static bool haveAttribute(IFileReader* reader, const std::string& attributeToRea
 template<class Dataset>
 std::unique_ptr<IObservables<Dataset>> observablesFactory(const std::string& testCase, std::ofstream& constantsFile)
 {
+
     std::unique_ptr<IFileReader> reader;
     std::string                  testCaseStripped = strBeforeSign(testCase, ",");
+
 
 #ifdef SPH_EXA_HAVE_H5PART
     if (std::filesystem::exists(testCaseStripped))

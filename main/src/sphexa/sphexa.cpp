@@ -119,7 +119,9 @@ int main(int argc, char** argv)
     transferToDevice(d, 0, d.x.size(), propagator->conservedFields());
     d.setOutputFields(outputFields.empty() ? propagator->conservedFields() : outputFields);
 
+
     if (parser.exists("--G")) { d.g = parser.get<double>("--G"); }
+
     bool  haveGrav = (d.g != 0.0);
     float theta    = parser.get("--theta", haveGrav ? 0.5f : 1.0f);
 
@@ -129,7 +131,9 @@ int main(int argc, char** argv)
 
     KeyType bucketSizeFocus = 64;
     // we want about 100 global nodes per rank to decompose the domain with +-1% accuracy
+
     KeyType bucketSize = std::max(bucketSizeFocus, d.numParticlesGlobal / (100 * numRanks));
+
     Domain domain(rank, numRanks, bucketSize, bucketSizeFocus, theta, box);
 
     propagator->sync(domain, simData);

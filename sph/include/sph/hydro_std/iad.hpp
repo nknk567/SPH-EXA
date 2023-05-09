@@ -58,6 +58,8 @@ void computeIADImpl(size_t startIndex, size_t endIndex, Dataset& d, const cstone
     auto* c23 = d.c23.data();
     auto* c33 = d.c33.data();
 
+    const auto* dark = d.dark.data();
+
     const auto* wh  = d.wh.data();
     const auto* whd = d.whd.data();
 
@@ -67,6 +69,7 @@ void computeIADImpl(size_t startIndex, size_t endIndex, Dataset& d, const cstone
 #pragma omp parallel for schedule(static)
     for (cstone::LocalIndex i = startIndex; i < endIndex; ++i)
     {
+        if (dark[i] == 1.0) continue;
         size_t   ni = i - startIndex;
         unsigned nc = std::min(neighborsCount[i], d.ngmax);
         IADJLoopSTD(i, sincIndex, K, box, neighbors + d.ngmax * ni, nc, x, y, z, h, m, rho, wh, whd, c11, c12, c13, c22,

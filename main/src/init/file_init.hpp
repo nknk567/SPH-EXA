@@ -264,6 +264,8 @@ public:
                 std::fill(d.alpha.begin(), d.alpha.end(), d.alphamin);
             }
         }
+        cooling::initChemistryData(simData.chem, simData.hydro.x.size());
+
 
         reader->closeStep();
 

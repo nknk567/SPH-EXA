@@ -83,6 +83,7 @@ public:
     KeyType numParticlesGlobal;
 
 
+
     //! @brief default mean desired number of neighbors per particle, can be overriden per test case or input file
     unsigned ng0{100};
 

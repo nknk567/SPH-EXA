@@ -149,6 +149,7 @@ public:
         //fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
 
 
+
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
 

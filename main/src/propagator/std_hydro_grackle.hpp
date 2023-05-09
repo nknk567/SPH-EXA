@@ -80,12 +80,17 @@ public:
     HydroGrackleProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
+<<<<<<< HEAD
 
 
         constexpr float                 ms_sim = 1e16;//1e9;//1e16;
         constexpr float                 kp_sim = 46400;//1.0;//46400.;
 
 
+=======
+        constexpr float                 ms_sim = 1e9;//1e16;
+        constexpr float                 kp_sim = 1.0;//46400.;
+>>>>>>> 24b7f86a4b7e7b3e8cc560e7dda1c454afa97a7c
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
         grackleOptions["with_radiative_cooling"] = 1;
@@ -158,10 +163,6 @@ public:
         size_t last  = domain.endIndex();
 
 
-        size_t n_gas = 0;
-        for (size_t i = first; i < last; i++) {
-            if (d.dark[i] == 0) n_gas++;
-        }
 
         computeTimestep(first, last, d);
         timer.step("Timestep");

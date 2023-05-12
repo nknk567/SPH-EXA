@@ -41,6 +41,7 @@
 #include "cooling/cooler.hpp"
 #include "ipropagator.hpp"
 #include "gravity_wrapper.hpp"
+#include "star-formation.hpp"
 
 namespace sphexa
 {
@@ -190,6 +191,8 @@ public:
 
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");
+
+        star_formation::form_all(first, last, simData);
         updateSmoothingLength(first, last, d);
         timer.step("UpdateSmoothingLength");
 

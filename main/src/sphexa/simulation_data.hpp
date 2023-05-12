@@ -34,6 +34,7 @@
 
 #include "cooling/chemistry_data.hpp"
 #include "sph/particles_data.hpp"
+#include "star_data.hpp"
 
 namespace sphexa
 {
@@ -49,6 +50,7 @@ public:
 
     using HydroData = ParticlesData<RealType, KeyType, AccType>;
     using ChemData  = cooling::ChemistryData<T>;
+    using StarData = star_formation::StarData<T>;
 
     //! @brief spacially distributed data for hydrodynamics and gravity
     HydroData hydro;
@@ -56,6 +58,7 @@ public:
     //! @brief chemistry data for radiative cooling, e.g. for GRACKLE
     ChemData chem;
 
+    StarData star;
     //! @brief non-spacially distributed nuclear abundances
     // NuclearData nuclear;
 

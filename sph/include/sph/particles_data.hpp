@@ -78,10 +78,8 @@ public:
     ParticlesData(const ParticlesData&) = delete;
 
 
-
-    KeyType iteration{1};
-    KeyType numParticlesGlobal;
-
+    uint64_t iteration{1};
+    uint64_t numParticlesGlobal;
 
     //! @brief default mean desired number of neighbors per particle, can be overriden per test case or input file
     unsigned ng0{100};
@@ -150,7 +148,7 @@ public:
     }
 
     //! @brief non-stateful variables for statistics
-    size_t totalNeighbors;
+    uint64_t totalNeighbors;
 
     /*! @brief Particle fields
      *

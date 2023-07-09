@@ -45,7 +45,7 @@ template<class T>
 class ChemistryData : public cstone::FieldStates<ChemistryData<T>>
 {
 public:
-    inline static constexpr size_t numFields = 21;
+    inline static constexpr size_t numFields = 23;
 
     template<class ValueType>
     using FieldVector     = std::vector<ValueType, std::allocator<ValueType>>;
@@ -100,7 +100,9 @@ public:
                                                   "RT_HeI_ionization_rate",
                                                   "RT_HeII_ionization_rate",
                                                   "RT_H2_dissociation_rate",
-                                                  "H2_self_shielding_length"};
+                                                  "H2_self_shielding_length",
+                                                  "oxygen_fraction",
+                                                  "iron_fraction"};
 
     static_assert(fieldNames.size() == numFields);
 

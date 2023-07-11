@@ -74,6 +74,9 @@ public:
     //! @brief load internal state from file
     virtual void load(const std::string& path, MPI_Comm comm){};
 
+    //! @brief Calculate quantities without advancing
+    virtual void prepareSystem(DomainType& domain, ParticleDataType& simData) {};
+
     virtual ~Propagator() = default;
 
     void printIterationTimings(const DomainType& domain, const ParticleDataType& simData)

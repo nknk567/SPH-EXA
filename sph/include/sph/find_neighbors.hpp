@@ -26,9 +26,17 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
         nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
 
         int iteration = 0;
+        if (nc[i] == 0)
+        {
+            std::cout << "nc = 0: " << i << std::endl;
+            std::cout << "h: " << h[id] << std::endl;
+            std::cout << "x, y, z: " << x[id] << "\t" << y[id] << "\t" << z[id] << std::endl;
+        }
         while (ngmin > nc[i] || nc[i] > ngmax && iteration++ < maxIteration)
         {
-            h[id] = updateH(ng0, nc[i], h[id]);
+            if (nc[i] == 0)
+                h[id] *= 1.25;
+            else { h[id] = updateH(ng0, nc[i], h[id]); }
             nc[i] = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
         }
         numFails += (iteration == maxIteration);

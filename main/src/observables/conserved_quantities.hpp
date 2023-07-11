@@ -55,6 +55,7 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
     const auto* vz   = d.vz.data();
     const auto* m    = d.m.data();
     const auto* temp = d.temp.data();
+    const auto* u = d.u.data();
 
     util::array<double, 3> linmom{0.0, 0.0, 0.0};
     util::array<double, 3> angmom{0.0, 0.0, 0.0};
@@ -89,6 +90,15 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
             eInt += cv * temp[i] * mi;
         }
     }
+    else if (!d.u.empty())
+    {
+#pragma omp parallel for reduction(+ : eInt)
+        for (size_t i = startIndex; i < endIndex; i++)
+        {
+            auto mi = m[i];
+            eInt += u[i] * mi;
+        }
+     }
 
     return std::make_tuple(0.5 * eKin, eInt, linmom, angmom);
 }

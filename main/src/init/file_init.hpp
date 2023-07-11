@@ -39,9 +39,33 @@
 #include "io/arg_parser.hpp"
 #include "io/factory.hpp"
 #include "isim_init.hpp"
+#include "cstone/fields/particles_get.hpp"
+
 
 namespace sphexa
 {
+
+template <typename ChemData>
+void restoreChemistryData(IFileReader* reader, int rank, ChemData& chem)
+{
+    using T = typename ChemData::RealType;
+    auto n = reader->localNumParticles();
+    chem.resize(n);
+    auto fieldPointers = chem.data();
+
+    //auto h1 = cstone::get<"HI_fraction">(chem).data();
+    //reader->readField("HI_fraction", h1);
+
+    for (size_t i = 0; i < fieldPointers.size(); i++) {
+        if (rank == 0) { std::cout << "restoring " << chem.fieldNames[i] << std::endl; }
+        std::visit([reader, key = chem.fieldNames[i]](auto field)
+                   {
+                       std::cout << "key: " << key << std::endl;
+                       reader->readField(key, field->data());
+                   },
+                   fieldPointers[i]);
+    }
+}
 
 template<class HydroData>
 cstone::Box<typename HydroData::RealType> restoreHydroData(IFileReader* reader, int rank, HydroData& d)
@@ -96,7 +120,7 @@ public:
         reader->setStep(h5_fname, initStep);
 
         auto box = restoreHydroData(reader.get(), rank, simData.hydro);
-
+        restoreChemistryData(reader.get(), rank, simData.chem);
         // Read file attributes and put them in constants_ such that they propagate to the new output after a restart
         auto fileAttributes = reader->fileAttributes();
         for (const auto& attr : fileAttributes)

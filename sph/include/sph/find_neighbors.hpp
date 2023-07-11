@@ -14,7 +14,7 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
 {
     LocalIndex numWork = lastId - firstId;
 
-    unsigned ngmin = ng0 / 4;
+    unsigned ngmin = ng0;
 
     size_t        numFails     = 0;
     constexpr int maxIteration = 10;

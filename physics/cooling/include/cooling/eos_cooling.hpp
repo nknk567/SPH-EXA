@@ -8,7 +8,7 @@
 template<typename HydroData, typename ChemData, typename Cooler>
 void eos_cooling(size_t startIndex, size_t endIndex, HydroData& d, ChemData &chem, Cooler &cooler)
 {
-    using T = HydroData::RealType;
+    using T = typename HydroData::RealType;
     const auto* temp = d.temp.data();
     const auto* rho  = d.rho.data();
 

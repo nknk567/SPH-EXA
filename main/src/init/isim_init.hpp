@@ -47,7 +47,7 @@ protected:
 
 public:
     virtual cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t, Dataset& d) const = 0;
-    virtual void initDependent (Dataset &d) const {};
+    virtual bool initDependent (Dataset &d) const {};
     virtual const std::map<std::string, double>&    constants() const                                      = 0;
 
     virtual ~ISimInitializer() = default;

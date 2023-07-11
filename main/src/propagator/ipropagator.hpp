@@ -76,6 +76,8 @@ public:
 
     //! @brief Calculate quantities without advancing
     virtual void prepareSystem(DomainType& domain, ParticleDataType& simData) {};
+    virtual void relaxSystem(DomainType& domain, ParticleDataType& simData) {};
+
 
     virtual ~Propagator() = default;
 

@@ -81,8 +81,8 @@ public:
         : Base(output, rank)
     {
 
-        constexpr float                 ms_sim = 1e6;//1e9;//1e16;
-        constexpr float                 kp_sim = 1.0;//1.0;//46400.;
+        constexpr float ms_sim = 1e6; // 1e9;//1e16;
+        constexpr float kp_sim = 1.0; // 1.0;//46400.;
 
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
@@ -151,7 +151,7 @@ public:
 
         computeDensity(first, last, d, domain.box());
         timer.step("Density");
-        //computeEOS_HydroStd(first, last, d);
+        // computeEOS_HydroStd(first, last, d);
         eos_cooling(first, last, d, simData.chem, cooling_data);
         timer.step("EquationOfState");
 
@@ -188,7 +188,56 @@ public:
         computeForces(domain, simData);
     }
 
+    void relaxSystem(DomainType& domain, DataType& simData) override
+    {
+        size_t step = 0;
+        while (1)
+        {
+            auto& d = simData.hydro;
+            timer.start();
 
+            sync(domain, simData);
+            // halo exchange for masses, allows for particles with variable masses
+            domain.exchangeHalos(std::tie(get<"m">(d)), get<"ax">(d), get<"ay">(d));
+            timer.step("domain::sync");
+
+            d.resize(domain.nParticlesWithHalos());
+            std::cout << get<"u">(d)[0] << std::endl;
+            computeForces(domain, simData);
+
+            size_t first = domain.startIndex();
+            size_t last  = domain.endIndex();
+
+            computeTimestep(first, last, d);
+            timer.step("Timestep");
+            // Friction
+            const T friction_time{10 * d.minDt};
+            T       max_fric{0.};
+            T       fric_tot{0.};
+            for (size_t i = first; i < last; i++)
+            {
+                T fric_x = -get<"vx">(d)[i] / friction_time;
+                T fric_y = -get<"vy">(d)[i] / friction_time;
+                T fric_z = -get<"vz">(d)[i] / friction_time;
+                T m_fric{std::max({fric_x, fric_y, fric_z})};
+                if (m_fric > max_fric) max_fric = m_fric;
+                get<"ax">(d)[i] += fric_x;
+                get<"ay">(d)[i] += fric_y;
+                get<"az">(d)[i] += fric_z;
+                fric_tot += std::abs(fric_x) + std::abs(fric_y) + std::abs(fric_z);
+            }
+            fric_tot /= d.numParticlesGlobal;
+            if (step > 100 && fric_tot < 1e-9) break;
+            std::cout << "fric_tot " << fric_tot << std::endl;
+            computePositions(first, last, d, domain.box());
+            timer.step("UpdateQuantities");
+            updateSmoothingLength(first, last, d);
+            timer.step("UpdateSmoothingLength");
+
+            timer.stop();
+            step++;
+        }
+    }
 
     void step(DomainType& domain, DataType& simData) override
     {
@@ -210,18 +259,17 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
 
-
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
             bool haveMui = !d.mui.empty();
             T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 
-            //T u_old  = cv * d.temp[i];
-            //T u_cool = u_old;
-            T u_old = d.u[i];
+            // T u_old  = cv * d.temp[i];
+            // T u_cool = u_old;
+            T u_old  = d.u[i];
             T u_cool = d.u[i];
-            /*cooling_data.cool_particle(
+            cooling_data.cool_particle(
                 d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
@@ -234,7 +282,7 @@ public:
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
             const T du = (u_cool - u_old) / d.minDt;
-            d.du[i] += du;*/
+            d.du[i] += du;
         }
         timer.step("GRACKLE chemistry and cooling");
 

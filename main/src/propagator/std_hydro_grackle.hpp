@@ -166,7 +166,7 @@ public:
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            if (d.dark[i] == 1.0) continue;
+            //if (d.dark[i] == 1.0) continue;
             bool haveMui = !d.mui.empty();
             T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 
@@ -192,7 +192,7 @@ public:
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");
 
-        star_formation::form_all(first, last, simData);
+        star_formation::form_all(domain, first, last, simData);
         updateSmoothingLength(first, last, d);
         timer.step("UpdateSmoothingLength");
 

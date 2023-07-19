@@ -77,7 +77,6 @@ public:
     ParticlesData()                     = default;
     ParticlesData(const ParticlesData&) = delete;
 
-
     uint64_t iteration{1};
     uint64_t numParticlesGlobal;
 
@@ -179,6 +178,8 @@ public:
     FieldVector<KeyType>  keys;                               // Particle space-filling-curve keys
     FieldVector<unsigned> nc;                                 // number of neighbors of each particle
     FieldVector<T>        dV11, dV12, dV13, dV22, dV23, dV33; // Velocity gradient components
+    FieldVector<T>        pType;                              // Particle type
+    FieldVector<T>        redistributeParticle;
     FieldVector<T>        dark;                               // Dark matter particle
 
     //! @brief Indices of neighbors for each particle, length is number of assigned particles * ngmax. CPU version only.
@@ -197,7 +198,7 @@ public:
         "x",     "y",    "z",   "x_m1", "y_m1", "z_m1", "vx",   "vy",   "vz",    "rho",  "u",     "p",
         "prho",  "h",    "m",   "c",    "ax",   "ay",   "az",   "du",   "du_m1", "c11",  "c12",   "c13",
         "c22",   "c23",  "c33", "mue",  "mui",  "temp", "cv",   "xm",   "kx",    "divv", "curlv", "alpha",
-        "gradh", "keys", "nc",  "dV11", "dV12", "dV13", "dV22", "dV23", "dV33", "dark"};
+        "gradh", "keys", "nc",  "dV11", "dV12", "dV13", "dV22", "dV23", "dV33",  "dark"};
 
     static_assert(!cstone::HaveGpu<AcceleratorType>{} ||
                       fieldNames.size() == DeviceData_t<AccType, T, KeyType>::fieldNames.size(),

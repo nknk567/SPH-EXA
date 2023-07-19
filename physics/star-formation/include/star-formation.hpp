@@ -76,14 +76,47 @@ T formationMass(const Params<T, Tmass>& params, Tmass& m, const T temp, const T 
     return star_mass_constr;
 }
 
-template<typename Dataset>
-void initializeStellarParticle(Dataset &d, size_t gas_index, size_t star_index)
+template<typename T>
+struct particle_type
+{
+    inline constexpr static T gas{0.0};
+    inline constexpr static T star{1.0};
+};
+
+template<typename Dataset, typename T>
+void initializeStellarParticle(Dataset& d, const size_t ig, const size_t is, const T stellarMass)
 {
     // Copy information to star particle
+    d.hydro.m[is]                     = stellarMass;
+    get<"metal_fraction">(d.chem)[is] = get<"metal_fraction">(d.chem)[ig];
+    d.hydro.pType[is] = particle_type<T>::star;
+    /*get<"formation_time">(d.star)[is] = d.hydro.ttot;
+    get<"formation_mass">(d.star)[is] = stellarMass;*/
+
+    /*  (const Tmass mass, const Tmass formation_mass, const T metallicity, const T oxygen_frac,
+       const T iron_frac, const T formation_time)*/
+
+    /* et<"m">(d.hydro)[i], get<"temp">(d.hydro)[i], get<"divv">(d.hydro)[i],
+         get<"rho">(d.hydro)[i], 1., get<"metal_fraction">(d.chem)[i], get<"oxygen_fraction">(d.chem)[i],
+         get<"iron_fraction">(d.chem)[i], d.hydro.minDt, d.hydro.ttot*/
 }
 
-template<typename Dataset>
-void form_all(size_t first, size_t last, Dataset& d)
+template<typename Domain, typename Dataset>
+void resizeStar(Domain& domain, Dataset& d, size_t n_new)
+{
+    if (n_new > domain.nParticlesWithHalos() - domain.nParticles())
+    {
+        size_t new_size = domain.nParticles() + n_new;
+        d.hydro.resize(new_size);
+        d.chem.resize(new_size);
+        std::cout << "new_size: " << new_size << std::endl;
+    }
+    const size_t end_before = domain.endIndex();
+    domain.setEndIndex(end_before + n_new);
+}
+
+template<typename Domain, typename Dataset>
+void form_all(Domain& domain, size_t first, size_t last, Dataset& d)
 {
     using T     = typename Dataset::HydroData::RealType;
     using Tmass = typename Dataset::HydroData::Tmass;
@@ -94,10 +127,8 @@ void form_all(size_t first, size_t last, Dataset& d)
     std::vector<size_t> formation_indices{};
     std::vector<Tmass>  formation_masses{};
 
-#pragma omp parallel reduction(+: n_formation)
+#pragma omp parallel reduction(+ : n_formation)
     {
-
-        // Tmass local_tot_formation_mass = 0.;
         std::vector<size_t> local_formation_indices{};
         std::vector<Tmass>  local_formation_masses{};
 #pragma omp for nowait // reduction(+: n_formation) reduction(+: tot_formation_mass)
@@ -108,10 +139,6 @@ void form_all(size_t first, size_t last, Dataset& d)
             if (formation_mass > Tmass{0.}) n_formation++;
             formation_masses.push_back(formation_mass);
             formation_indices.push_back(i);
-            // get<"sf_formation_mass">(d.hydro)[i] = formation_mass;
-            /*form_new(params, i, get<"m">(d.hydro)[i], get<"temp">(d.hydro)[i], get<"divv">(d.hydro)[i],
-                     get<"rho">(d.hydro)[i], 1., get<"metal_fraction">(d.chem)[i], get<"oxygen_fraction">(d.chem)[i],
-                     get<"iron_fraction">(d.chem)[i], d.hydro.minDt, d.hydro.ttot);*/
         }
 #pragma omp critical
         {
@@ -122,20 +149,19 @@ void form_all(size_t first, size_t last, Dataset& d)
         }
     }
 
-    d.hydro.resize(d.hydro.x.size() + n_formation);
-    // domain.setEndIndex(domain.endIndex + n_formation);
+    resizeStar(domain, d, n_formation);
+
 #pragma omp parallel for
     for (size_t i = 0; i < formation_indices.size(); i++)
     {
         const size_t index{formation_indices[i]};
-        const Tmass m_star{formation_masses[i]};
-        initializeParticle(params, index, get<"m">(d.hydro)[index], get<"temp">(d.hydro)[index],
-                           get<"divv">(d.hydro)[index], get<"rho">(d.hydro)[index], 1.,
-                           get<"metal_fraction">(d.chem)[index], get<"oxygen_fraction">(d.chem)[index],
-                           get<"iron_fraction">(d.chem)[index], d.hydro.minDt, d.hydro.ttot);
-        auto &m_gas = d.hydro.m[index];
+        const Tmass  m_star{formation_masses[i]};
+
+        initializeStellarParticle(d, index, domain.endIndex() - i - 1, m_star);
+
+        auto& m_gas = d.hydro.m[index];
         m_gas -= m_star;
-        if (m_gas < params.m_gas_min) d.hydro.deleteParticle[index] = 1.0;
+        if (m_gas < params.m_gas_min) d.hydro.redistributeParticle[index] = 1.0;
     }
 }
 // redistributeGas();

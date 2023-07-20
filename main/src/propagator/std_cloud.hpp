@@ -211,7 +211,7 @@ public:
             computeTimestep(first, last, d);
             timer.step("Timestep");
             // Friction
-            const T friction_time{2. * d.minDt};
+            const T friction_time{10. * d.minDt};
             T       max_fric{0.};
             T       fric_tot{0.};
             for (size_t i = first; i < last; i++)
@@ -227,7 +227,7 @@ public:
                 fric_tot += std::abs(fric_x) + std::abs(fric_y) + std::abs(fric_z);
             }
             fric_tot /= d.numParticlesGlobal;
-            if (step > 100 && fric_tot < 0.01) break;
+            if (step > 100 && fric_tot < 0.000) break;
             std::cout << "fric_tot " << fric_tot << std::endl;
             computePositions(first, last, d, domain.box());
             timer.step("UpdateQuantities");

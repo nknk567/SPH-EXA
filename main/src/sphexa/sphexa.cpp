@@ -141,9 +141,12 @@ int main(int argc, char** argv)
     while (true)
     {
         propagator->prepareSystem(domain, simData);
+        std::cout << "system prepared" << std::endl;
+        //std::exit(0);
         if (simInit->initDependent(simData)) break;
     }
-    // propagator->relaxSystem(domain, simData);
+    //std::exit(0);
+     propagator->relaxSystem(domain, simData);
     size_t startIteration = d.iteration;
     for (; !stopSimulation(d.iteration - 1, d.ttot, maxStepStr); d.iteration++)
     {

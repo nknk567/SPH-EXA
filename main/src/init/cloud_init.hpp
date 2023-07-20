@@ -35,7 +35,7 @@
 
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/continuum.hpp"
-#include "sph/sph.hpp"
+//#include "sph/sph.hpp"
 // #include "sph/eos.hpp"
 #include "sph/particles_data.hpp"
 #include "isim_init.hpp"
@@ -75,7 +75,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.0);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.0);
 
-    const T u_guess{2.87};
+    const T u_guess{0.2};
     std::fill(d.u.begin(), d.u.end(), u_guess);
 
 
@@ -100,16 +100,43 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     }
 }
 
+template <typename FT, typename T>
+T bisect_monotone(const FT &func, const T y)
+{
+    T x = 0.;
+    T delta = 2.;
+    const T epsilon = 1e-5;
+    while (true) {
+        //std::cout << "bisect: " << std::endl;
+        T x_new = x + delta;
+        const T y_x_new = func(x_new);
+        if (std::abs(y - y_x_new) < epsilon) {x=x_new; break;}
+        if (y_x_new > y) delta *= 0.5;
+        else x = x_new;
+    }
+    return x;
+}
+
 template<class Vector>
 void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
 {
+    auto f = [](double y) {
+        //return 2. - std::exp(-y) * (y*y + 2.*y + 2.);
+        //return std::pow((2. - std::exp(-y) * (y*y + 2.*y + 2.)) * 3., 1./3.);
+        const double b = 1.75;
+        return std::pow((2./(b*b*b) - std::exp(-b * y) * (b*b*y*y + 2.*b*y + 2.) / (b*b*b)) * 3., 1./3.);
+    };
+    //double x = bisect_monotone(f, 1.0);
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x.size(); i++)
     {
         auto radius0 = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
 
         // multiply coordinates by sqrt(r) to generate a density profile ~ 1/r
-        auto contraction = std::sqrt(radius0);
+        //auto contraction = std::sqrt(radius0);
+        auto new_r = bisect_monotone(f, radius0);
+        auto contraction = new_r / radius0;
         x[i] *= contraction;
         y[i] *= contraction;
         z[i] *= contraction;
@@ -166,8 +193,36 @@ public:
         {
             const T radius = std::sqrt(d.x[i] * d.x[i] + d.y[i] * d.y[i] + d.z[i] * d.z[i]);
             //pressure_eq[i] = 3. / (8. * M_PI) * (1. - radius * radius);
-            const T r_eps = std::max(radius, 1e-5);
-            pressure_eq[i] = 1. / (2. * M_PI) * std::log(1. / r_eps);
+
+            auto p = [](double radius) {
+                const T b = 1.75;
+                //const T e = std::exp(b * radius);
+                //const T e2 = std::exp(2. * b * radius);
+                const T em = std::exp(-b * radius);
+                const T em2 = std::exp(-2. * b * radius);
+                const T eim2 = std::expint(-2 * b * radius);
+                const T eim = std::expint(-b * radius);
+
+                const T t1 = 4. * b * radius * eim2;
+                const T t2 = -4. * b * radius * eim;
+                const T t3 = em2 * (b * radius + 4.) - 4. * em;
+                const T n = 2. * M_PI * (t1 + t2 + t3);
+                const T res = (n / (radius * b*b*b) * (9. / (16. * M_PI * M_PI)));
+                return res;
+            };
+
+            pressure_eq[i] = p(2.9892) - p(radius);
+
+            /*const T ei = std::expint(-2. * b * radius);
+            const T e = std::exp(-2 * b * radius);
+            const T first_term = -2 * b * ei;
+            const T second_term = -e * (b * radius + 4.0) / (2. * radius);
+            const T pressure = 0. - (first_term + second_term) / (b*b*b);
+            pressure_eq[i] = pressure * 3. / (4 * M_PI);*/
+
+            /*const T r_eps = std::max(radius, 1e-5);
+            pressure_eq[i] = 1. / (2. * M_PI) * std::log(1. / r_eps);*/
+
         }
 
         /*cooling::Cooler<T>              cooling_data;
@@ -213,7 +268,8 @@ public:
             const T relation{pressure_eq[i] / pressure};
             d.u[i] = u_cool * relation;
             if (std::abs(relation - 1.) > 1e-5) good = false;
-            //std::cout << d.u[i] << std::endl;
+            std::cout << "u: " << d.u[i] << std::endl;
+            std::cout << "relation " << relation << std::endl;
             //std::cout << d.rho[i] << std::endl;
         }
         std::cout << "status " << good << std::endl;
@@ -243,7 +299,7 @@ public:
         size_t numParticlesGlobal = d.x.size();
         MPI_Allreduce(MPI_IN_PLACE, &numParticlesGlobal, 1, MpiType<size_t>{}, MPI_SUM, simData.comm);
 
-         contractRhoProfile(d.x, d.y, d.z);
+        contractRhoProfileCloud(d.x, d.y, d.z);
         syncCoords<KeyType>(rank, numRanks, numParticlesGlobal, d.x, d.y, d.z, globalBox);
 
         d.resize(d.x.size());

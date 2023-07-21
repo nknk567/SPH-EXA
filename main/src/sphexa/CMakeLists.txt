@@ -48,7 +48,6 @@ target_link_libraries(${exename} PRIVATE OpenMP::OpenMP_CXX ${MPI_CXX_LIBRARIES}
 target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/physics/cooling/include/)
 target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/physics/star-formation/include/)
 
-
 enableH5Part(${exename})
 enableInSituViz(${exename})
 enableGrackle(${exename})

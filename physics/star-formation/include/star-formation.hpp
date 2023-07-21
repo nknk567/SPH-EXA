@@ -104,15 +104,19 @@ void initializeStellarParticle(Dataset& d, const size_t ig, const size_t is, con
 template<typename Domain, typename Dataset>
 void resizeStar(Domain& domain, Dataset& d, size_t n_new)
 {
-    if (n_new > domain.nParticlesWithHalos() - domain.nParticles())
+    //Check how much new space is required
+    long add_size = n_new - long(domain.endIndex()) + long(domain.nParticlesWithHalos());
+    //Resize Dataset if needed
+    if (add_size > 0)
     {
-        size_t new_size = domain.nParticles() + n_new;
+        size_t new_size = domain.nParticlesWithHalos() + add_size;
         d.hydro.resize(new_size);
         d.chem.resize(new_size);
         std::cout << "new_size: " << new_size << std::endl;
     }
     const size_t end_before = domain.endIndex();
     domain.setEndIndex(end_before + n_new);
+    domain.setBufSize(domain.nParticlesWithHalos() + add_size);
 }
 
 template<typename Domain, typename Dataset>
@@ -157,7 +161,7 @@ void form_all(Domain& domain, size_t first, size_t last, Dataset& d)
         const size_t index{formation_indices[i]};
         const Tmass  m_star{formation_masses[i]};
 
-        initializeStellarParticle(d, index, domain.endIndex() - i - 1, m_star);
+        initializeStellarParticle(d, index, domain.endIndex() - n_formation + i, m_star);
 
         auto& m_gas = d.hydro.m[index];
         m_gas -= m_star;

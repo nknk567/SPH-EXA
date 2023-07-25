@@ -86,11 +86,11 @@ public:
 
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 0;
+        grackleOptions["with_radiative_cooling"] = 1;
         grackleOptions["primordial_chemistry"]   = 3;
         grackleOptions["dust_chemistry"]         = 0;
         grackleOptions["metal_cooling"]          = 1;
-        grackleOptions["UVbackground"]           = 1;
+        grackleOptions["UVbackground"]           = 0;
         cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
     }
 
@@ -259,8 +259,8 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
 
-//#pragma omp parallel for schedule(static)
-        /*for (size_t i = first; i < last; i++)
+#pragma omp parallel for schedule(static)
+        for (size_t i = first; i < last; i++)
         {
             bool haveMui = !d.mui.empty();
             T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
@@ -284,7 +284,7 @@ public:
             const T du = (u_cool - u_old) / d.minDt;
             d.du[i] += du;
         }
-        timer.step("GRACKLE chemistry and cooling");*/
+        timer.step("GRACKLE chemistry and cooling");
 
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");
@@ -293,6 +293,38 @@ public:
 
         timer.stop();
     }
+
+    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
+                    const cstone::Box<T>& box) override
+    {
+        Base::saveFields(writer, first, last, simData, box);
+        //should be customized and namespace
+        auto&            chem             = simData.chem;
+        auto             fieldPointers = chem.data();
+        //std::vector<int> outputFields  = chem.outputFieldIndices;
+
+        auto output = [&]()
+        {
+            for (int i = int(fieldPointers.size()) - 1; i >= 0; --i)
+            {
+                //int fidx = outputFields[i];
+                //if (d.isAllocated(fidx))
+                //{
+                    //int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
+                     //            d.outputFieldIndices.begin();
+                    transferToHost(chem, first, last, {chem.fieldNames[i]});
+                    std::visit([writer, i, key = chem.fieldNames[i]](auto field)
+                               { writer->writeField(key, field->data(), i); },
+                               fieldPointers[i]);
+                    //outputFields.erase(outputFields.begin() + i);
+                //}
+            }
+        };
+
+        output();
+    }
+
+
 };
 
 } // namespace sphexa

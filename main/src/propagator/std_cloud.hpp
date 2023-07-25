@@ -259,11 +259,11 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
 
-/*#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            bool haveMui = !d.mui.empty();
-            T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
+            //bool haveMui = !d.mui.empty();
+            //T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 
             // T u_old  = cv * d.temp[i];
             // T u_cool = u_old;
@@ -284,7 +284,7 @@ public:
             const T du = (u_cool - u_old) / d.minDt;
             d.du[i] += du;
         }
-        timer.step("GRACKLE chemistry and cooling");*/
+        timer.step("GRACKLE chemistry and cooling");
 
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");

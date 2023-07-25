@@ -59,7 +59,7 @@ auto accelerationTimestep(size_t first, size_t last, const Dataset& d)
 #pragma omp parallel for reduction(max : maxAccSq)
         for (size_t i = first; i < last; ++i)
         {
-            cstone::Vec3<T> X{d.x[i], d.y[i], d.z[i]};
+            cstone::Vec3<T> X{d.ax[i], d.ay[i], d.az[i]};
             maxAccSq = std::max(norm2(X), maxAccSq);
         }
     }

@@ -227,7 +227,7 @@ public:
                 fric_tot += std::abs(fric_x) + std::abs(fric_y) + std::abs(fric_z);
             }
             fric_tot /= d.numParticlesGlobal;
-            if (step > 100 && fric_tot < 0.000) break;
+            if (step > 100 && fric_tot < 0.018) break;
             std::cout << "fric_tot " << fric_tot << std::endl;
             computePositions(first, last, d, domain.box());
             timer.step("UpdateQuantities");

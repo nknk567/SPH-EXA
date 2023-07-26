@@ -131,7 +131,7 @@ void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler,
             get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
             get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
             get<"H2_self_shielding_length">(chem)[i]);
-        minTc = std::min(cooling_time, minTc);
+        minTc = std::min(std::abs(cooling_time), minTc);
 
     }
     std::cout << "minTc: " << minTc << std::endl;

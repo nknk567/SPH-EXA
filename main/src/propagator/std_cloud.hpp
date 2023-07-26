@@ -202,7 +202,7 @@ public:
             timer.step("domain::sync");
 
             d.resize(domain.nParticlesWithHalos());
-            fill(get<"soft">(d), 0, domain.startIndex(), d.eps);
+            fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
             std::cout << get<"u">(d)[0] << std::endl;
             computeForces(domain, simData);
 

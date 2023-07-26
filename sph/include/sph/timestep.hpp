@@ -134,6 +134,7 @@ void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler,
         minTc = std::min(cooling_time, minTc);
 
     }
+    std::cout << "minTc: " << minTc << std::endl;
     T minDtLoc = std::min({minDtAcc, d.minDtCourant, d.minDtRho, d.maxDtIncrease * d.minDt});
 
     T minDtGlobal;

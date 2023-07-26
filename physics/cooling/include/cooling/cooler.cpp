@@ -83,11 +83,17 @@ private:
                       T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
                       T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
                       T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
-    T temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
-                          T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
-                          T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
-                          T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
-                          T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
+    T temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
+                            T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction,
+                            T& DII_fraction, T& HDI_fraction, T& e_fraction, T& metal_fraction,
+                            T& volumetric_heating_rate, T& specific_heating_rate, T& RT_heating_rate,
+                            T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
+                            T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
+    T cooling_time(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
+                   T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
+                   T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
+                   T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
+                   T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
 };
 
 // Implementation of Cooler
@@ -165,6 +171,21 @@ T Cooler<T>::adiabatic_index(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& H
         H2II_fraction, DI_fraction, DII_fraction, HDI_fraction, e_fraction, metal_fraction, volumetric_heating_rate,
         specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
         RT_H2_dissociation_rate, H2_self_shielding_length);
+}
+
+template<typename T>
+T Cooler<T>::cooling_time(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
+                          T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction,
+                          T& DII_fraction, T& HDI_fraction, T& e_fraction, T& metal_fraction,
+                          T& volumetric_heating_rate, T& specific_heating_rate, T& RT_heating_rate,
+                          T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
+                          T& RT_H2_dissociation_rate, T& H2_self_shielding_length)
+{
+    return impl_ptr->cooling_time(rho, u, HI_fraction, HII_fraction, HM_fraction, HeI_fraction, HeII_fraction,
+                                  HeIII_fraction, H2I_fraction, H2II_fraction, DI_fraction, DII_fraction, HDI_fraction,
+                                  e_fraction, metal_fraction, volumetric_heating_rate, specific_heating_rate,
+                                  RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate,
+                                  RT_HeII_ionization_rate, RT_H2_dissociation_rate, H2_self_shielding_length);
 }
 
 template struct Cooler<double>;
@@ -339,22 +360,25 @@ T Cooler<T>::Impl::energy_to_temperature(const T& dt, T& rho, T& u, T& HI_fracti
 }
 
 template<typename T>
-T Cooler<T>::Impl::temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
-                        T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
-                        T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
-                        T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
-                        T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length)
+T Cooler<T>::Impl::temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction,
+                                         T& HeI_fraction, T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction,
+                                         T& H2II_fraction, T& DI_fraction, T& DII_fraction, T& HDI_fraction,
+                                         T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
+                                         T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate,
+                                         T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
+                                         T& RT_H2_dissociation_rate, T& H2_self_shielding_length)
 {
     const T temp_units(get_temperature_units(&global_values.units));
-    T nden = metal_fraction * rho / 16.;
-    nden += (HI_fraction + HII_fraction + e_fraction + (HeI_fraction+HeII_fraction+HeIII_fraction)/4.)*rho;
+    T       nden = metal_fraction * rho / 16.;
+    nden += (HI_fraction + HII_fraction + e_fraction + (HeI_fraction + HeII_fraction + HeIII_fraction) / 4.) * rho;
     nden += (HM_fraction + (H2I_fraction + H2II_fraction) / 2.) * rho;
-    const T mu = rho / nden;
-    T u = 1.0;
-    const T gamma = adiabatic_index(rho, u, HI_fraction, HII_fraction, HM_fraction, HeI_fraction, HeII_fraction, HeIII_fraction, H2I_fraction,
-                                    H2II_fraction, DI_fraction, DII_fraction, HDI_fraction, e_fraction, metal_fraction, volumetric_heating_rate,
-                                    specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
-                                    RT_H2_dissociation_rate, H2_self_shielding_length);
+    const T mu    = rho / nden;
+    T       u     = 1.0;
+    const T gamma = adiabatic_index(
+        rho, u, HI_fraction, HII_fraction, HM_fraction, HeI_fraction, HeII_fraction, HeIII_fraction, H2I_fraction,
+        H2II_fraction, DI_fraction, DII_fraction, HDI_fraction, e_fraction, metal_fraction, volumetric_heating_rate,
+        specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
+        RT_H2_dissociation_rate, H2_self_shielding_length);
     return T(temp / temp_units / mu / (gamma - 1.0));
 }
 
@@ -400,4 +424,26 @@ T Cooler<T>::Impl::adiabatic_index(T& rho, T& u, T& HI_fraction, T& HII_fraction
                           &gamma);
     return gamma;
 }
+
+template<typename T>
+T Cooler<T>::Impl::cooling_time(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
+                                T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction,
+                                T& DII_fraction, T& HDI_fraction, T& e_fraction, T& metal_fraction,
+                                T& volumetric_heating_rate, T& specific_heating_rate, T& RT_heating_rate,
+                                T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
+                                T& RT_H2_dissociation_rate, T& H2_self_shielding_length)
+{
+    cooler_field_data_content<T> grackle_fields;
+    grackle_fields.assign_field_data(
+        rho, u, HI_fraction, HII_fraction, HM_fraction, HeI_fraction, HeII_fraction, HeIII_fraction, H2I_fraction,
+        H2II_fraction, DI_fraction, DII_fraction, HDI_fraction, e_fraction, metal_fraction, volumetric_heating_rate,
+        specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
+        RT_H2_dissociation_rate, H2_self_shielding_length);
+    gr_float time(0.0);
+    local_calculate_cooling_time(&global_values.data, &global_values.rates, &global_values.units, &grackle_fields.data,
+                                 &time);
+
+    return time;
+}
+
 } // namespace cooling

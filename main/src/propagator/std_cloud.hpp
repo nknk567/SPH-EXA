@@ -257,7 +257,7 @@ public:
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-        computeTimestep(first, last, d);
+        computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
 
 #pragma omp parallel for schedule(static)

@@ -70,12 +70,12 @@ struct Cooler
                             T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
 
     //! @brief Calculate the internal energy from the temperature in K
-    T temperature_to_energy(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
-                      T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
-                      T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
-                      T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
-                      T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
-
+    T temperature_to_energy(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
+                            T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction,
+                            T& DII_fraction, T& HDI_fraction, T& e_fraction, T& metal_fraction,
+                            T& volumetric_heating_rate, T& specific_heating_rate, T& RT_heating_rate,
+                            T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
+                            T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
 
     //! @brief Calculate pressure using the chemistry composition
     T pressure(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
@@ -90,6 +90,12 @@ struct Cooler
                       T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
                       T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
                       T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
+
+    T cooling_time(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
+                   T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
+                   T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
+                   T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
+                   T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
 
 private:
     struct Impl;

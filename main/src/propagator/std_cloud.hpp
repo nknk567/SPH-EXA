@@ -202,7 +202,6 @@ public:
             timer.step("domain::sync");
 
             d.resize(domain.nParticlesWithHalos());
-            fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
             std::cout << get<"u">(d)[0] << std::endl;
             computeForces(domain, simData);
 
@@ -252,6 +251,7 @@ public:
 
         d.resize(domain.nParticlesWithHalos());
         std::cout << get<"u">(d)[0] << std::endl;
+        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
         computeForces(domain, simData);
 
         size_t first = domain.startIndex();

@@ -117,7 +117,7 @@ void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler,
 
     T minDtAcc = (d.g != 0.0) ? accelerationTimestep(first, last, d) : INFINITY;
 
-    T minTc(0.);
+    T minTc(INFINITY);
 #pragma omp parallel for reduction(min: minTc)
     for (size_t i = first; i < last; i++)
     {

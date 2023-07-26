@@ -63,7 +63,7 @@ class CloudProp final : public HydroProp<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "soft">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -202,6 +202,7 @@ public:
             timer.step("domain::sync");
 
             d.resize(domain.nParticlesWithHalos());
+            fill(get<"soft">(d), 0, domain.startIndex(), d.eps);
             std::cout << get<"u">(d)[0] << std::endl;
             computeForces(domain, simData);
 

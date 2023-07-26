@@ -134,7 +134,7 @@ void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler,
         minTc = std::min(cooling_time, minTc);
 
     }
-    T minDtLoc = std::min({minDtAcc, d.minDtCourant, d.minDtRho, d.maxDtIncrease * d.minDt, minTc * 0.01});
+    T minDtLoc = std::min({minDtAcc, d.minDtCourant, d.minDtRho, d.maxDtIncrease * d.minDt});
 
     T minDtGlobal;
     MPI_Allreduce(&minDtLoc, &minDtGlobal, 1, MpiType<T>{}, MPI_MIN, MPI_COMM_WORLD);

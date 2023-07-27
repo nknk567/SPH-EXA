@@ -253,14 +253,14 @@ public:
             const double k  = 3. / (4. * M_PI * r0 * r0 * r0);    // Mtot == 1
             auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. / std::pow(r, 5)); };
 
-            const double B = Bf(1.);
+            const double B = Bf(rc) - Bf(1.);
             auto         Afunc = [&](double r) { return 2. * M_PI * k * k / 3. * (1. - r * r); };
             auto         p = [&](double radius)
             {
                 if (radius <= 1.)
                     return B + Afunc(radius);
                 else
-                    return Bf(radius);
+                    return Bf(rc) - Bf(radius);
             };
 
             pressure_eq[i] = p(radius);

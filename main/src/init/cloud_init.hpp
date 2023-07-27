@@ -35,8 +35,8 @@
 
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/continuum.hpp"
-//#include "sph/sph.hpp"
-// #include "sph/eos.hpp"
+// #include "sph/sph.hpp"
+//  #include "sph/eos.hpp"
 #include "sph/particles_data.hpp"
 #include "isim_init.hpp"
 #include "early_sync.hpp"
@@ -48,7 +48,7 @@ namespace sphexa
 
 std::map<std::string, double> cloudConstants()
 {
-    return {{"gravConstant", 1.},  {"r", 1.},       {"mTotal", 1.},           {"gamma", 5. / 3.},
+    return {{"gravConstant", 1.},  {"r", 5.},       {"mTotal", 1.},           {"gamma", 5. / 3.},
             {"u0", 0.05},          {"minDt", 1e-4}, {"minDt_m1", 1e-4},       {"mui", 10},
             {"ng0", 100},          {"ngmax", 110},  {"metal_fraction", 1e-6}, {"hydrogen_fraction", 0.76},
             {"d_to_h_ratio", 1e-5}};
@@ -78,15 +78,13 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     const T u_guess{0.2};
     std::fill(d.u.begin(), d.u.end(), u_guess);
 
-
     cooling::initChemistryData(chem, d.x.size());
-
 
     T totalVolume = 4 * M_PI / 3 * std::pow(constants.at("r"), 3);
     // before the contraction with sqrt(r), the sphere has a constant particle concentration of Ntot / Vtot
     // after shifting particles towards the center by factor sqrt(r), the local concentration becomes
     // c(r) = 2/3 * 1/r * Ntot / Vtot
-    T c0 = 2. / 3. *  d.numParticlesGlobal / totalVolume;
+    T c0 = 2. / 3. * d.numParticlesGlobal / totalVolume;
     std::cout << d.numParticlesGlobal << "numParticlesGlobal" << std::endl;
     std::cout << c0 << "c0" << std::endl;
 
@@ -100,19 +98,26 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     }
 }
 
-template <typename FT, typename T>
-T bisect_monotone(const FT &func, const T y)
+template<typename FT, typename T>
+T bisect_monotone(const FT& func, const T y)
 {
-    T x = 0.;
-    T delta = 2.;
+    T       x       = 0.;
+    T       delta   = 2.;
     const T epsilon = 1e-5;
-    while (true) {
-        //std::cout << "bisect: " << std::endl;
-        T x_new = x + delta;
+    while (true)
+    {
+        // std::cout << "bisect: " << std::endl;
+        T       x_new   = x + delta;
         const T y_x_new = func(x_new);
-        if (std::abs(y - y_x_new) < epsilon) {x=x_new; break;}
-        if (y_x_new > y) delta *= 0.5;
-        else x = x_new;
+        if (std::abs(y - y_x_new) < epsilon)
+        {
+            x = x_new;
+            break;
+        }
+        if (y_x_new > y)
+            delta *= 0.5;
+        else
+            x = x_new;
     }
     return x;
 }
@@ -120,13 +125,19 @@ T bisect_monotone(const FT &func, const T y)
 template<class Vector>
 void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
 {
-    auto f = [](double y) {
+    // truncated 1/r
+    auto f = [](double r) {
+        if (r <= 1.) return r;
+        else return std::sqrt(1./3.) * std::sqrt(2.*r*r*r + 1.);
+    };
+    // Exponential profile
+    /*auto f_1 = [](double y) {
         //return 2. - std::exp(-y) * (y*y + 2.*y + 2.);
         //return std::pow((2. - std::exp(-y) * (y*y + 2.*y + 2.)) * 3., 1./3.);
         const double b = 1.75;
         return std::pow((2./(b*b*b) - std::exp(-b * y) * (b*b*y*y + 2.*b*y + 2.) / (b*b*b)) * 3., 1./3.);
-    };
-    //double x = bisect_monotone(f, 1.0);
+    };*/
+    // double x = bisect_monotone(f, 1.0);
 
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x.size(); i++)
@@ -134,8 +145,9 @@ void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
         auto radius0 = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
 
         // multiply coordinates by sqrt(r) to generate a density profile ~ 1/r
-        //auto contraction = std::sqrt(radius0);
-        auto new_r = bisect_monotone(f, radius0);
+        // auto contraction = std::sqrt(radius0);
+        //auto new_r       = bisect_monotone(f_1, radius0);
+        auto new_r       = f(radius0);
         auto contraction = new_r / radius0;
         x[i] *= contraction;
         y[i] *= contraction;
@@ -187,28 +199,41 @@ public:
         auto& d    = simData.hydro;
         auto& chem = simData.chem;
 
-        //const T        rho_const{3. / (4. * M_PI)};
+        // const T        rho_const{3. / (4. * M_PI)};
         std::vector<T> pressure_eq(d.x.size(), 0.);
         for (size_t i = 0; i < d.x.size(); i++)
         {
             const T radius = std::sqrt(d.x[i] * d.x[i] + d.y[i] * d.y[i] + d.z[i] * d.z[i]);
-            //pressure_eq[i] = 3. / (8. * M_PI) * (1. - radius * radius);
+            // pressure_eq[i] = 3. / (8. * M_PI) * (1. - radius * radius);
 
-            auto p = [](double radius) {
+            //exponential profile
+            /*auto p = [](double radius)
+            {
                 const T b = 1.75;
-                //const T e = std::exp(b * radius);
-                //const T e2 = std::exp(2. * b * radius);
-                const T em = std::exp(-b * radius);
-                const T em2 = std::exp(-2. * b * radius);
+                // const T e = std::exp(b * radius);
+                // const T e2 = std::exp(2. * b * radius);
+                const T em   = std::exp(-b * radius);
+                const T em2  = std::exp(-2. * b * radius);
                 const T eim2 = std::expint(-2 * b * radius);
-                const T eim = std::expint(-b * radius);
+                const T eim  = std::expint(-b * radius);
 
-                const T t1 = 4. * b * radius * eim2;
-                const T t2 = -4. * b * radius * eim;
-                const T t3 = em2 * (b * radius + 4.) - 4. * em;
-                const T n = 2. * M_PI * (t1 + t2 + t3);
-                const T res = (n / (radius * b*b*b) * (9. / (16. * M_PI * M_PI)));
+                const T t1  = 4. * b * radius * eim2;
+                const T t2  = -4. * b * radius * eim;
+                const T t3  = em2 * (b * radius + 4.) - 4. * em;
+                const T n   = 2. * M_PI * (t1 + t2 + t3);
+                const T res = (n / (radius * b * b * b) * (9. / (16. * M_PI * M_PI)));
                 return res;
+            };*/
+
+            //truncated 1/r
+            const T r0 = settings_.at("r");
+            const double rc = std::sqrt(1. / 3.) * std::sqrt(2. * r0*r0*r0 + 2.);
+            const double k = 3. / (4. * M_PI * r0*r0*r0);
+            const double B = 2. * M_PI *  k*k * (std::log(rc) - std::log(1.) + 1. / (6. * rc * rc) - 1. / 6.);
+            auto p = [&](double radius)
+            {
+             if (radius <= 1.) return B + 2. * M_PI * k*k / 3. * (1. - radius * radius);
+             else return 2. * M_PI *  k*k * (std::log(rc) - std::log(radius) + 1. / (6. * rc * rc) - 1. / (6. * radius * radius));
             };
 
             pressure_eq[i] = p(2.9892) - p(radius);
@@ -222,7 +247,6 @@ public:
 
             /*const T r_eps = std::max(radius, 1e-5);
             pressure_eq[i] = 1. / (2. * M_PI) * std::log(1. / r_eps);*/
-
         }
 
         /*cooling::Cooler<T>              cooling_data;
@@ -270,7 +294,7 @@ public:
             if (std::abs(relation - 1.) > 1e-5) good = false;
             std::cout << "u: " << d.u[i] << std::endl;
             std::cout << "relation " << relation << std::endl;
-            //std::cout << d.rho[i] << std::endl;
+            // std::cout << d.rho[i] << std::endl;
         }
         std::cout << "status " << good << std::endl;
         return good;

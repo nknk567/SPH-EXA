@@ -329,6 +329,8 @@ public:
         d.resize(d.x.size());
 
         settings_["numParticlesGlobal"] = double(numParticlesGlobal);
+        std::cout << "numParticlesGlobal: " << numParticlesGlobal << std::endl;
+        std::exit(0);
         BuiltinWriter attributeSetter(settings_);
         d.loadOrStoreAttributes(&attributeSetter);
 

@@ -48,7 +48,7 @@ namespace sphexa
 
 std::map<std::string, double> cloudConstants()
 {
-    return {{"gravConstant", 1.},  {"r", 3.},       {"mTotal", 1.},           {"gamma", 5. / 3.},
+    return {{"gravConstant", 1.},  {"r", 1.5},      {"mTotal", 1.},           {"gamma", 5. / 3.},
             {"u0", 0.05},          {"minDt", 1e-4}, {"minDt_m1", 1e-4},       {"mui", 10},
             {"ng0", 100},          {"ngmax", 110},  {"metal_fraction", 1e-6}, {"hydrogen_fraction", 0.76},
             {"d_to_h_ratio", 1e-5}};
@@ -126,9 +126,17 @@ template<class Vector>
 void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
 {
     // truncated 1/r
-    auto f = [](double r) {
+    /*auto f = [](double r) {
         if (r <= 1.) return r;
         else return std::sqrt(1./3.) * std::sqrt(2.*r*r*r + 1.);
+    };*/
+    // truncated 1/r^4
+    auto f = [](double r)
+    {
+        if (r <= 1.)
+            return r;
+        else
+            return 1. / (4. / 3. - r * r * r / 3.);
     };
     // Exponential profile
     /*auto f_1 = [](double y) {
@@ -146,7 +154,7 @@ void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
 
         // multiply coordinates by sqrt(r) to generate a density profile ~ 1/r
         // auto contraction = std::sqrt(radius0);
-        //auto new_r       = bisect_monotone(f_1, radius0);
+        // auto new_r       = bisect_monotone(f_1, radius0);
         auto new_r       = f(radius0);
         auto contraction = new_r / radius0;
         x[i] *= contraction;
@@ -206,7 +214,7 @@ public:
             const T radius = std::sqrt(d.x[i] * d.x[i] + d.y[i] * d.y[i] + d.z[i] * d.z[i]);
             // pressure_eq[i] = 3. / (8. * M_PI) * (1. - radius * radius);
 
-            //exponential profile
+            // exponential profile
             /*auto p = [](double radius)
             {
                 const T b = 1.75;
@@ -224,16 +232,35 @@ public:
                 const T res = (n / (radius * b * b * b) * (9. / (16. * M_PI * M_PI)));
                 return res;
             };*/
-           // pressure_eq[i] = p(2.9892) - p(radius);
-            //truncated 1/r
-            const T r0 = settings_.at("r");
-            const double rc = std::sqrt(1. / 3.) * std::sqrt(2. * r0*r0*r0 + 2.);
-            const double k = 3. / (4. * M_PI * r0*r0*r0);
-            const double B = 2. * M_PI *  k*k * (std::log(rc) - std::log(1.) + 1. / (6. * rc * rc) - 1. / 6.);
-            auto p = [&](double radius)
+            // pressure_eq[i] = p(2.9892) - p(radius);
+            // truncated 1/r
+            /* const T r0 = settings_.at("r");
+             const double rc = std::sqrt(1. / 3.) * std::sqrt(2. * r0*r0*r0 + 2.);
+             const double k = 3. / (4. * M_PI * r0*r0*r0);
+             const double B = 2. * M_PI *  k*k * (std::log(rc) - std::log(1.) + 1. / (6. * rc * rc) - 1. / 6.);
+             auto p = [&](double radius)
+             {
+              if (radius <= 1.) return B + 2. * M_PI * k*k / 3. * (1. - radius * radius);
+              else return 2. * M_PI *  k*k * (std::log(rc) - std::log(radius) + 1. / (6. * rc * rc) - 1. / (6. * radius
+             * radius));
+             };
+
+             pressure_eq[i] = p(radius);*/
+
+            // truncated 1/r^4
+            const T      r0 = settings_.at("r");
+            const double rc = 1. / (4. / 3. - r0 * r0 * r0 / 3.); // nicht grösser als 4^(1/3)
+            const double k  = 3. / (4. * M_PI * r0 * r0 * r0);    // Mtot == 1
+            auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. / std::pow(r, 5)); };
+
+            const double B = Bf(1.);
+            auto         Afunc = [&](double r) { return 2. * M_PI * k * k / 3. * (1. - r * r); };
+            auto         p = [&](double radius)
             {
-             if (radius <= 1.) return B + 2. * M_PI * k*k / 3. * (1. - radius * radius);
-             else return 2. * M_PI *  k*k * (std::log(rc) - std::log(radius) + 1. / (6. * rc * rc) - 1. / (6. * radius * radius));
+                if (radius <= 1.)
+                    return B + Afunc(radius);
+                else
+                    return Bf(radius);
             };
 
             pressure_eq[i] = p(radius);

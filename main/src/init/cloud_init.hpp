@@ -224,7 +224,7 @@ public:
                 const T res = (n / (radius * b * b * b) * (9. / (16. * M_PI * M_PI)));
                 return res;
             };*/
-
+           // pressure_eq[i] = p(2.9892) - p(radius);
             //truncated 1/r
             const T r0 = settings_.at("r");
             const double rc = std::sqrt(1. / 3.) * std::sqrt(2. * r0*r0*r0 + 2.);
@@ -236,7 +236,7 @@ public:
              else return 2. * M_PI *  k*k * (std::log(rc) - std::log(radius) + 1. / (6. * rc * rc) - 1. / (6. * radius * radius));
             };
 
-            pressure_eq[i] = p(2.9892) - p(radius);
+            pressure_eq[i] = p(radius);
 
             /*const T ei = std::expint(-2. * b * radius);
             const T e = std::exp(-2 * b * radius);

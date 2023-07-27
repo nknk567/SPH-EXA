@@ -138,13 +138,13 @@ int main(int argc, char** argv)
     viz::init_catalyst(argc, argv);
     viz::init_ascent(d, domain.startIndex());
 
-    /*while (true)
+    while (true)
     {
         propagator->prepareSystem(domain, simData);
         std::cout << "system prepared" << std::endl;
         //std::exit(0);
         if (simInit->initDependent(simData)) break;
-    }
+    }/*
     //std::exit(0);
     propagator->relaxSystem(domain, simData);*/
     size_t startIteration = d.iteration;

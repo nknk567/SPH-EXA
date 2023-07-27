@@ -48,7 +48,7 @@ namespace sphexa
 
 std::map<std::string, double> cloudConstants()
 {
-    return {{"gravConstant", 1.},  {"r", 5.},       {"mTotal", 1.},           {"gamma", 5. / 3.},
+    return {{"gravConstant", 1.},  {"r", 3.},       {"mTotal", 1.},           {"gamma", 5. / 3.},
             {"u0", 0.05},          {"minDt", 1e-4}, {"minDt_m1", 1e-4},       {"mui", 10},
             {"ng0", 100},          {"ngmax", 110},  {"metal_fraction", 1e-6}, {"hydrogen_fraction", 0.76},
             {"d_to_h_ratio", 1e-5}};

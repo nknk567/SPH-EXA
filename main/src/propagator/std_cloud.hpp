@@ -259,7 +259,7 @@ public:
 
         computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
-/*
+
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
@@ -285,7 +285,7 @@ public:
             const T du = (u_cool - u_old) / d.minDt;
             d.du[i] += du;
         }
-        timer.step("GRACKLE chemistry and cooling");*/
+        timer.step("GRACKLE chemistry and cooling");
 
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");

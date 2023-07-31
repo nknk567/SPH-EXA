@@ -252,7 +252,7 @@ public:
             const double rc = 1. / (4. / 3. - r0 * r0 * r0 / 3.); // nicht grösser als 4^(1/3)
             const double k  = 3. / (4. * M_PI * r0 * r0 * r0);    // Mtot == 1
             //auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. / std::pow(r, 5.)); };
-            auto Bf = [&](double r) { return -4. * M_PI * k * k * (1. / (6. * std::pow(r, 6.)) + 4. / 15. / std::pow(r, 5.)); };
+            auto Bf = [&](double r) { return -4. * M_PI * k * k * (-1. / (6. * std::pow(r, 6.)) + 4. / 15. / std::pow(r, 5.)); };
 
             const double B = Bf(rc) - Bf(1.);
             auto         Afunc = [&](double r) { return 2. * M_PI * k * k / 3. * (1. - r * r); };

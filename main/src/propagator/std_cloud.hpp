@@ -90,7 +90,7 @@ public:
         grackleOptions["primordial_chemistry"]   = 3;
         grackleOptions["dust_chemistry"]         = 0;
         grackleOptions["metal_cooling"]          = 0;
-        grackleOptions["UVbackground"]           = 0;
+        grackleOptions["UVbackground"]           = 1;
         cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
     }
 

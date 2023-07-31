@@ -1,0 +1,63 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"domain/test/unit/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 48,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 49,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "sbin/unit",
+			"paths" : 
+			[
+				"domain/test/unit/component_units"
+			],
+			"targetId" : "component_units::@1081eed09c20b9b7e9c6",
+			"targetIndex" : 30,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "sbin/unit",
+			"paths" : 
+			[
+				"domain/test/unit/component_units_omp"
+			],
+			"targetId" : "component_units_omp::@1081eed09c20b9b7e9c6",
+			"targetIndex" : 31,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "domain/test/unit",
+		"source" : "domain/test/unit"
+	}
+}

@@ -1,0 +1,422 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "extern/grackle/libgrackle.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_compile_definitions",
+			"target_include_directories",
+			"target_compile_options"
+		],
+		"files" : 
+		[
+			"extern/grackle/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 39,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 40,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 46,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -fPIC -fdiagnostics-color=always"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "CONFIG_BFLOAT_8"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "H5_USE_16_API"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "LINUX"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "PIC"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "/opt/homebrew/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/opt/homebrew/Cellar/open-mpi/4.1.5/include"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/extern/grackle/grackle_repo/src/clib"
+				},
+				{
+					"backtrace" : 5,
+					"path" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/cmake-build-debug/extern/grackle"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -mmacosx-version-min=12.6 -Jextern/grackle -fPIC -fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 6,
+					"fragment" : "-fno-second-underscore"
+				},
+				{
+					"backtrace" : 6,
+					"fragment" : "-ffixed-line-length-132"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "CONFIG_BFLOAT_8"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "H5_USE_16_API"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "LINUX"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "PIC"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "/opt/homebrew/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/opt/homebrew/Cellar/open-mpi/4.1.5/include"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/extern/grackle/grackle_repo/src/clib"
+				},
+				{
+					"backtrace" : 5,
+					"path" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/cmake-build-debug/extern/grackle"
+				}
+			],
+			"language" : "Fortran",
+			"sourceIndexes" : 
+			[
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27
+			]
+		}
+	],
+	"id" : "grackle::@34c95f2f78c1833ed696",
+	"name" : "grackle",
+	"nameOnDisk" : "libgrackle.a",
+	"paths" : 
+	{
+		"build" : "extern/grackle",
+		"source" : "extern/grackle"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_deps/auto_show_config.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_deps/auto_show_flags.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_deps/auto_show_version.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/calculate_cooling_time.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/calculate_dust_temperature.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/calculate_gamma.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/calculate_pressure.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/calculate_temperature.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/grackle_units.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/index_helper.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/initialize_chemistry_data.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/initialize_cloudy_data.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/initialize_UVbackground_data.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/set_default_chemistry_parameters.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/solve_chemistry.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/update_UVbackground_rates.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/rate_functions.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/grackle/grackle_repo/src/clib/initialize_rates.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/calc_temp1d_cloudy_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/calc_temp_cloudy_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/calc_tdust_1d_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/calc_tdust_3d_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/cool1d_cloudy_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/cool1d_cloudy_old_tables_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/cool1d_multi_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/cool_multi_time_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/interpolators_g.F",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "extern/grackle/grackle_repo/src/clib/solve_rate_cool_g.F",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

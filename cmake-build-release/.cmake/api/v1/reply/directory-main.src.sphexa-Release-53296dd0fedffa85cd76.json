@@ -1,0 +1,45 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"main/src/sphexa/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 54,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"main/src/sphexa/sphexa"
+			],
+			"targetId" : "sphexa::@832eb8f6435d4eff7952",
+			"targetIndex" : 60,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "main/src/sphexa",
+		"source" : "main/src/sphexa"
+	}
+}

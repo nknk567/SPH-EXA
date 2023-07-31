@@ -1,0 +1,52 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"addRyoanjiMpiTest"
+		],
+		"files" : 
+		[
+			"ryoanji/test/interface/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 1
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "sbin/ryoanji",
+			"paths" : 
+			[
+				"ryoanji/test/interface/global_upsweep_cpu"
+			],
+			"targetId" : "global_upsweep_cpu::@045972a7510b765dddcf",
+			"targetIndex" : 45,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "ryoanji/test/interface",
+		"source" : "ryoanji/test/interface"
+	}
+}

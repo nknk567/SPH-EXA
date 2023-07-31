@@ -1,0 +1,45 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"sph/test/hydro_std/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 18,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "sbin/hydro",
+			"paths" : 
+			[
+				"sph/test/hydro_std/kernel_tests_std"
+			],
+			"targetId" : "kernel_tests_std::@9a9854e51e14b46d715e",
+			"targetIndex" : 53,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "sph/test/hydro_std",
+		"source" : "sph/test/hydro_std"
+	}
+}

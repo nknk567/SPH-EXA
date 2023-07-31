@@ -1,0 +1,389 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"addMpiTest",
+			"addCstoneMpiTest"
+		],
+		"files" : 
+		[
+			"domain/test/integration_mpi/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 20,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 4
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 5
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 7
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 8
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 22,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 10
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 11
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 23,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 13
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 14
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 24,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 17
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 25,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 19
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 20
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 27,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 22
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 23
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 25
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 26
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 28
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 29
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 30,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 31
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 32
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 31,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 34
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 35
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/globaloctree"
+			],
+			"targetId" : "globaloctree::@2518e8362975f9c0380f",
+			"targetIndex" : 46,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/exchange_halos"
+			],
+			"targetId" : "exchange_halos::@2518e8362975f9c0380f",
+			"targetIndex" : 40,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/box_mpi"
+			],
+			"targetId" : "box_mpi::@2518e8362975f9c0380f",
+			"targetIndex" : 29,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/exchange_focus"
+			],
+			"targetId" : "exchange_focus::@2518e8362975f9c0380f",
+			"targetIndex" : 38,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/exchange_keys"
+			],
+			"targetId" : "exchange_keys::@2518e8362975f9c0380f",
+			"targetIndex" : 41,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/focus_transfer"
+			],
+			"targetId" : "focus_transfer::@2518e8362975f9c0380f",
+			"targetIndex" : 42,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 21,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/domain_2ranks"
+			],
+			"targetId" : "domain_2ranks::@2518e8362975f9c0380f",
+			"targetIndex" : 35,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/treedomain"
+			],
+			"targetId" : "treedomain::@2518e8362975f9c0380f",
+			"targetIndex" : 61,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/exchange_general"
+			],
+			"targetId" : "exchange_general::@2518e8362975f9c0380f",
+			"targetIndex" : 39,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/exchange_domain"
+			],
+			"targetId" : "exchange_domain::@2518e8362975f9c0380f",
+			"targetIndex" : 37,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 33,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/focus_tree"
+			],
+			"targetId" : "focus_tree::@2518e8362975f9c0380f",
+			"targetIndex" : 43,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 36,
+			"component" : "Unspecified",
+			"destination" : "sbin/integration_mpi",
+			"paths" : 
+			[
+				"domain/test/integration_mpi/domain_nranks"
+			],
+			"targetId" : "domain_nranks::@2518e8362975f9c0380f",
+			"targetIndex" : 36,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "domain/test/integration_mpi",
+		"source" : "domain/test/integration_mpi"
+	}
+}

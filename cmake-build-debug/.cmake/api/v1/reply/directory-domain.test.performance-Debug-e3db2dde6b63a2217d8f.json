@@ -1,0 +1,101 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"cstone_add_performance_test"
+		],
+		"files" : 
+		[
+			"domain/cmake/cstone_add_performance_test.cmake",
+			"domain/test/performance/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 3,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 8,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 4,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 8,
+				"parent" : 3
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 5,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 8,
+				"parent" : 5
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "sbin/performance",
+			"paths" : 
+			[
+				"domain/test/performance/octree_perf"
+			],
+			"targetId" : "octree_perf::@88b46c568624f92daefe",
+			"targetIndex" : 55,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "sbin/performance",
+			"paths" : 
+			[
+				"domain/test/performance/peers_perf"
+			],
+			"targetId" : "peers_perf::@88b46c568624f92daefe",
+			"targetIndex" : 56,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "sbin/performance",
+			"paths" : 
+			[
+				"domain/test/performance/scan_perf"
+			],
+			"targetId" : "scan_perf::@88b46c568624f92daefe",
+			"targetIndex" : 58,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "domain/test/performance",
+		"source" : "domain/test/performance"
+	}
+}

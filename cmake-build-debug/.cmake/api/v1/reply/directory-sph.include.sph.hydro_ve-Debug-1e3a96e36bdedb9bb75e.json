@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "sph/include/sph/hydro_ve",
+		"source" : "sph/include/sph/hydro_ve"
+	}
+}

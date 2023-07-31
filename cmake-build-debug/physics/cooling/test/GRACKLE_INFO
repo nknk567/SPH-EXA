@@ -1,0 +1,113 @@
+2023-03-24 12:27:35
+
+The Grackle Version grackle_version
+Git Branch   grackle_branch
+Git Revision grackle_revision
+
+Grackle build options:
+
+   MACHINE: 
+   MACHINE-NAME: cscs
+
+   CONFIG_PRECISION  [precision-{32,64}]                     : 64
+   CONFIG_OPT  [opt-{warn,debug,high,aggressive}]            : high
+   CONFIG_OMP  [omp-{on,off}]                                : off
+
+Grackle build flags:
+
+Usage: which [options] [--] COMMAND [...]
+Write the full path of COMMAND(s) to standard output.
+
+  --version, -[vV] Print version and exit successfully.
+  --help,          Print this help and exit successfully.
+  --skip-dot       Skip directories in PATH that start with a dot.
+  --skip-tilde     Skip directories in PATH that start with a tilde.
+  --show-dot       Don't expand a dot to current directory in output.
+  --show-tilde     Output a tilde for HOME directory for non-root.
+  --tty-only       Stop processing options on the right if not on tty.
+  --all, -a        Print all matches in PATH, not just the first
+  --read-alias, -i Read list of aliases from stdin.
+  --skip-alias     Ignore option --read-alias; don't read stdin.
+  --read-functions Read shell functions from stdin.
+  --skip-functions Ignore option --read-functions; don't read stdin.
+
+Recommended use is to write the output of (alias; declare -f) to standard
+input, so that which can show aliases and shell functions. See which(1) for
+examples.
+
+If the options --read-alias and/or --read-functions are specified then the
+output can be a full alias or function definition, optionally followed by
+the full path of each command used inside of those.
+
+Report bugs to <which-bugs@gnu.org>.
+CPP = 
+CC  = /opt/cray/pe/craype/2.7.10/bin/cc
+CXX = /opt/cray/pe/craype/2.7.10/bin/CC
+FC  = /opt/cray/pe/craype/2.7.10/bin/ftn
+F90 = /opt/cray/pe/craype/2.7.10/bin/ftn
+LD  = /opt/cray/pe/craype/2.7.10/bin/cc
+LIBTOOL = /usr/bin/libtool
+
+DEFINES = -DLINUX -DH5_USE_16_API -fPIC  -DCONFIG_BFLOAT_8
+
+INCLUDES =     -I.
+
+CPPFLAGS = -P -traditional
+CFLAGS   =  -O2 
+CXXFLAGS =  -O2 
+FFLAGS   = -fno-second-underscore -ffixed-line-length-132 -O2 
+F90FLAGS = -fno-second-underscore -O2 
+LDFLAGS  =  
+
+LIBS     = 
+
+Grackle run-time parameters:
+use_grackle                       = 1
+with_radiative_cooling            = 1
+primordial_chemistry              = 3
+dust_chemistry                    = 1
+metal_cooling                     = 1
+UVbackground                      = 1
+grackle_data_file                 = /Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/extern/grackle/grackle_repo/input/CloudyData_UVB=HM2012.h5
+cmb_temperature_floor             = 1
+Gamma                             = 1.66667
+h2_on_dust                        = 1
+use_dust_density_field            = 0
+dust_recombination_cooling        = 1
+photoelectric_heating             = 2
+photoelectric_heating_rate        = 8.5e-26
+use_isrf_field                    = 0
+interstellar_radiation_field      = 1.7
+use_volumetric_heating_rate       = 0
+use_specific_heating_rate         = 0
+three_body_rate                   = 0
+cie_cooling                       = 0
+h2_optical_depth_approximation    = 0
+ih2co                             = 1
+ipiht                             = 1
+HydrogenFractionByMass            = 0.76
+DeuteriumToHydrogenRatio          = 6.8e-05
+SolarMetalFractionByMass          = 0.01295
+local_dust_to_gas_ratio           = 0.009387
+NumberOfTemperatureBins           = 600
+CaseBRecombination                = 0
+TemperatureStart                  = 1
+TemperatureEnd                    = 1e+09
+NumberOfDustTemperatureBins       = 250
+DustTemperatureStart              = 1
+DustTemperatureEnd                = 1500
+Compton_xray_heating              = 0
+LWbackground_sawtooth_suppression = 0
+LWbackground_intensity            = 0
+UVbackground_redshift_on          = 15.13
+UVbackground_redshift_off         = 0
+UVbackground_redshift_fullon      = 15.13
+UVbackground_redshift_drop        = 0
+cloudy_electron_fraction_factor   = 0.00915396
+use_radiative_transfer            = 0
+radiative_transfer_coupled_rate_solver = 0
+radiative_transfer_intermediate_step = 0
+radiative_transfer_hydrogen_only  = 0
+self_shielding_method             = 0
+H2_custom_shielding               = 0
+H2_self_shielding                 = 0

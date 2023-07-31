@@ -1,0 +1,23 @@
+{
+	"bmi-installation" : null,
+	"compiler-id" : "GNU",
+	"config" : "Release",
+	"cxx-modules" : {},
+	"dir-cur-bld" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/cmake-build-release/extern/grackle",
+	"dir-cur-src" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/extern/grackle",
+	"dir-top-bld" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/cmake-build-release",
+	"dir-top-src" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork",
+	"exports" : [],
+	"include-dirs" : 
+	[
+		"/opt/homebrew/include",
+		"/opt/homebrew/Cellar/open-mpi/4.1.5/include",
+		"/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/extern/grackle/grackle_repo/src/clib",
+		"extern/grackle"
+	],
+	"language" : "Fortran",
+	"linked-target-dirs" : [],
+	"module-dir" : "/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/cmake-build-release/extern/grackle",
+	"submodule-ext" : ".smod",
+	"submodule-sep" : "@"
+}

@@ -288,10 +288,6 @@ void Cooler<T>::Impl::initOptions(const std::map<std::string, std::any>& grackle
                 global_values.data.use_volumetric_heating_rate = std::any_cast<int>(value);
             if (key == ("use_specific_heating_rate"))
                 global_values.data.use_specific_heating_rate = std::any_cast<int>(value);
-            if (key == ("use_temperature_floor"))
-                global_values.data.use_temperature_floor = std::any_cast<int>(value);
-            if (key == ("temperature_floor_scalar"))
-                global_values.data.temperature_floor_scalar = std::any_cast<double>(value);
             if (key == ("use_radiative_transfer"))
                 global_values.data.use_radiative_transfer = std::any_cast<int>(value);
             if (key == ("radiative_transfer_coupled_rate_solver"))

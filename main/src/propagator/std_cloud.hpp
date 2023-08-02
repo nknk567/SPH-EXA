@@ -265,11 +265,31 @@ public:
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
+            T u_cool = d.u[i];
+            T temp = cooling_data.energy_to_temperature(
+                d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
+                get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
+                get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
+                get<"H2I_fraction">(simData.chem)[i], get<"H2II_fraction">(simData.chem)[i],
+                get<"DI_fraction">(simData.chem)[i], get<"DII_fraction">(simData.chem)[i],
+                get<"HDI_fraction">(simData.chem)[i], get<"e_fraction">(simData.chem)[i],
+                get<"metal_fraction">(simData.chem)[i], get<"volumetric_heating_rate">(simData.chem)[i],
+                get<"specific_heating_rate">(simData.chem)[i], get<"RT_heating_rate">(simData.chem)[i],
+                get<"RT_HI_ionization_rate">(simData.chem)[i], get<"RT_HeI_ionization_rate">(simData.chem)[i],
+                get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
+                get<"H2_self_shielding_length">(simData.chem)[i]);
+            d.temp[i] = temp;
+        }
+
+#pragma omp parallel for schedule(static)
+        for (size_t i = first; i < last; i++)
+        {
             //bool haveMui = !d.mui.empty();
             //T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 
             // T u_old  = cv * d.temp[i];
             // T u_cool = u_old;
+            if (d.temp[i] < 3000) continue;
             T u_old  = d.u[i];
             T u_cool = d.u[i];
             cooling_data.cool_particle(
@@ -288,23 +308,7 @@ public:
             d.du[i] += du;
         }
         timer.step("GRACKLE chemistry and cooling");
-        for (size_t i = first; i < last; i++)
-        {
-            T u_cool = d.u[i];
-            T temp = cooling_data.energy_to_temperature(
-                d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
-                get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
-                get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
-                get<"H2I_fraction">(simData.chem)[i], get<"H2II_fraction">(simData.chem)[i],
-                get<"DI_fraction">(simData.chem)[i], get<"DII_fraction">(simData.chem)[i],
-                get<"HDI_fraction">(simData.chem)[i], get<"e_fraction">(simData.chem)[i],
-                get<"metal_fraction">(simData.chem)[i], get<"volumetric_heating_rate">(simData.chem)[i],
-                get<"specific_heating_rate">(simData.chem)[i], get<"RT_heating_rate">(simData.chem)[i],
-                get<"RT_HI_ionization_rate">(simData.chem)[i], get<"RT_HeI_ionization_rate">(simData.chem)[i],
-                get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
-                get<"H2_self_shielding_length">(simData.chem)[i]);
-            d.temp[i] = temp;
-        }
+
         computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);

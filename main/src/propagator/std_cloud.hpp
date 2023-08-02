@@ -67,7 +67,7 @@ class CloudProp final : public HydroProp<DomainType, DataType>
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
-        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc">;
+        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc", "ct">;
 
     using CoolingFields =
         FieldList<"HI_fraction", "HII_fraction", "HM_fraction", "HeI_fraction", "HeII_fraction", "HeIII_fraction",
@@ -281,7 +281,8 @@ public:
             d.temp[i] = temp;
         }
 
-#pragma omp parallel for schedule(static)
+        double diff_erg_max = 0.;
+#pragma omp parallel for schedule(static) reduction(max: diff_erg_max)
         for (size_t i = first; i < last; i++)
         {
             //bool haveMui = !d.mui.empty();
@@ -305,8 +306,10 @@ public:
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
             const T du = (u_cool - u_old) / d.minDt;
+            diff_erg_max = std::max(diff_erg_max, std::abs(du - u_old / d.ct[i]));
             d.du[i] += du;
         }
+        std::cout << "largest difference: " << diff_erg_max << std::endl;
         timer.step("GRACKLE chemistry and cooling");
 
         computePositions(first, last, d, domain.box());

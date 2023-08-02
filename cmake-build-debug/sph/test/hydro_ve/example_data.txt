@@ -1,1 +1,0 @@
-/Users/noah/Documents/SPH/4 Jan 22/SPH-EXA-fork/sph/test/hydro_ve/example_data.txt

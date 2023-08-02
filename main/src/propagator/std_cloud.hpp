@@ -289,7 +289,7 @@ public:
 
             // T u_old  = cv * d.temp[i];
             // T u_cool = u_old;
-            if (d.temp[i] < 3000) continue;
+            if (d.rho[i] > 0.3) continue;
             T u_old  = d.u[i];
             T u_cool = d.u[i];
             cooling_data.cool_particle(

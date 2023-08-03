@@ -440,8 +440,11 @@ T Cooler<T>::Impl::cooling_time(T& rho, T& u, T& HI_fraction, T& HII_fraction, T
         specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
         RT_H2_dissociation_rate, H2_self_shielding_length);
     gr_float time(0.0);
-    local_calculate_cooling_time(&global_values.data, &global_values.rates, &global_values.units, &grackle_fields.data,
-                                 &time);
+    if (0 == local_calculate_cooling_time(&global_values.data, &global_values.rates, &global_values.units,
+                                          &grackle_fields.data, &time))
+    {
+        throw std::runtime_error("Grackle: Error in local_calculate_cooling_time");
+    }
 
     return time;
 }

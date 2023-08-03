@@ -258,7 +258,7 @@ public:
 
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
-        //fill(get<"ct">(d), 0, domain.nParticlesWithHalos(), 0.0);
+
         computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
 

@@ -63,11 +63,11 @@ class CloudProp final : public HydroProp<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "soft", "temp", "ct">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "soft", "temp">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
-        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc">;
+        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc", "ct">;
 
     using CoolingFields =
         FieldList<"HI_fraction", "HII_fraction", "HM_fraction", "HeI_fraction", "HeII_fraction", "HeIII_fraction",
@@ -258,7 +258,7 @@ public:
 
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
-        fill(get<"ct">(d), 0, domain.nParticlesWithHalos(), 0.0);
+        //fill(get<"ct">(d), 0, domain.nParticlesWithHalos(), 0.0);
         computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
 

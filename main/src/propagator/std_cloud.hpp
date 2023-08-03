@@ -282,6 +282,8 @@ public:
         }
 
         double tot_diff = 0.;
+        double tot_ct = 0.;
+
 #pragma omp parallel for schedule(static) reduction(+: tot_diff)
         for (size_t i = first; i < last; i++)
         {
@@ -306,10 +308,13 @@ public:
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
             const T du = (u_cool - u_old) / d.minDt;
-            tot_diff += (u_cool - u_old) + u_old / d.ct[i] * d.minDt;
+            tot_diff += (u_cool - u_old);
+            tot_ct += u_old / d.ct[i] * d.minDt;
             d.du[i] += du;
         }
         std::cout << "tot diff: " << tot_diff << std::endl;
+        std::cout << "tot ct: " << tot_ct << std::endl;
+
         timer.step("GRACKLE chemistry and cooling");
 
         computePositions(first, last, d, domain.box());

@@ -94,7 +94,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
         T radius        = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
         T concentration = c0 / radius;
         d.h[i]          = std::cbrt(3 / (4 * M_PI) * d.ng0 / concentration) * 0.5;
-        std::cout << "h: " << d.h[i] << std::endl; // is it infinity?
+        //std::cout << "h: " << d.h[i] << std::endl; // is it infinity?
     }
 }
 

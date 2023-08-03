@@ -284,7 +284,7 @@ public:
         double tot_diff = 0.;
         double tot_ct = 0.;
 
-#pragma omp parallel for schedule(static) reduction(+: tot_diff)
+#pragma omp parallel for schedule(static) reduction(+: tot_diff) reduction(+: tot_ct)
         for (size_t i = first; i < last; i++)
         {
             //bool haveMui = !d.mui.empty();

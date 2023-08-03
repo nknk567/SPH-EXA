@@ -320,8 +320,8 @@ public:
             const T relation{pressure_eq[i] / pressure};
             d.u[i] = u_cool * relation;
             if (std::abs(relation - 1.) > 1e-5) good = false;
-            std::cout << "u: " << d.u[i] << std::endl;
-            std::cout << "relation " << relation << std::endl;
+            //std::cout << "u: " << d.u[i] << std::endl;
+            //std::cout << "relation " << relation << std::endl;
             // std::cout << d.rho[i] << std::endl;
         }
         std::cout << "status " << good << std::endl;

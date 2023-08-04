@@ -60,7 +60,6 @@ namespace fs = std::filesystem;
 using namespace sphexa;
 
 bool stopSimulation(size_t iteration, double time, const std::string& maxStepStr);
-
 void printHelp(char* binName, int rank);
 
 int main(int argc, char** argv)

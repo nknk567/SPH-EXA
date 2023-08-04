@@ -59,48 +59,47 @@ using AccType = cstone::CpuTag;
 namespace fs = std::filesystem;
 using namespace sphexa;
 
-bool stopSimulation(size_t iteration, double time, const std::string& maxStepStr);
-void printHelp(char* binName, int rank);
+bool stopSimulation(size_t iteration, double time, const std::string &maxStepStr);
 
-int main(int argc, char** argv)
-{
+void printHelp(char *binName, int rank);
+
+int main(int argc, char **argv) {
     auto [rank, numRanks] = initMpi();
     const ArgParser parser(argc, argv);
 
-    if (parser.exists("-h") || parser.exists("--h") || parser.exists("-help") || parser.exists("--help"))
-    {
+    if (parser.exists("-h") || parser.exists("--h") || parser.exists("-help") || parser.exists("--help")) {
         printHelp(argv[0], rank);
         return exitSuccess();
     }
 
-    using Real    = double;
+    using Real = double;
     using KeyType = uint64_t;
     using Dataset = SimulationData<Real, KeyType, AccType>;
-    using Domain  = cstone::Domain<KeyType, Real, AccType>;
+    using Domain = cstone::Domain<KeyType, Real, AccType>;
 
-    const std::string        initCond          = parser.get("--init");
-    const size_t             problemSize       = parser.get("-n", 50);
-    const std::string        glassBlock        = parser.get("--glass");
-    const std::string        propChoice        = parser.get("--prop", std::string("ve"));
-    const std::string        maxStepStr        = parser.get("-s", std::string("200"));
-    const std::string        writeFrequencyStr = parser.get("-w", std::string("0"));
-    std::vector<std::string> writeExtra        = parser.getCommaList("--wextra");
-    std::vector<std::string> outputFields      = parser.getCommaList("-f");
-    const bool               ascii             = parser.exists("--ascii");
-    const bool               quiet             = parser.exists("--quiet");
-    const bool               avClean           = parser.exists("--avclean");
-    const int                simDuration       = parser.get("--duration", std::numeric_limits<int>::max());
-    const bool               writeEnabled      = writeFrequencyStr != "0" || !writeExtra.empty();
-    std::string              outFile           = parser.get("-o", "./dump_" + initCond);
+    const std::string initCond = parser.get("--init");
+    const size_t problemSize = parser.get("-n", 50);
+    const std::string glassBlock = parser.get("--glass");
+    const std::string propChoice = parser.get("--prop", std::string("ve"));
+    const std::string maxStepStr = parser.get("-s", std::string("200"));
+    const std::string writeFrequencyStr = parser.get("-w", std::string("0"));
+    std::vector<std::string> writeExtra = parser.getCommaList("--wextra");
+    std::vector<std::string> outputFields = parser.getCommaList("-f");
+    const bool ascii = parser.exists("--ascii");
+    const bool quiet = parser.exists("--quiet");
+    const bool avClean = parser.exists("--avclean");
+    const int simDuration = parser.get("--duration", std::numeric_limits<int>::max());
+    const bool writeEnabled = writeFrequencyStr != "0" || !writeExtra.empty();
+    std::string outFile = parser.get("-o", "./dump_" + initCond);
 
     std::ofstream nullOutput("/dev/null");
-    std::ostream& output = quiet ? nullOutput : std::cout;
+    std::ostream &output = quiet ? nullOutput : std::cout;
     std::ofstream constantsFile(fs::path(outFile).parent_path() / fs::path("constants.txt"));
 
     //! @brief evaluate user choice for different kind of actions
-    auto simInit     = initializerFactory<Dataset>(initCond, glassBlock);
-    auto propagator  = propagatorFactory<Domain, Dataset>(propChoice, avClean, output, rank);
-    auto fileWriter  = fileWriterFactory(ascii, MPI_COMM_WORLD);
+    auto simInit = initializerFactory<Dataset>(initCond, glassBlock);
+    auto propagator = propagatorFactory<Domain, Dataset>(propChoice, avClean, output, rank);
+    auto fileWriter = fileWriterFactory(ascii, MPI_COMM_WORLD);
     auto observables = observablesFactory<Dataset>(initCond, constantsFile);
 
     Dataset simData;
@@ -114,13 +113,13 @@ int main(int argc, char** argv)
     propagator->load(initCond, simData.comm);
     cstone::Box<Real> box = simInit->init(rank, numRanks, problemSize, simData);
 
-    auto& d = simData.hydro;
+    auto &d = simData.hydro;
     transferToDevice(d, 0, d.x.size(), propagator->conservedFields());
-    d.setOutputFields(outputFields.empty() ? propagator->conservedFields() : outputFields);
+    simData.setOutputFields(outputFields.empty() ? propagator->conservedFields() : outputFields);
 
     if (parser.exists("--G")) { d.g = parser.get<double>("--G"); }
-    bool  haveGrav = (d.g != 0.0);
-    float theta    = parser.get("--theta", haveGrav ? 0.5f : 1.0f);
+    bool haveGrav = (d.g != 0.0);
+    float theta = parser.get("--theta", haveGrav ? 0.5f : 1.0f);
 
     if (!parser.exists("-o")) { outFile += fileWriter->suffix(); }
     if (rank == 0 && writeEnabled) { fileWriter->constants(simInit->constants(), outFile); }
@@ -129,7 +128,7 @@ int main(int argc, char** argv)
     uint64_t bucketSizeFocus = 64;
     // we want about 100 global nodes per rank to decompose the domain with +-1% accuracy
     uint64_t bucketSize = std::max(bucketSizeFocus, d.numParticlesGlobal / (100 * numRanks));
-    Domain   domain(rank, numRanks, bucketSize, bucketSizeFocus, theta, box);
+    Domain domain(rank, numRanks, bucketSize, bucketSizeFocus, theta, box);
 
     propagator->sync(domain, simData);
     if (rank == 0) std::cout << "Domain synchronized, nLocalParticles " << d.x.size() << std::endl;
@@ -138,8 +137,7 @@ int main(int argc, char** argv)
     viz::init_ascent(d, domain.startIndex());
 
     size_t startIteration = d.iteration;
-    for (; !stopSimulation(d.iteration - 1, d.ttot, maxStepStr); d.iteration++)
-    {
+    for (; !stopSimulation(d.iteration - 1, d.ttot, maxStepStr); d.iteration++) {
         propagator->step(domain, simData);
         box = domain.box();
 
@@ -151,8 +149,7 @@ int main(int argc, char** argv)
         if (isPeriodicOutputStep(d.iteration, writeFrequencyStr) ||
             isPeriodicOutputTime(d.ttot - d.minDt, d.ttot, writeFrequencyStr) ||
             isExtraOutputStep(d.iteration, d.ttot - d.minDt, d.ttot, writeExtra) ||
-            (isWallClockReached && writeEnabled))
-        {
+            (isWallClockReached && writeEnabled)) {
             fileWriter->addStep(domain.startIndex(), domain.endIndex(), outFile);
 
             simData.hydro.loadOrStoreAttributes(fileWriter.get());
@@ -165,15 +162,13 @@ int main(int argc, char** argv)
         }
 
         viz::execute(d, domain.startIndex(), domain.endIndex());
-        if (isWallClockReached)
-        {
+        if (isWallClockReached) {
             d.iteration++;
             break;
         }
     }
 
-    if (rank == 0)
-    {
+    if (rank == 0) {
         totalTimer.step("Total execution time of " + std::to_string(d.iteration - startIteration) + " iterations of " +
                         initCond + " up to t = " + std::to_string(d.ttot));
     }
@@ -184,18 +179,15 @@ int main(int argc, char** argv)
 }
 
 //! @brief decide whether to stop the simulation based on evolved time (not wall-clock) or iteration count
-bool stopSimulation(size_t iteration, double time, const std::string& maxStepStr)
-{
+bool stopSimulation(size_t iteration, double time, const std::string &maxStepStr) {
     bool lastIteration = strIsIntegral(maxStepStr) && iteration >= std::stoi(maxStepStr);
-    bool simTimeLimit  = !strIsIntegral(maxStepStr) && time > std::stod(maxStepStr);
+    bool simTimeLimit = !strIsIntegral(maxStepStr) && time > std::stod(maxStepStr);
 
     return lastIteration || simTimeLimit;
 }
 
-void printHelp(char* name, int rank)
-{
-    if (rank == 0)
-    {
+void printHelp(char *name, int rank) {
+    if (rank == 0) {
         printf("\nUsage:\n\n");
         printf("%s [OPTIONS]\n", name);
         printf("\nWhere possible options are:\n\n");

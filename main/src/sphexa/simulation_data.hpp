@@ -35,31 +35,61 @@
 #include "cooling/chemistry_data.hpp"
 #include "sph/particles_data.hpp"
 
-namespace sphexa
-{
+namespace sphexa {
 
 //! @brief the place to store hydro, chemistry, nuclear and other simulation data
-template<typename T, typename KeyType_, class AccType>
-class SimulationData
-{
-public:
-    using AcceleratorType = AccType;
-    using KeyType         = KeyType_;
-    using RealType        = T;
+    template<typename T, typename KeyType_, class AccType>
+    class SimulationData {
+    public:
+        using AcceleratorType = AccType;
+        using KeyType = KeyType_;
+        using RealType = T;
 
-    using HydroData = ParticlesData<RealType, KeyType, AccType>;
-    using ChemData  = cooling::ChemistryData<T>;
+        using HydroData = ParticlesData<RealType, KeyType, AccType>;
+        using ChemData = cooling::ChemistryData<T>;
 
-    //! @brief spacially distributed data for hydrodynamics and gravity
-    HydroData hydro;
+        //! @brief spacially distributed data for hydrodynamics and gravity
+        HydroData hydro;
 
-    //! @brief chemistry data for radiative cooling, e.g. for GRACKLE
-    ChemData chem;
+        //! @brief chemistry data for radiative cooling, e.g. for GRACKLE
+        ChemData chem;
 
-    //! @brief non-spacially distributed nuclear abundances
-    // NuclearData nuclear;
+        //! @brief non-spacially distributed nuclear abundances
+        // NuclearData nuclear;
 
-    MPI_Comm comm;
-};
+        MPI_Comm comm;
+
+        inline static constexpr std::array dataPrefix{"", "chem::"};
+
+        auto dataTuple() {
+            auto ret = std::tie(hydro, chem);
+            static_assert(std::tuple_size_v<decltype(ret)> == dataPrefix.size());
+            return ret;
+        }
+
+        void setOutputFields(const std::vector<std::string> &outFields) {
+            std::array<std::vector<std::string>, dataPrefix.size()> outFieldsFwd;
+
+            auto assign_name = [&outFieldsFwd](std::string outField) {
+                for (size_t i = dataPrefix.size() - 1; i >= 0; i--) {
+                    std::string prefix(dataPrefix[i]);
+                    const auto m = std::mismatch(prefix.begin(), prefix.end(), outField.begin());
+                    if (m.first == prefix.end()) {
+                        outFieldsFwd[i].push_back(std::string(m.second, outField.end()));
+                        break;
+                    }
+                }
+            };
+
+            std::for_each(outFields.begin(), outFields.end(), assign_name);
+
+            std::apply([this](const auto &... outF) {
+                std::apply([&outF...](auto &... data) {
+                    std::initializer_list<int>{(data.setOutputFields(outF), 0)...};
+                }, dataTuple());
+            }, outFieldsFwd);
+        }
+
+    };
 
 } // namespace sphexa

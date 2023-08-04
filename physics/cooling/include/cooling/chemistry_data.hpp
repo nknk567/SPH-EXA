@@ -104,6 +104,17 @@ public:
 
     static_assert(fieldNames.size() == numFields);
 
+    //! @brief particle fields selected for file output
+    std::vector<int>         outputFieldIndices;
+    std::vector<std::string> outputFieldNames;
+    void setOutputFields(const std::vector<std::string>& outFields)
+    {
+        std::cout << "setting outFields chemistry" << std::endl;
+        for (auto f : outFields)
+            std::cout << f << std::endl;
+        outputFieldNames   = outFields;
+        outputFieldIndices = cstone::fieldStringsToInt(outFields, fieldNames);
+    }
 private:
     template<size_t... Is>
     auto dataTuple_helper(std::index_sequence<Is...>)

@@ -79,10 +79,10 @@ public:
             for (size_t i = dataPrefix.size() - 1; i >= 0; i--)
             {
                 std::string prefix(dataPrefix[i]);
-                const auto  m = std::mismatch(prefix.begin(), prefix.end(), outField.begin());
+                const auto m = std::mismatch(prefix.begin(), prefix.end(), outField.begin());
                 if (m.first == prefix.end())
                 {
-                    outFieldsFwd[i].push_back(std::string(m.second, outField.end()));
+                    outFieldsFwd[i].emplace_back(m.second, outField.end());
                     break;
                 }
             }
@@ -90,14 +90,10 @@ public:
 
         std::for_each(outFields.begin(), outFields.end(), assign_name);
 
-        std::apply(
-            [this](const auto&... outF)
-            {
-                std::apply([&outF...](auto&... data)
-                           { std::initializer_list<int>{(data.setOutputFields(outF), 0)...}; },
-                           dataTuple());
-            },
-            outFieldsFwd);
+        auto data              = dataTuple();
+        auto outFieldsFwdTuple = std::tuple_cat(outFieldsFwd);
+        for_each_tuple_zip([](auto& d, const std::vector<std::string>& f) { d.setOutputFields(f); }, data,
+                           outFieldsFwdTuple);
     }
 };
 

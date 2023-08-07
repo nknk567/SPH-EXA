@@ -43,34 +43,56 @@
 namespace sphexa
 {
 
-template<class HydroData>
-cstone::Box<typename HydroData::RealType> restoreHydroData(IFileReader* reader, int rank, HydroData& d)
+template<class Dataset>
+cstone::Box<typename Dataset::RealType> restoreData(IFileReader* reader, int rank, Dataset& simData)
 {
-    using T = typename HydroData::RealType;
+    using T = typename Dataset::RealType;
 
     cstone::Box<T> box(0, 1);
     box.loadOrStore(reader);
 
-    d.loadOrStoreAttributes(reader);
-    d.iteration++;
-    d.resize(reader->localNumParticles());
+    auto data          = simData.dataTuple();
+    auto prefixesTuple = std::tuple_cat(simData.dataPrefix);
+    for_each_tuple_zip(
+        [&reader](auto& d, const std::string& prefix)
+        {
+            struct readerPrefix
+            {
+                IFileReader*       reader;
+                const std::string& prefix;
 
-    if (d.numParticlesGlobal != reader->globalNumParticles())
+                void stepAttribute(const std::string& key, IFileReader::FieldType val, int64_t size)
+                {
+                    reader->stepAttribute(prefix + key, val, size);
+                };
+            };
+            readerPrefix r{reader, prefix};
+            d.loadOrStoreAttributes(&r);
+            d.resize(reader->localNumParticles());
+        },
+        data, prefixesTuple);
+
+    simData.hydro.iteration++;
+    if (simData.hydro.numParticlesGlobal != reader->globalNumParticles())
     {
         throw std::runtime_error("numParticlesGlobal mismatch\n");
     }
 
-    auto fieldPointers = d.data();
-    for (size_t i = 0; i < fieldPointers.size(); ++i)
+    auto read = [&rank, &reader](auto& d, const std::string& prefix)
     {
-        if (d.isConserved(i))
+        auto fieldPointers = d.data();
+        for (size_t i = 0; i < fieldPointers.size(); ++i)
         {
-            if (rank == 0) { std::cout << "restoring " << d.fieldNames[i] << std::endl; }
-            std::visit([reader, key = d.fieldNames[i]](auto field) { reader->readField(key, field->data()); },
-                       fieldPointers[i]);
+            if (d.isConserved(i))
+            {
+                if (rank == 0) { std::cout << "restoring " << d.fieldNames[i] << std::endl; }
+                std::visit([reader, key = d.fieldNames[i], prefix](auto field)
+                           { reader->readField(prefix + key, field->data()); },
+                           fieldPointers[i]);
+            }
         }
-    }
-
+    };
+    for_each_tuple_zip(read, data, prefixesTuple);
     return box;
 }
 
@@ -95,9 +117,10 @@ public:
         reader = std::make_unique<H5PartReader>(simData.comm);
         reader->setStep(h5_fname, initStep);
 
-        auto box = restoreHydroData(reader.get(), rank, simData.hydro);
+        auto box = restoreData(reader.get(), rank, simData);
 
-        // Read file attributes and put them in constants_ such that they propagate to the new output after a restart
+        // Read file attributes and put them in constants_ such that they propagate to the new output after a
+        // restart
         auto fileAttributes = reader->fileAttributes();
         for (const auto& attr : fileAttributes)
         {
@@ -143,7 +166,8 @@ public:
         reader = std::make_unique<H5PartReader>(simData.comm);
         reader->setStep(h5_fname, -1);
 
-        // Read file attributes and put them in constants_ such that they propagate to the new output after a restart
+        // Read file attributes and put them in constants_ such that they propagate to the new output after a
+        // restart
         auto fileAttributes = reader->fileAttributes();
         for (const auto& attr : fileAttributes)
         {

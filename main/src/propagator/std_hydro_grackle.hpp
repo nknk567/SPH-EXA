@@ -189,6 +189,32 @@ public:
 
         timer.stop();
     }
+
+    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
+                    const cstone::Box<T>& box) override
+    {
+        auto output = [&](auto& d, const std::string& prefix)
+        {
+            auto             fieldPointers = d.data();
+            std::vector<int> outputFields  = d.outputFieldIndices;
+            for (int i = int(outputFields.size()) - 1; i >= 0; --i)
+            {
+                int fidx = outputFields[i];
+                if (d.isAllocated(fidx))
+                {
+                    int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
+                                 d.outputFieldIndices.begin();
+                    transferToHost(d, first, last, {d.fieldNames[fidx]});
+                    std::visit([writer, c = column, key = prefix + d.fieldNames[fidx]](auto field)
+                               { writer->writeField(key, field->data(), c); },
+                               fieldPointers[fidx]);
+                    outputFields.erase(outputFields.begin() + i);
+                }
+            }
+        };
+        auto prefixesTuple = std::tuple_cat(simData.dataPrefix);
+        for_each_tuple_zip(output, simData.dataTuple(), prefixesTuple);
+    }
 };
 
 } // namespace sphexa

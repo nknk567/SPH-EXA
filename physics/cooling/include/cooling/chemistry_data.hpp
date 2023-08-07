@@ -117,6 +117,12 @@ public:
         outputFieldIndices = cstone::fieldStringsToInt(outFields, fieldNames);
     }
 
+    template<class Archive>
+    void loadOrStoreAttributes(Archive* ar)
+    {
+        //ar->stepAttribute(
+    }
+
 private:
     template<size_t... Is>
     auto dataTuple_helper(std::index_sequence<Is...>)

@@ -86,6 +86,7 @@ public:
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
         grackleOptions["with_radiative_cooling"] = 1;
+        grackleOptions["primiordial_chemistry"] = 1;
         grackleOptions["dust_chemistry"]         = 0;
         grackleOptions["metal_cooling"]          = 0;
         grackleOptions["UVbackground"]           = 0;
@@ -96,6 +97,7 @@ public:
     {
         std::vector<std::string> ret{"x", "y", "z", "h", "m"};
         for_each_tuple([&ret](auto f) { ret.push_back(f.value); }, make_tuple(ConservedFields{}));
+        for_each_tuple([&ret](auto f) { ret.push_back(std::string{"chem::"} + f.value); }, make_tuple(CoolingFields{}));
         return ret;
     }
 

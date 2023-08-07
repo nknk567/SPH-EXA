@@ -51,28 +51,10 @@ cstone::Box<typename Dataset::RealType> restoreData(IFileReader* reader, int ran
     cstone::Box<T> box(0, 1);
     box.loadOrStore(reader);
 
-    auto data          = simData.dataTuple();
-    auto prefixesTuple = std::tuple_cat(simData.dataPrefix);
-    for_each_tuple_zip(
-        [&reader](auto& d, const std::string& prefix)
-        {
-            struct readerPrefix
-            {
-                IFileReader*       reader;
-                const std::string& prefix;
-
-                void stepAttribute(const std::string& key, IFileReader::FieldType val, int64_t size)
-                {
-                    reader->stepAttribute(prefix + key, val, size);
-                };
-            };
-            readerPrefix r{reader, prefix};
-            d.loadOrStoreAttributes(&r);
-            d.resize(reader->localNumParticles());
-        },
-        data, prefixesTuple);
-
+    auto& d = simData.hydro;
+    d.loadOrStoreAttributes(reader);
     simData.hydro.iteration++;
+
     if (simData.hydro.numParticlesGlobal != reader->globalNumParticles())
     {
         throw std::runtime_error("numParticlesGlobal mismatch\n");
@@ -80,6 +62,7 @@ cstone::Box<typename Dataset::RealType> restoreData(IFileReader* reader, int ran
 
     auto read = [&rank, &reader](auto& d, const std::string& prefix)
     {
+        d.resize(reader->localNumParticles());
         auto fieldPointers = d.data();
         for (size_t i = 0; i < fieldPointers.size(); ++i)
         {
@@ -92,6 +75,9 @@ cstone::Box<typename Dataset::RealType> restoreData(IFileReader* reader, int ran
             }
         }
     };
+
+    auto data          = simData.dataTuple();
+    auto prefixesTuple = std::tuple_cat(simData.dataPrefix);
     for_each_tuple_zip(read, data, prefixesTuple);
     return box;
 }

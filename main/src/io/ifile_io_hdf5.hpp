@@ -248,7 +248,9 @@ public:
 
     void readField(const std::string& key, FieldType field) override
     {
-        auto err = std::visit([this, &key](auto arg) { return fileutils::readH5PartField(h5File_, key, arg); }, field);
+        auto err = std::visit([this, &key](auto arg) {
+                                  return fileutils::readH5PartField(h5File_, key, arg);
+                              }, field);
         if (err != H5PART_SUCCESS) { throw std::runtime_error("Could not read field: " + key); }
     }
 

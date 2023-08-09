@@ -80,7 +80,7 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
 
     double eInt = 0.0;
 
-    if (!d.temp.empty())
+    /*if (!d.temp.empty())
     {
 #pragma omp parallel for reduction(+ : eInt)
         for (size_t i = startIndex; i < endIndex; i++)
@@ -90,7 +90,7 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
             eInt += cv * temp[i] * mi;
         }
     }
-    else if (!d.u.empty())
+    else*/ if (!d.u.empty())
     {
 #pragma omp parallel for reduction(+ : eInt)
         for (size_t i = startIndex; i < endIndex; i++)

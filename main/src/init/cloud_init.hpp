@@ -98,63 +98,24 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     }
 }
 
-template<typename FT, typename T>
-T bisect_monotone(const FT& func, const T y)
-{
-    T       x       = 0.;
-    T       delta   = 2.;
-    const T epsilon = 1e-5;
-    while (true)
-    {
-        // std::cout << "bisect: " << std::endl;
-        T       x_new   = x + delta;
-        const T y_x_new = func(x_new);
-        if (std::abs(y - y_x_new) < epsilon)
-        {
-            x = x_new;
-            break;
-        }
-        if (y_x_new > y)
-            delta *= 0.5;
-        else
-            x = x_new;
-    }
-    return x;
-}
-
 template<class Vector>
 void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
 {
-    // truncated 1/r
-    /*auto f = [](double r) {
-        if (r <= 1.) return r;
-        else return std::sqrt(1./3.) * std::sqrt(2.*r*r*r + 1.);
-    };*/
     // truncated 1/r^4
-    auto f = [](double r)
+    auto f = [](const double r)
     {
         if (r <= 1.)
             return r;
         else
             return 1. / (4. / 3. - r * r * r / 3.);
     };
-    // Exponential profile
-    /*auto f_1 = [](double y) {
-        //return 2. - std::exp(-y) * (y*y + 2.*y + 2.);
-        //return std::pow((2. - std::exp(-y) * (y*y + 2.*y + 2.)) * 3., 1./3.);
-        const double b = 1.75;
-        return std::pow((2./(b*b*b) - std::exp(-b * y) * (b*b*y*y + 2.*b*y + 2.) / (b*b*b)) * 3., 1./3.);
-    };*/
-    // double x = bisect_monotone(f, 1.0);
 
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x.size(); i++)
     {
-        auto radius0 = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
+        const auto radius0 = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
 
-        // multiply coordinates by sqrt(r) to generate a density profile ~ 1/r
-        // auto contraction = std::sqrt(radius0);
-        // auto new_r       = bisect_monotone(f_1, radius0);
+        // multiply coordinates by sqrt(r) to generate the density profile
         auto new_r       = f(radius0);
         auto contraction = new_r / radius0;
         x[i] *= contraction;
@@ -162,30 +123,6 @@ void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
         z[i] *= contraction;
     }
 }
-
-/*//! @brief Estimate SFC partition of the Evrard sphere based on approximate continuum particle counts
-template<class KeyType, class T>
-std::tuple<KeyType, KeyType> estimateEvrardSfcPartition(size_t cbrtNumPart, const cstone::Box<T>& box, int rank,
-                                                        int numRanks)
-{
-    size_t numParticlesGlobal = 0.523 * cbrtNumPart * cbrtNumPart * cbrtNumPart;
-    T      r                  = box.xmax();
-
-    double   eps        = 2.0 * r / (1u << cstone::maxTreeLevel<KeyType>{});
-    unsigned bucketSize = numParticlesGlobal / (100 * numRanks);
-
-    auto oneOverR = [numParticlesGlobal, r, eps](T x, T y, T z)
-    {
-        T radius = std::max(std::sqrt(norm2(cstone::Vec3<T>{x, y, z})), eps);
-        if (radius > r) { return 0.0; }
-        else { return T(numParticlesGlobal) / (2 * M_PI * radius); }
-    };
-
-    auto [tree, counts]            = cstone::computeContinuumCsarray<KeyType>(oneOverR, box, bucketSize);
-    cstone::SpaceCurveAssignment a = cstone::singleRangeSfcSplit(counts, numRanks);
-
-    return {tree[a.firstNodeIdx(rank)], tree[a.lastNodeIdx(rank)]};
-}*/
 
 template<class Dataset>
 class CloudGlassSphere : public ISimInitializer<Dataset>
@@ -207,52 +144,16 @@ public:
         auto& d    = simData.hydro;
         auto& chem = simData.chem;
 
-        // const T        rho_const{3. / (4. * M_PI)};
         std::vector<T> pressure_eq(d.x.size(), 0.);
         for (size_t i = 0; i < d.x.size(); i++)
         {
             const T radius = std::sqrt(d.x[i] * d.x[i] + d.y[i] * d.y[i] + d.z[i] * d.z[i]);
-            // pressure_eq[i] = 3. / (8. * M_PI) * (1. - radius * radius);
-
-            // exponential profile
-            /*auto p = [](double radius)
-            {
-                const T b = 1.75;
-                // const T e = std::exp(b * radius);
-                // const T e2 = std::exp(2. * b * radius);
-                const T em   = std::exp(-b * radius);
-                const T em2  = std::exp(-2. * b * radius);
-                const T eim2 = std::expint(-2 * b * radius);
-                const T eim  = std::expint(-b * radius);
-
-                const T t1  = 4. * b * radius * eim2;
-                const T t2  = -4. * b * radius * eim;
-                const T t3  = em2 * (b * radius + 4.) - 4. * em;
-                const T n   = 2. * M_PI * (t1 + t2 + t3);
-                const T res = (n / (radius * b * b * b) * (9. / (16. * M_PI * M_PI)));
-                return res;
-            };*/
-            // pressure_eq[i] = p(2.9892) - p(radius);
-            // truncated 1/r
-            /* const T r0 = settings_.at("r");
-             const double rc = std::sqrt(1. / 3.) * std::sqrt(2. * r0*r0*r0 + 2.);
-             const double k = 3. / (4. * M_PI * r0*r0*r0);
-             const double B = 2. * M_PI *  k*k * (std::log(rc) - std::log(1.) + 1. / (6. * rc * rc) - 1. / 6.);
-             auto p = [&](double radius)
-             {
-              if (radius <= 1.) return B + 2. * M_PI * k*k / 3. * (1. - radius * radius);
-              else return 2. * M_PI *  k*k * (std::log(rc) - std::log(radius) + 1. / (6. * rc * rc) - 1. / (6. * radius
-             * radius));
-             };
-
-             pressure_eq[i] = p(radius);*/
 
             // truncated 1/r^4
             const T      r0 = settings_.at("r");
             const double rc = 1. / (4. / 3. - r0 * r0 * r0 / 3.); // nicht grösser als 4^(1/3)
             const double k  = 3. / (4. * M_PI * r0 * r0 * r0);    // Mtot == 1
-            // auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. /
-            // std::pow(r, 5.)); };
+
             auto Bf = [&](double r)
             { return -4. * M_PI * k * k * (-1. / (6. * std::pow(r, 6.)) + 4. / 15. / std::pow(r, 5.)); };
 
@@ -267,95 +168,28 @@ public:
             };
 
             pressure_eq[i] = p(radius);
-
-            /*const T ei = std::expint(-2. * b * radius);
-            const T e = std::exp(-2 * b * radius);
-            const T first_term = -2 * b * ei;
-            const T second_term = -e * (b * radius + 4.0) / (2. * radius);
-            const T pressure = 0. - (first_term + second_term) / (b*b*b);
-            pressure_eq[i] = pressure * 3. / (4 * M_PI);*/
-
-            /*const T r_eps = std::max(radius, 1e-5);
-            pressure_eq[i] = 1. / (2. * M_PI) * std::log(1. / r_eps);*/
         }
 
-        /*cooling::Cooler<T>              cooling_data;
-        constexpr float                 ms_sim = 1e6;
-        constexpr float                 kp_sim = 1.0;
-        std::map<std::string, std::any> grackleOptions;
-        grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 0;
-        grackleOptions["primordial_chemistry"]   = 3;
-        grackleOptions["dust_chemistry"]         = 0;
-        grackleOptions["metal_cooling"]          = 1;
-        grackleOptions["UVbackground"]           = 1;
-        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);*/
-
-        /*T nden = get<"metal_fraction">(chem)[0] * rho_const / 16.;
-        nden += (get<"HI_fraction">(chem)[0] + get<"HII_fraction">(chem)[0] + get<"e_fraction">(chem)[0] +
-                 (get<"HeI_fraction">(chem)[0] + get<"HeII_fraction">(chem)[0] + get<"HeIII_fraction">(chem)[0]) / 4.) *
-                rho_const;
-        nden += (get<"HM_fraction">(chem)[0] + (get<"H2I_fraction">(chem)[0] + get<"H2II_fraction">(chem)[0]) / 2.) *
-                rho_const;
-        const T mu = rho_const / nden;*/
-        // const T u_guess{2.87};
-        //  Calculate density
-        //  resizeNeighbors(d, d.x.size() * d.ngmax);
-        //  sph::findNeighborsSfc(size_t(0), d.x.size(), d, box);
-        //  sph::computeDensity<T, Dataset>(size_t(0), d.x.size(), d, box);
         bool good = true;
         for (size_t i = 0; i < d.x.size(); i++)
         {
-            T rho{d.rho[i]};
-            T u_cool{d.u[i]};
-            T pressure{d.p[i]};
-            /*const T pressure = cooling_data.pressure(
-                rho, u_cool, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i], get<"HM_fraction">(chem)[i],
-                get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i], get<"HeIII_fraction">(chem)[i],
-                get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i], get<"DI_fraction">(chem)[i],
-                get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i], get<"e_fraction">(chem)[i],
-                get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
-                get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
-                get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
-                get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
-                get<"H2_self_shielding_length">(chem)[i]);*/
+            T       rho{d.rho[i]};
+            T       u_cool{d.u[i]};
+            T       pressure{d.p[i]};
             const T relation{pressure_eq[i] / pressure};
             d.u[i] = u_cool * relation;
             if (std::abs(relation - 1.) > 1e-5) good = false;
-            // std::cout << "u: " << d.u[i] << std::endl;
-            // std::cout << "relation " << relation << std::endl;
-            //  std::cout << d.rho[i] << std::endl;
         }
         std::cout << "status " << good << std::endl;
         return good;
     }
-    cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
-                                                 Dataset& simData) const override
+
+    void initPressure(Dataset& simData, const int rank, const int numRanks,
+                      const cstone::Box<typename Dataset::RealType>& globalBox, const size_t numParticlesGlobal) const
     {
         auto& d       = simData.hydro;
         using KeyType = typename Dataset::KeyType;
         using T       = typename Dataset::RealType;
-
-        std::vector<T> xBlock, yBlock, zBlock;
-        fileutils::readTemplateBlock(glassBlock, xBlock, yBlock, zBlock);
-        size_t blockSize = xBlock.size();
-
-        int               multi1D      = std::rint(cbrtNumPart / std::cbrt(blockSize));
-        cstone::Vec3<int> multiplicity = {multi1D, multi1D, multi1D};
-
-        T              r = settings_.at("r");
-        cstone::Box<T> globalBox(-r, r, cstone::BoundaryType::open);
-
-        auto [keyStart, keyEnd] = equiDistantSfcSegments<KeyType>(rank, numRanks, 100);
-        assembleCuboid<T>(keyStart, keyEnd, globalBox, multiplicity, xBlock, yBlock, zBlock, d.x, d.y, d.z);
-        cutSphere(r, d.x, d.y, d.z);
-
-        size_t numParticlesGlobal = d.x.size();
-        MPI_Allreduce(MPI_IN_PLACE, &numParticlesGlobal, 1, MpiType<size_t>{}, MPI_SUM, simData.comm);
-
-        contractRhoProfileCloud(d.x, d.y, d.z);
-        syncCoords<KeyType>(rank, numRanks, numParticlesGlobal, d.x, d.y, d.z, globalBox);
-
         using cstone::FieldList;
         using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "u">;
 
@@ -388,8 +222,6 @@ public:
 
         uint64_t bucketSize = std::max(bucketSizeFocus, d.numParticlesGlobal / (100 * numRanks));
         cstone::Domain<KeyType, T, cstone::CpuTag> domain(rank, numRanks, bucketSize, bucketSizeFocus, 0.5, globalBox);
-
-
 
         if (rank == 0) std::cout << "nLocalParticles " << get<"HI_fraction">(simData.chem).size() << std::endl;
 
@@ -453,6 +285,36 @@ public:
             calculatePressure();
             if (initDependent(simData)) break;
         }
+    }
+
+    cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
+                                                 Dataset& simData) const override
+    {
+        auto& d       = simData.hydro;
+        using KeyType = typename Dataset::KeyType;
+        using T       = typename Dataset::RealType;
+
+        std::vector<T> xBlock, yBlock, zBlock;
+        fileutils::readTemplateBlock(glassBlock, xBlock, yBlock, zBlock);
+        size_t blockSize = xBlock.size();
+
+        int               multi1D      = std::rint(cbrtNumPart / std::cbrt(blockSize));
+        cstone::Vec3<int> multiplicity = {multi1D, multi1D, multi1D};
+
+        T              r = settings_.at("r");
+        cstone::Box<T> globalBox(-r, r, cstone::BoundaryType::open);
+
+        auto [keyStart, keyEnd] = equiDistantSfcSegments<KeyType>(rank, numRanks, 100);
+        assembleCuboid<T>(keyStart, keyEnd, globalBox, multiplicity, xBlock, yBlock, zBlock, d.x, d.y, d.z);
+        cutSphere(r, d.x, d.y, d.z);
+
+        size_t numParticlesGlobal = d.x.size();
+        MPI_Allreduce(MPI_IN_PLACE, &numParticlesGlobal, 1, MpiType<size_t>{}, MPI_SUM, simData.comm);
+
+        contractRhoProfileCloud(d.x, d.y, d.z);
+        syncCoords<KeyType>(rank, numRanks, numParticlesGlobal, d.x, d.y, d.z, globalBox);
+
+        initPressure(simData, rank, numRanks, globalBox, numParticlesGlobal);
 
         return globalBox;
     }

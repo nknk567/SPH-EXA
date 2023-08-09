@@ -87,7 +87,7 @@ public:
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]              = 1;
         grackleOptions["with_radiative_cooling"]   = 1;
-        grackleOptions["primordial_chemistry"]     = 0;
+        grackleOptions["primordial_chemistry"]     = 3;
         grackleOptions["dust_chemistry"]           = 0;
         grackleOptions["metal_cooling"]            = 0;
         grackleOptions["UVbackground"]             = 0;

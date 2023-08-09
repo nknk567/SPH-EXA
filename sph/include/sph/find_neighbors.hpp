@@ -23,6 +23,7 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
     for (LocalIndex i = 0; i < numWork; ++i)
     {
         LocalIndex id = i + firstId;
+
         nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
 
         int iteration = 0;

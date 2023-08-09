@@ -35,7 +35,7 @@
 
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/continuum.hpp"
-// #include "sph/sph.hpp"
+#include "sph/sph.hpp"
 //  #include "sph/eos.hpp"
 #include "sph/particles_data.hpp"
 #include "isim_init.hpp"
@@ -94,7 +94,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
         T radius        = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
         T concentration = c0 / radius;
         d.h[i]          = std::cbrt(3 / (4 * M_PI) * d.ng0 / concentration) * 0.5;
-        //std::cout << "h: " << d.h[i] << std::endl; // is it infinity?
+        // std::cout << "h: " << d.h[i] << std::endl; // is it infinity?
     }
 }
 
@@ -251,12 +251,14 @@ public:
             const T      r0 = settings_.at("r");
             const double rc = 1. / (4. / 3. - r0 * r0 * r0 / 3.); // nicht grösser als 4^(1/3)
             const double k  = 3. / (4. * M_PI * r0 * r0 * r0);    // Mtot == 1
-            //auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. / std::pow(r, 5.)); };
-            auto Bf = [&](double r) { return -4. * M_PI * k * k * (-1. / (6. * std::pow(r, 6.)) + 4. / 15. / std::pow(r, 5.)); };
+            // auto Bf = [&](double r) { return 4. * M_PI * k * k * (8. / std::pow(r0, 8.) - 4. / 15. /
+            // std::pow(r, 5.)); };
+            auto Bf = [&](double r)
+            { return -4. * M_PI * k * k * (-1. / (6. * std::pow(r, 6.)) + 4. / 15. / std::pow(r, 5.)); };
 
-            const double B = Bf(rc) - Bf(1.);
+            const double B     = Bf(rc) - Bf(1.);
             auto         Afunc = [&](double r) { return 2. * M_PI * k * k / 3. * (1. - r * r); };
-            auto         p = [&](double radius)
+            auto         p     = [&](double radius)
             {
                 if (radius <= 1.)
                     return B + Afunc(radius);
@@ -320,9 +322,9 @@ public:
             const T relation{pressure_eq[i] / pressure};
             d.u[i] = u_cool * relation;
             if (std::abs(relation - 1.) > 1e-5) good = false;
-            //std::cout << "u: " << d.u[i] << std::endl;
-            //std::cout << "relation " << relation << std::endl;
-            // std::cout << d.rho[i] << std::endl;
+            // std::cout << "u: " << d.u[i] << std::endl;
+            // std::cout << "relation " << relation << std::endl;
+            //  std::cout << d.rho[i] << std::endl;
         }
         std::cout << "status " << good << std::endl;
         return good;
@@ -354,6 +356,24 @@ public:
         contractRhoProfileCloud(d.x, d.y, d.z);
         syncCoords<KeyType>(rank, numRanks, numParticlesGlobal, d.x, d.y, d.z, globalBox);
 
+        using cstone::FieldList;
+        using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "u">;
+
+        //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
+        using DependentFields = FieldList<"rho", "p", "c", "du", "nc">;
+
+        using CoolingFields =
+            FieldList<"HI_fraction", "HII_fraction", "HM_fraction", "HeI_fraction", "HeII_fraction", "HeIII_fraction",
+                      "H2I_fraction", "H2II_fraction", "DI_fraction", "DII_fraction", "HDI_fraction", "e_fraction",
+                      "metal_fraction", "volumetric_heating_rate", "specific_heating_rate", "RT_heating_rate",
+                      "RT_HI_ionization_rate", "RT_HeI_ionization_rate", "RT_HeII_ionization_rate",
+                      "RT_H2_dissociation_rate", "H2_self_shielding_length">;
+        d.setConserved("x", "y", "z", "h", "m");
+        d.setDependent("keys");
+        std::apply([&d](auto... f) { d.setConserved(f.value...); }, make_tuple(ConservedFields{}));
+        std::apply([&d](auto... f) { d.setDependent(f.value...); }, make_tuple(DependentFields{}));
+        std::apply([&simData](auto... f) { simData.chem.setConserved(f.value...); }, make_tuple(CoolingFields{}));
+
         d.resize(d.x.size());
 
         settings_["numParticlesGlobal"] = double(numParticlesGlobal);
@@ -362,6 +382,77 @@ public:
         d.loadOrStoreAttributes(&attributeSetter);
 
         initCloudFields(d, simData.chem, settings_, globalBox);
+
+        // Prepare hydrost. eq
+        uint64_t bucketSizeFocus = 64;
+
+        uint64_t bucketSize = std::max(bucketSizeFocus, d.numParticlesGlobal / (100 * numRanks));
+        cstone::Domain<KeyType, T, cstone::CpuTag> domain(rank, numRanks, bucketSize, bucketSizeFocus, 0.5, globalBox);
+
+
+
+        if (rank == 0) std::cout << "nLocalParticles " << get<"HI_fraction">(simData.chem).size() << std::endl;
+
+        // transferToDevice(d, 0, d.x.size(), bl());
+
+        domain.syncGrav(get<"keys">(d), get<"x">(d), get<"y">(d), get<"z">(d), get<"h">(d), get<"m">(d),
+                        std::tuple_cat(get<ConservedFields>(d), get<CoolingFields>(simData.chem)),
+                        get<DependentFields>(d));
+        d.treeView = domain.octreeProperties();
+
+        d.resize(domain.nParticlesWithHalos());
+
+        size_t                          first = domain.startIndex();
+        size_t                          last  = domain.endIndex();
+        cooling::Cooler<T>              cooling_data;
+        constexpr float                 ms_sim = 1e8;
+        constexpr float                 kp_sim = 1.0;
+        std::map<std::string, std::any> grackleOptions;
+        grackleOptions["use_grackle"]            = 1;
+        grackleOptions["with_radiative_cooling"] = 1;
+        grackleOptions["primordial_chemistry"]   = 1;
+        grackleOptions["dust_chemistry"]         = 0;
+        grackleOptions["metal_cooling"]          = 0;
+        grackleOptions["UVbackground"]           = 0;
+
+        std::cout << "prepare" << std::endl;
+
+        resizeNeighbors(d, domain.nParticles() * d.ngmax);
+        std::cout << "prepare1" << std::endl;
+
+        sph::findNeighborsSfc(first, last, d, domain.box());
+        std::cout << "prepare2" << std::endl;
+
+        sph::computeDensity(first, last, d, domain.box());
+        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
+        std::cout << "prepared" << std::endl;
+
+        auto calculatePressure = [&, &chem = simData.chem]()
+        {
+            std::cout << "calc pressure" << std::endl;
+#pragma omp parallel for schedule(static)
+            for (size_t i = first; i < last; ++i)
+            {
+
+                T pressure = cooling_data.pressure(
+                    d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                    get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
+                    get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
+                    get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
+                    get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
+                    get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
+                    get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
+                    get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
+                    get<"H2_self_shielding_length">(chem)[i]);
+                d.p[i] = pressure;
+            }
+        };
+
+        while (true)
+        {
+            calculatePressure();
+            if (initDependent(simData)) break;
+        }
 
         return globalBox;
     }

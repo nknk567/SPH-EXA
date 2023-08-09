@@ -85,13 +85,13 @@ public:
         constexpr float kp_sim = 1.0; // 1.0;//46400.;
 
         std::map<std::string, std::any> grackleOptions;
-        grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 1;
-        grackleOptions["primordial_chemistry"]   = 1;
-        grackleOptions["dust_chemistry"]         = 0;
-        grackleOptions["metal_cooling"]          = 0;
-        grackleOptions["UVbackground"]           = 0;
-        grackleOptions["use_temperature_floor"] = 1;
+        grackleOptions["use_grackle"]              = 1;
+        grackleOptions["with_radiative_cooling"]   = 0;
+        grackleOptions["primordial_chemistry"]     = 1;
+        grackleOptions["dust_chemistry"]           = 0;
+        grackleOptions["metal_cooling"]            = 0;
+        grackleOptions["UVbackground"]             = 0;
+        grackleOptions["use_temperature_floor"]    = 1;
         grackleOptions["temperature_floor_scalar"] = 3000.;
         cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
     }

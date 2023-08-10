@@ -225,7 +225,14 @@ public:
 
         if (rank == 0) std::cout << "nLocalParticles " << get<"HI_fraction">(simData.chem).size() << std::endl;
 
-        // transferToDevice(d, 0, d.x.size(), bl());
+        auto bl = []()
+        {
+            std::vector<std::string> ret{"x", "y", "z", "h", "m"};
+            for_each_tuple([&ret](auto f) { ret.push_back(f.value); }, make_tuple(ConservedFields{}));
+            return ret;
+        };
+
+       // transferToDevice(d, 0, d.x.size(), bl());
 
         domain.syncGrav(get<"keys">(d), get<"x">(d), get<"y">(d), get<"z">(d), get<"h">(d), get<"m">(d),
                         std::tuple_cat(get<ConservedFields>(d), get<CoolingFields>(simData.chem)),
@@ -278,10 +285,11 @@ public:
             const auto oldFields = chem.fields;
             T          max_diff  = 0.;
 
-#pragma omp parallel for schedule(static) reduction(max : max_diff)
+//#pragma omp parallel for schedule(static) reduction(max : max_diff)
             for (size_t i = first; i < last; ++i)
             {
                 T u = d.u[i];
+                std::cout << "rho: " << d.rho[i] << std::endl;
                 cooling_data.cool_particle(
                     0.1, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],

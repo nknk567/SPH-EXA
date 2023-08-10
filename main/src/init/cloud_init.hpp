@@ -289,7 +289,7 @@ public:
             for (size_t i = first; i < last; ++i)
             {
                 T u = d.u[i];
-                std::cout << "rho: " << d.rho[i] << std::endl;
+                std::cout << "rho: " << d.rho[i] << "u " << u << std::endl;
                 cooling_data.cool_particle(
                     0.1, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],

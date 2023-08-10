@@ -295,7 +295,7 @@ public:
                 T u = d.u[i];
                 std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
                 cooling_data.cool_particle(
-                    0.01, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                    0.0001, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
                     get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
                     get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
@@ -324,7 +324,7 @@ public:
             std::cout << "equilibrated " << n_it << "\t" << max_diff << std::endl;
             if (max_diff < 1e-6 && good) break;
         }
-        //calculateChemistry();
+        calculateChemistry();
     }
 
     cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,

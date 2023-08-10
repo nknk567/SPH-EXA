@@ -106,6 +106,12 @@ public:
 
     static_assert(fieldNames.size() == numFields);
 
+    T m_code_in_ms = 1e16;
+    T l_code_in_kpc = 46400.;
+
+
+
+
 private:
     template<size_t... Is>
     auto dataTuple_helper(std::index_sequence<Is...>)

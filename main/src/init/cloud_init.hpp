@@ -241,31 +241,22 @@ public:
         constexpr float                 kp_sim = 1.0;
         std::map<std::string, std::any> grackleOptions;
         grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 1;
+        grackleOptions["with_radiative_cooling"] = 0;
         grackleOptions["primordial_chemistry"]   = 1;
         grackleOptions["dust_chemistry"]         = 0;
         grackleOptions["metal_cooling"]          = 0;
         grackleOptions["UVbackground"]           = 0;
 
-        std::cout << "prepare" << std::endl;
-
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
-        std::cout << "prepare1" << std::endl;
-
         sph::findNeighborsSfc(first, last, d, domain.box());
-        std::cout << "prepare2" << std::endl;
-
-        sph::computeDensity(first, last, d, domain.box());
+        sph::computeDensity(first, last, d, domain.box()); // halo exchange rho!!
         cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
-        std::cout << "prepared" << std::endl;
 
         auto calculatePressure = [&, &chem = simData.chem]()
         {
-            std::cout << "calc pressure" << std::endl;
 #pragma omp parallel for schedule(static)
             for (size_t i = first; i < last; ++i)
             {
-
                 T pressure = cooling_data.pressure(
                     d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
@@ -280,10 +271,45 @@ public:
             }
         };
 
+
+
+        auto calculateChemistry = [&, &chem = simData.chem]()
+        {
+            const auto oldFields = chem.fields;
+            T          max_diff  = 0.;
+
+#pragma omp parallel for schedule(static) reduction(max : max_diff)
+            for (size_t i = first; i < last; ++i)
+            {
+                T u = d.u[i];
+                cooling_data.cool_particle(
+                    0.1, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                    get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
+                    get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
+                    get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
+                    get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
+                    get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
+                    get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
+                    get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
+                    get<"H2_self_shielding_length">(chem)[i]);
+                for (size_t j = 0; j < chem.fields.size(); j++)
+                {
+                    const T diff = std::abs(chem.fields[j][i] - oldFields[j][i]);
+                    max_diff     = std::max(max_diff, diff);
+                }
+            }
+            return max_diff;
+        };
+
+        size_t n_it = 0;
         while (true)
         {
             calculatePressure();
-            if (initDependent(simData)) break;
+            bool good =  (initDependent(simData));
+            const T max_diff = calculateChemistry();
+            n_it++;
+            std::cout << "equilibrated " << n_it << "\t" << max_diff << std::endl;
+            if (max_diff < 1e-6 && good) break;
         }
     }
 

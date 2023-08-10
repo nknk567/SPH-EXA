@@ -283,19 +283,19 @@ public:
             // const auto oldFields = chem.fields;
             T max_diff = 0.;
 
-            // #pragma omp parallel for schedule(static) reduction(max : max_diff)
+#pragma omp parallel for schedule(static) reduction(max : max_diff)
             for (size_t i = first; i < last; ++i)
             {
                 std::array<T, chem.numFields> old;
                 for (size_t j = 0; j < chem.fields.size(); j++)
                 {
                     old[j] = chem.fields[j][i];
-                    std::cout << " old " << old[j] << std::endl;
+//                    std::cout << " old " << old[j] << std::endl;
                 }
                 T u = d.u[i];
-                std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
+              //  std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
                 cooling_data.cool_particle(
-                    0.0001, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                    1e-8, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
                     get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
                     get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
@@ -306,7 +306,7 @@ public:
                     get<"H2_self_shielding_length">(chem)[i]);
                 for (size_t j = 0; j < chem.fields.size(); j++)
                 {
-                    const T diff = std::abs(chem.fields[j][i] - old[j]);
+                    const T diff = std::abs(chem.fields[j][i] - old[j]) / 1e-8;
                     max_diff     = std::max(max_diff, diff);
                 }
             }
@@ -318,11 +318,11 @@ public:
         {
             calculatePressure();
             bool good = (initDependent(simData));
-            // const T max_diff = calculateChemistry();
-            const T max_diff = 0.;
+             const T max_diff = calculateChemistry();
+            //const T max_diff = 0.;
             n_it++;
             std::cout << "equilibrated " << n_it << "\t" << max_diff << std::endl;
-            if (max_diff < 1e-6 && good) break;
+            if (max_diff < 1e-4 && good) break;
         }
         //calculateChemistry();
     }

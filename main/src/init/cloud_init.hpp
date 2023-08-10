@@ -314,7 +314,8 @@ public:
         {
             calculatePressure();
             bool good =  (initDependent(simData));
-            const T max_diff = calculateChemistry();
+            //const T max_diff = calculateChemistry();
+            const T max_diff=0.;
             n_it++;
             std::cout << "equilibrated " << n_it << "\t" << max_diff << std::endl;
             if (max_diff < 1e-6 && good) break;

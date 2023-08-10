@@ -290,6 +290,7 @@ public:
                 for (size_t j = 0; j < chem.fields.size(); j++)
                 {
                     old[j] = chem.fields[j][i];
+                    std::cout << " old " << old[j] << std::endl;
                 }
                 T u = d.u[i];
                 std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;

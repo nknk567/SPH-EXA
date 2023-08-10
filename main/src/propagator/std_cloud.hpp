@@ -93,7 +93,7 @@ public:
         grackleOptions["UVbackground"]             = 0;
         grackleOptions["use_temperature_floor"]    = 1;
         grackleOptions["temperature_floor_scalar"] = 3000.;
-        //cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
+        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
     }
 
     std::vector<std::string> conservedFields() const override

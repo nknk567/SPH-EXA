@@ -324,7 +324,7 @@ public:
             std::cout << "equilibrated " << n_it << "\t" << max_diff << std::endl;
             if (max_diff < 1e-6 && good) break;
         }
-        calculateChemistry();
+        //calculateChemistry();
     }
 
     cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,

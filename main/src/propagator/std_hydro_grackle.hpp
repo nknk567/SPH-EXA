@@ -39,6 +39,7 @@
 #include "sph/sph.hpp"
 
 #include "cooling/cooler.hpp"
+#include "cooling/eos_cooling.hpp"
 #include "ipropagator.hpp"
 #include "gravity_wrapper.hpp"
 
@@ -57,13 +58,13 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
     using T       = typename DataType::RealType;
     using KeyType = typename DataType::KeyType;
 
-    cooling::Cooler<T> cooling_data;
+   // cooling::Cooler<T> cooling_data;
 
     /*! @brief the list of conserved particles fields with values preserved between iterations
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -80,17 +81,17 @@ public:
     HydroGrackleProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
+        /*
+                constexpr float                 ms_sim = 1e16;//1e9;//1e16;
+                constexpr float                 kp_sim = 46400;//1.0;//46400.;
 
-        constexpr float                 ms_sim = 1e16;//1e9;//1e16;
-        constexpr float                 kp_sim = 46400;//1.0;//46400.;
-
-        std::map<std::string, std::any> grackleOptions;
-        grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 1;
-        grackleOptions["dust_chemistry"]         = 0;
-        grackleOptions["metal_cooling"]          = 0;
-        grackleOptions["UVbackground"]           = 0;
-        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
+                std::map<std::string, std::any> grackleOptions;
+                grackleOptions["use_grackle"]            = 1;
+                grackleOptions["with_radiative_cooling"] = 1;
+                grackleOptions["dust_chemistry"]         = 0;
+                grackleOptions["metal_cooling"]          = 0;
+                grackleOptions["UVbackground"]           = 0;
+                cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);*/
     }
 
     std::vector<std::string> conservedFields() const override
@@ -138,6 +139,43 @@ public:
         d.treeView = domain.octreeProperties();
     }
 
+    void computeForces(DomainType& domain, DataType& simData)
+    {
+        size_t first = domain.startIndex();
+        size_t last  = domain.endIndex();
+        auto&  d     = simData.hydro;
+
+        resizeNeighbors(d, domain.nParticles() * d.ngmax);
+        findNeighborsSfc(first, last, d, domain.box());
+        timer.step("FindNeighbors");
+
+        computeDensity(first, last, d, domain.box());
+        timer.step("Density");
+
+        eos_cooling(first, last, d, simData.chem, simData.chem.cooling_data);
+        timer.step("EquationOfState");
+
+        domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
+        timer.step("mpi::synchronizeHalos");
+
+        computeIAD(first, last, d, domain.box());
+        timer.step("IAD");
+
+        domain.exchangeHalos(get<"c11", "c12", "c13", "c22", "c23", "c33">(d), get<"ax">(d), get<"ay">(d));
+        timer.step("mpi::synchronizeHalos");
+
+        computeMomentumEnergySTD(first, last, d, domain.box());
+        timer.step("MomentumEnergyIAD");
+
+        if (d.g != 0.0)
+        {
+            Base::mHolder_.upsweep(d, domain);
+            timer.step("Upsweep");
+            Base::mHolder_.traverse(d, domain);
+            timer.step("Gravity");
+        }
+    }
+
     void step(DomainType& domain, DataType& simData) override
     {
         auto& d = simData.hydro;
@@ -150,24 +188,20 @@ public:
 
         d.resize(domain.nParticlesWithHalos());
 
-        Base::computeForces(domain, simData);
+        computeForces(domain, simData);
 
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-        computeTimestep(first, last, d);
+        computeTimestep_cool(first, last, d, simData.chem.cooling_data, simData.chem);
         timer.step("Timestep");
-
 
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            bool haveMui = !d.mui.empty();
-            T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
-
-            T u_old  = cv * d.temp[i];
-            T u_cool = u_old;
-            cooling_data.cool_particle(
+            T u_old  = d.u[i];
+            T u_cool = d.u[i];
+            simData.chem.cooling_data.cool_particle(
                 d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],

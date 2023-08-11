@@ -17,7 +17,7 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
     unsigned ngmin = ng0;
 
     size_t        numFails     = 0;
-    constexpr int maxIteration = 1000;
+    constexpr int maxIteration = 10;
 
 #pragma omp parallel for reduction(+ : numFails)
     for (LocalIndex i = 0; i < numWork; ++i)
@@ -27,12 +27,6 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
         nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
 
         int iteration = 0;
-        if (nc[i] == 0)
-        {
-            std::cout << "nc = 0: " << i << std::endl;
-            std::cout << "h: " << h[id] << std::endl;
-            std::cout << "x, y, z: " << x[id] << "\t" << y[id] << "\t" << z[id] << std::endl;
-        }
         while (ngmin > nc[i] || nc[i] > ngmax && iteration++ < maxIteration)
         {
             if (nc[i] == 0)

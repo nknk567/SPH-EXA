@@ -108,10 +108,16 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < d.x.size(); i++)
     {
-        T radius        = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
-        T concentration = c0 / radius;
-        d.h[i]          = std::cbrt(3 / (4 * M_PI) * d.ng0 / concentration) * 0.5;
-        // std::cout << "h: " << d.h[i] << std::endl; // is it infinity?
+        T radius = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
+        auto concentration = [c0](double x, double y, double z)
+        {
+            const double r = std::sqrt(x * x + y * y + z * z);
+            if (r < 1.)
+                return c0;
+            else
+                return c0 / std::pow(r, 4);
+        };
+        d.h[i] = std::cbrt(3 / (4 * M_PI) * d.ng0 / concentration(d.x[i], d.y[i], d.z[i])) * 0.5;
     }
 }
 
@@ -259,18 +265,18 @@ public:
 
         d.resize(domain.nParticlesWithHalos());
 
-        size_t                          first = domain.startIndex();
-        size_t                          last  = domain.endIndex();
-        //cooling::Cooler<T>              cooling_data;
-        constexpr float                 ms_sim = 1e8;
-        constexpr float                 kp_sim = 1.0;
-        //std::map<std::string, std::any> grackleOptions;
-        //grackleOptions["use_grackle"]            = 1;
-        //grackleOptions["with_radiative_cooling"] = 0;
-        //grackleOptions["primordial_chemistry"]   = 1;
-        //grackleOptions["dust_chemistry"]         = 0;
-        //grackleOptions["metal_cooling"]          = 0;
-        //grackleOptions["UVbackground"]           = 0;
+        size_t first = domain.startIndex();
+        size_t last  = domain.endIndex();
+        // cooling::Cooler<T>              cooling_data;
+        constexpr float ms_sim = 1e8;
+        constexpr float kp_sim = 1.0;
+        // std::map<std::string, std::any> grackleOptions;
+        // grackleOptions["use_grackle"]            = 1;
+        // grackleOptions["with_radiative_cooling"] = 0;
+        // grackleOptions["primordial_chemistry"]   = 1;
+        // grackleOptions["dust_chemistry"]         = 0;
+        // grackleOptions["metal_cooling"]          = 0;
+        // grackleOptions["UVbackground"]           = 0;
 
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         sph::findNeighborsSfc(first, last, d, domain.box());

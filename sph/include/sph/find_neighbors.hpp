@@ -14,7 +14,7 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
 {
     LocalIndex numWork = lastId - firstId;
 
-    unsigned ngmin = ng0;
+    unsigned ngmin = ng0 / 4;
 
     size_t        numFails     = 0;
     constexpr int maxIteration = 10;
@@ -24,7 +24,7 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
     {
         LocalIndex id = i + firstId;
 
-        nc[i]         = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
+        nc[i] = findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
 
         int iteration = 0;
         while (ngmin > nc[i] || nc[i] > ngmax && iteration++ < maxIteration)

@@ -49,7 +49,6 @@
 #endif
 #ifdef SPH_EXA_HAVE_GRACKLE
 #include "evrard_cooling_init.hpp"
-#include "cloud_init.hpp"
 #endif
 
 namespace sphexa
@@ -106,11 +105,6 @@ std::unique_ptr<ISimInitializer<Dataset>> initializerFactory(std::string testCas
     {
         if (glassBlock.empty()) { throw std::runtime_error("need a valid glass block for evrard\n"); }
         return std::make_unique<EvrardGlassSphereCooling<Dataset>>(glassBlock);
-    }
-    if (testCase == "cloud")
-    {
-        if (glassBlock.empty()) { throw std::runtime_error("need a valid glass block for evrard\n"); }
-        return std::make_unique<CloudGlassSphere<Dataset>>(glassBlock);
     }
 #endif
     if (std::filesystem::exists(strBeforeSign(testCase, ":"))) { return std::make_unique<FileInit<Dataset>>(testCase); }

@@ -52,7 +52,7 @@ struct Cooler
 
     //! @brief Init Cooler. Must be called before any other function is used.
     void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                  const std::optional<double> t_sim);
+              const std::optional<double> t_sim);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,

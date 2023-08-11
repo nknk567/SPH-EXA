@@ -111,14 +111,14 @@ void computeTimestep(size_t first, size_t last, Dataset& d)
     d.minDt    = minDtGlobal;
 }
 template<class Dataset, typename Cooler, typename Chem>
-void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler, Chem &chem)
+void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler& cooler, Chem& chem)
 {
     using T = typename Dataset::RealType;
 
     T minDtAcc = (d.g != 0.0) ? accelerationTimestep(first, last, d) : INFINITY;
 
     T minTc(INFINITY);
-#pragma omp parallel for reduction(min: minTc)
+#pragma omp parallel for reduction(min : minTc)
     for (size_t i = first; i < last; i++)
     {
         const T cooling_time = cooler.cooling_time(
@@ -131,9 +131,7 @@ void computeTimestep_cool(size_t first, size_t last, Dataset& d, Cooler &cooler,
             get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
             get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
             get<"H2_self_shielding_length">(chem)[i]);
-        //d.ct[i] = cooling_time;
         minTc = std::min(std::abs(cooling_time), minTc);
-
     }
     std::cout << "minTc: " << minTc << std::endl;
     T minDtLoc = std::min({minDtAcc, d.minDtCourant, d.minDtRho, d.maxDtIncrease * d.minDt, 0.01 * minTc});

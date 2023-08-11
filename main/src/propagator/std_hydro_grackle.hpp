@@ -226,6 +226,35 @@ public:
 
         timer.stop();
     }
+    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
+                    const cstone::Box<T>& box) override
+    {
+        Base::saveFields(writer, first, last, simData, box);
+        // should be customized and namespace
+        auto& chem          = simData.chem;
+        auto  fieldPointers = chem.data();
+        // std::vector<int> outputFields  = chem.outputFieldIndices;
+
+        auto output = [&]()
+        {
+            for (int i = int(fieldPointers.size()) - 1; i >= 0; --i)
+            {
+                // int fidx = outputFields[i];
+                // if (d.isAllocated(fidx))
+                //{
+                // int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
+                //             d.outputFieldIndices.begin();
+                transferToHost(chem, first, last, {chem.fieldNames[i]});
+                std::visit([writer, i, key = chem.fieldNames[i]](auto field)
+                           { writer->writeField(key, field->data(), i); },
+                           fieldPointers[i]);
+                // outputFields.erase(outputFields.begin() + i);
+                //}
+            }
+        };
+
+        output();
+    }
 };
 
 } // namespace sphexa

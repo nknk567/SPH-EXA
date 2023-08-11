@@ -115,7 +115,6 @@ int main(int argc, char** argv)
     cstone::Box<Real> box = simInit->init(rank, numRanks, problemSize, simData);
 
     auto& d = simData.hydro;
-    //Hier auch cooling fields übertragen
     transferToDevice(d, 0, d.x.size(), propagator->conservedFields());
     d.setOutputFields(outputFields.empty() ? propagator->conservedFields() : outputFields);
 

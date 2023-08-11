@@ -161,7 +161,7 @@ public:
         Base::updateSettings(cloudConstants());
     }
 
-    bool initDependent(Dataset& simData) const override
+    bool initDependent(Dataset& simData) const
     {
         using T    = typename Dataset::RealType;
         auto& d    = simData.hydro;

@@ -63,11 +63,11 @@ class CloudProp final : public HydroProp<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "soft", "temp">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "temp">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
-        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc", "ct">;
+        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc">;
 
     using CoolingFields =
         FieldList<"HI_fraction", "HII_fraction", "HM_fraction", "HeI_fraction", "HeII_fraction", "HeIII_fraction",
@@ -174,7 +174,7 @@ public:
         }
     }
 
-    void prepareSystem(DomainType& domain, DataType& simData) override
+    void prepareSystem(DomainType& domain, DataType& simData)
     {
         auto& d = simData.hydro;
         timer.start();
@@ -186,7 +186,7 @@ public:
         computeForces(domain, simData);
     }
 
-    void relaxSystem(DomainType& domain, DataType& simData) override
+    void relaxSystem(DomainType& domain, DataType& simData)
     {
         size_t step = 0;
         while (1)
@@ -249,7 +249,7 @@ public:
 
         d.resize(domain.nParticlesWithHalos());
         std::cout << get<"u">(d)[0] << std::endl;
-        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
+        //fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
         computeForces(domain, simData);
 
         size_t first = domain.startIndex();
@@ -305,11 +305,11 @@ public:
                 get<"H2_self_shielding_length">(simData.chem)[i]);
             const T du = (u_cool - u_old) / d.minDt;
             tot_diff += (u_cool - u_old);
-            tot_ct += u_old / d.ct[i] * d.minDt;
+            //tot_ct += u_old / d.ct[i] * d.minDt;
             d.du[i] += du;
         }
         std::cout << "tot diff: " << tot_diff << std::endl;
-        std::cout << "tot ct: " << tot_ct << std::endl;
+        //std::cout << "tot ct: " << tot_ct << std::endl;
 
         timer.step("GRACKLE chemistry and cooling");
 

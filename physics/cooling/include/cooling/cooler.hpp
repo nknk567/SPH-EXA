@@ -55,7 +55,7 @@ struct Cooler
               const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
               const std::optional<double>                          t_sim          = std::nullopt);
     void init_new(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-              const std::optional<double> t_sim);
+                  const std::optional<double> t_sim);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
@@ -116,8 +116,8 @@ struct Cooler
             }
             catch (std::out_of_range&)
             {
-                std::cout << "Attribute chem::" << attribute << " not set in file or initializer, setting to default value "
-                          << *location << std::endl;
+                std::cout << "Attribute chem::" << attribute
+                          << " not set in file or initializer, setting to default value " << *location << std::endl;
             }
         };
         for (size_t i = 0; i < fieldNames.size(); i++)
@@ -129,8 +129,8 @@ struct Cooler
 private:
     using FieldVariant = std::variant<int*, double*>;
     struct Impl;
-    std::unique_ptr<Impl>           impl_ptr;
-    std::vector<const char*> getFieldNames();
-    std::vector<FieldVariant>       getFields();
+    std::unique_ptr<Impl>     impl_ptr;
+    std::vector<const char*>  getFieldNames();
+    std::vector<FieldVariant> getFields();
 };
 } // namespace cooling

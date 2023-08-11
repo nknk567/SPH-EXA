@@ -37,7 +37,6 @@
 #include "cstone/fields/particles_get.hpp"
 #include "sph/particles_data.hpp"
 #include "sph/sph.hpp"
-
 #include "cooling/cooler.hpp"
 #include "cooling/eos_cooling.hpp"
 #include "ipropagator.hpp"
@@ -58,13 +57,11 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
     using T       = typename DataType::RealType;
     using KeyType = typename DataType::KeyType;
 
-    // cooling::Cooler<T> cooling_data;
-
     /*! @brief the list of conserved particles fields with values preserved between iterations
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "temp">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =

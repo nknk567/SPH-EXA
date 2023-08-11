@@ -35,21 +35,52 @@
 
 #include "cooling/init_chemistry.h"
 
+std::map<std::string, double> evrardCoolingConstants()
+{
+    return {{"gravConstant", 1.},
+            {"r", 1.},
+            {"mTotal", 1.},
+            {"gamma", 5. / 3.},
+            {"u0", 0.05},
+            {"minDt", 1e-4},
+            {"minDt_m1", 1e-4},
+            {"mui", 10},
+            {"ng0", 100},
+            {"ngmax", 150},
+            {"chem::use_grackle", 1},
+            {"chem::with_radiative_cooling", 1},
+            {"chem::primordial_chemistry", 1},
+            {"chem::dust_chemistry", 0},
+            {"chem::metal_cooling", 0},
+            {"chem::UVbackground", 0},
+            {"chem::m_code_in_ms", 1e16},
+            {"chem::l_code_in_kpc", 46400.}};
+}
+
 template<class Dataset>
 class EvrardGlassSphereCooling : public sphexa::EvrardGlassSphere<Dataset>
 {
+    using Base = sphexa::EvrardGlassSphere<Dataset>;
 
 public:
     EvrardGlassSphereCooling(std::string initBlock)
         : sphexa::EvrardGlassSphere<Dataset>(initBlock)
     {
+        Base::updateSettings(evrardCoolingConstants());
     }
 
     cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
                                                  Dataset& simData) const override
     {
         auto box = sphexa::EvrardGlassSphere<Dataset>::init(rank, numRanks, cbrtNumPart, simData);
+        std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
+
         cooling::initChemistryData(simData.chem, simData.hydro.x.size());
+
+        sphexa::BuiltinWriter attributeSetter(Base::constants());
+        simData.chem.loadOrStoreAttributes(&attributeSetter);
+        simData.chem.cooling_data.init(simData.chem.m_code_in_ms, simData.chem.l_code_in_kpc, 0, std::nullopt);
+
         return box;
     }
 };

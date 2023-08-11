@@ -80,7 +80,16 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
 
     double eInt = 0.0;
 
-    if (!d.temp.empty())
+    if (!d.u.empty())
+    {
+#pragma omp parallel for reduction(+ : eInt)
+        for (size_t i = startIndex; i < endIndex; i++)
+        {
+            auto mi = m[i];
+            eInt += u[i] * mi;
+        }
+    }
+    else if (!d.temp.empty())
     {
 #pragma omp parallel for reduction(+ : eInt)
         for (size_t i = startIndex; i < endIndex; i++)
@@ -90,15 +99,7 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
             eInt += cv * temp[i] * mi;
         }
     }
-    else if (!d.u.empty())
-    {
-#pragma omp parallel for reduction(+ : eInt)
-        for (size_t i = startIndex; i < endIndex; i++)
-        {
-            auto mi = m[i];
-            eInt += u[i] * mi;
-        }
-     }
+
 
     return std::make_tuple(0.5 * eKin, eInt, linmom, angmom);
 }

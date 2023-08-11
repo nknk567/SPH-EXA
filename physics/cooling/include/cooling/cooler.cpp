@@ -51,64 +51,25 @@ private:
     GlobalValues global_values;
 
     //{"use_grackle", "primordial_chemistry"};
-    constexpr static std::array fieldNames{"use_grackle",
-                                           "with_radiative_cooling",
-                                           "primordial_chemistry",
-                                           "dust_chemistry",
-                                           "metal_cooling",
-                                           "UVbackground",
-                                           //!
-                                           //!d.char *grackle_data_file",
-                                           "cmb_temperature_floor",
-                                           "Gamma",
-                                           "h2_on_dust",
-                                           "use_dust_density_field",
-                                           "dust_recombination_cooling",
-                                           "photoelectric_heating",
-                                           "photoelectric_heating_rate",
-                                           "use_isrf_field",
-                                           "interstellar_radiation_field",
-                                           "use_volumetric_heating_rate",
-                                           "use_specific_heating_rate",
-                                           "three_body_rate",
-                                           "cie_cooling",
-                                           "h2_optical_depth_approximation",
-                                           "ih2co",
-                                           "ipiht",
-                                           "HydrogenFractionByMass",
-                                           "DeuteriumToHydrogenRatio",
-                                           "SolarMetalFractionByMass",
-                                           "local_dust_to_gas_ratio",
-                                           "NumberOfTemperatureBins",
-                                           "CaseBRecombination",
-                                           "TemperatureStart",
-                                           "TemperatureEnd",
-                                           "NumberOfDustTemperatureBins",
-                                           "DustTemperatureStart",
-                                           "DustTemperatureEnd",
-                                           "Compton_xray_heating",
-                                           "LWbackground_sawtooth_suppression",
-                                           "LWbackground_intensity",
-                                           "UVbackground_redshift_on",
-                                           "UVbackground_redshift_off",
-                                           "UVbackground_redshift_fullon",
-                                           "UVbackground_redshift_drop",
-                                           "cloudy_electron_fraction_factor",
-                                           "use_radiative_transfer",
-                                           "radiative_transfer_coupled_rate_solver",
-                                           "radiative_transfer_intermediate_step",
-                                           "radiative_transfer_hydrogen_only",
-                                           "self_shielding_method",
-                                           "H2_self_shielding",
-                                           "H2_custom_shielding",
-                                           "h2_charge_exchange_rate",
-                                           "h2_dust_rate",
-                                           "h2_h_cooling_rate",
-                                           "collisional_excitation_rates",
-                                           "collisional_ionisation_rates",
-                                           "recombination_cooling_rates",
-                                           "bremsstrahlung_cooling_rates"};
-    auto                        fieldsTuple()
+    constexpr static std::array fieldNames{
+        "use_grackle", "with_radiative_cooling", "primordial_chemistry", "dust_chemistry", "metal_cooling",
+        "UVbackground",
+        //!
+        //! d.char *grackle_data_file",
+        "cmb_temperature_floor", "Gamma", "h2_on_dust", "use_dust_density_field", "dust_recombination_cooling",
+        "photoelectric_heating", "photoelectric_heating_rate", "use_isrf_field", "interstellar_radiation_field",
+        "use_volumetric_heating_rate", "use_specific_heating_rate", "three_body_rate", "cie_cooling",
+        "h2_optical_depth_approximation", "ih2co", "ipiht", "HydrogenFractionByMass", "DeuteriumToHydrogenRatio",
+        "SolarMetalFractionByMass", "local_dust_to_gas_ratio", "NumberOfTemperatureBins", "CaseBRecombination",
+        "TemperatureStart", "TemperatureEnd", "NumberOfDustTemperatureBins", "DustTemperatureStart",
+        "DustTemperatureEnd", "Compton_xray_heating", "LWbackground_sawtooth_suppression", "LWbackground_intensity",
+        "UVbackground_redshift_on", "UVbackground_redshift_off", "UVbackground_redshift_fullon",
+        "UVbackground_redshift_drop", "cloudy_electron_fraction_factor", "use_radiative_transfer",
+        "radiative_transfer_coupled_rate_solver", "radiative_transfer_intermediate_step",
+        "radiative_transfer_hydrogen_only", "self_shielding_method", "H2_self_shielding", "H2_custom_shielding",
+        "h2_charge_exchange_rate", "h2_dust_rate", "h2_h_cooling_rate", "collisional_excitation_rates",
+        "collisional_ionisation_rates", "recombination_cooling_rates", "bremsstrahlung_cooling_rates"};
+    auto fieldsTuple()
     {
         auto& d = global_values.data;
         //(d.use_grackle, d.primordial_chemistry);
@@ -215,17 +176,10 @@ template<typename T>
 Cooler<T>::~Cooler() = default;
 
 template<typename T>
-void Cooler<T>::init_new(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                         const std::optional<double> t_sim)
+void Cooler<T>::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
+                     const std::optional<double> t_sim)
 {
     impl_ptr->init(ms_sim, kp_sim, comoving_coordinates, t_sim);
-}
-template<typename T>
-void Cooler<T>::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                     const std::optional<std::map<std::string, std::any>> grackleOptions,
-                     const std::optional<double>                          t_sim)
-{
-    impl_ptr->init(ms_sim, kp_sim, comoving_coordinates, grackleOptions, t_sim);
 }
 
 template<typename T>

@@ -281,7 +281,7 @@ public:
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         sph::findNeighborsSfc(first, last, d, domain.box());
         sph::computeDensity(first, last, d, domain.box()); // halo exchange rho!!
-        simData.chem.cooling_data.init_new(ms_sim, kp_sim, 0, std::nullopt);
+        simData.chem.cooling_data.init(ms_sim, kp_sim, 0, std::nullopt);
 
         auto calculatePressure = [&, &chem = simData.chem]()
         {

@@ -58,7 +58,7 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
     using T       = typename DataType::RealType;
     using KeyType = typename DataType::KeyType;
 
-   // cooling::Cooler<T> cooling_data;
+    // cooling::Cooler<T> cooling_data;
 
     /*! @brief the list of conserved particles fields with values preserved between iterations
      *
@@ -81,17 +81,6 @@ public:
     HydroGrackleProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
-        /*
-                constexpr float                 ms_sim = 1e16;//1e9;//1e16;
-                constexpr float                 kp_sim = 46400;//1.0;//46400.;
-
-                std::map<std::string, std::any> grackleOptions;
-                grackleOptions["use_grackle"]            = 1;
-                grackleOptions["with_radiative_cooling"] = 1;
-                grackleOptions["dust_chemistry"]         = 0;
-                grackleOptions["metal_cooling"]          = 0;
-                grackleOptions["UVbackground"]           = 0;
-                cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);*/
     }
 
     std::vector<std::string> conservedFields() const override
@@ -187,7 +176,6 @@ public:
         timer.step("domain::sync");
 
         d.resize(domain.nParticlesWithHalos());
-        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.05);
 
         computeForces(domain, simData);
 
@@ -225,35 +213,6 @@ public:
         timer.step("UpdateSmoothingLength");
 
         timer.stop();
-    }
-    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
-                    const cstone::Box<T>& box) override
-    {
-        Base::saveFields(writer, first, last, simData, box);
-        // should be customized and namespace
-        auto& chem          = simData.chem;
-        auto  fieldPointers = chem.data();
-        // std::vector<int> outputFields  = chem.outputFieldIndices;
-
-        auto output = [&]()
-        {
-            for (int i = int(fieldPointers.size()) - 1; i >= 0; --i)
-            {
-                // int fidx = outputFields[i];
-                // if (d.isAllocated(fidx))
-                //{
-                // int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
-                //             d.outputFieldIndices.begin();
-                transferToHost(chem, first, last, {chem.fieldNames[i]});
-                std::visit([writer, i, key = chem.fieldNames[i]](auto field)
-                           { writer->writeField(key, field->data(), i); },
-                           fieldPointers[i]);
-                // outputFields.erase(outputFields.begin() + i);
-                //}
-            }
-        };
-
-        output();
     }
 };
 

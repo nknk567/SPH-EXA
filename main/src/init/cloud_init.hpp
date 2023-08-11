@@ -48,10 +48,27 @@ namespace sphexa
 
 std::map<std::string, double> cloudConstants()
 {
-    return {{"gravConstant", 1.},  {"r", 1.5},      {"mTotal", 1.},           {"gamma", 5. / 3.},
-            {"u0", 0.05},          {"minDt", 1e-4}, {"minDt_m1", 1e-4},       {"mui", 10},
-            {"ng0", 100},          {"ngmax", 110},  {"metal_fraction", 1e-6}, {"hydrogen_fraction", 0.76},
-            {"d_to_h_ratio", 1e-5}};
+    return {{"gravConstant", 1.},
+            {"r", 1.5},
+            {"mTotal", 1.},
+            {"gamma", 5. / 3.},
+            {"u0", 0.05},
+            {"minDt", 1e-4},
+            {"minDt_m1", 1e-4},
+            {"mui", 10},
+            {"ng0", 100},
+            {"ngmax", 110},
+            {"metal_fraction", 1e-6},
+            {"hydrogen_fraction", 0.76},
+            {"d_to_h_ratio", 1e-5},
+            {"chem::use_grackle", 1},
+            {"chem::with_radiative_cooling", 1},
+            {"chem::primordial_chemistry", 1},
+            {"chem::dust_chemistry", 0},
+            {"chem::metal_cooling", 0},
+            {"chem::UVbackground", 0},
+            {"chem::m_code_in_ms", 1e8},
+            {"chem::l_code_in_kpc", 1.0}};
 }
 
 template<class Dataset, typename ChemData>
@@ -214,6 +231,7 @@ public:
         std::cout << "numParticlesGlobal: " << numParticlesGlobal << std::endl;
         BuiltinWriter attributeSetter(settings_);
         d.loadOrStoreAttributes(&attributeSetter);
+        simData.chem.loadOrStoreAttributes(&attributeSetter);
 
         initCloudFields(d, simData.chem, settings_, globalBox);
 
@@ -243,28 +261,28 @@ public:
 
         size_t                          first = domain.startIndex();
         size_t                          last  = domain.endIndex();
-        cooling::Cooler<T>              cooling_data;
+        //cooling::Cooler<T>              cooling_data;
         constexpr float                 ms_sim = 1e8;
         constexpr float                 kp_sim = 1.0;
-        std::map<std::string, std::any> grackleOptions;
-        grackleOptions["use_grackle"]            = 1;
-        grackleOptions["with_radiative_cooling"] = 0;
-        grackleOptions["primordial_chemistry"]   = 1;
-        grackleOptions["dust_chemistry"]         = 0;
-        grackleOptions["metal_cooling"]          = 0;
-        grackleOptions["UVbackground"]           = 0;
+        //std::map<std::string, std::any> grackleOptions;
+        //grackleOptions["use_grackle"]            = 1;
+        //grackleOptions["with_radiative_cooling"] = 0;
+        //grackleOptions["primordial_chemistry"]   = 1;
+        //grackleOptions["dust_chemistry"]         = 0;
+        //grackleOptions["metal_cooling"]          = 0;
+        //grackleOptions["UVbackground"]           = 0;
 
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         sph::findNeighborsSfc(first, last, d, domain.box());
         sph::computeDensity(first, last, d, domain.box()); // halo exchange rho!!
-        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
+        simData.chem.cooling_data.init_new(ms_sim, kp_sim, 0, std::nullopt);
 
         auto calculatePressure = [&, &chem = simData.chem]()
         {
 #pragma omp parallel for schedule(static)
             for (size_t i = first; i < last; ++i)
             {
-                T pressure = cooling_data.pressure(
+                T pressure = simData.chem.cooling_data.pressure(
                     d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
                     get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
@@ -290,11 +308,11 @@ public:
                 for (size_t j = 0; j < chem.fields.size(); j++)
                 {
                     old[j] = chem.fields[j][i];
-//                    std::cout << " old " << old[j] << std::endl;
+                    //                    std::cout << " old " << old[j] << std::endl;
                 }
                 T u = d.u[i];
-              //  std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
-                cooling_data.cool_particle(
+                //  std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
+                simData.chem.cooling_data.cool_particle(
                     1e-8, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
                     get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
                     get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],

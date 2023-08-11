@@ -36,6 +36,9 @@
 #include <memory>
 #include <map>
 #include <any>
+#include <variant>
+#include <vector>
+#include <iostream>
 
 namespace cooling
 {
@@ -51,6 +54,8 @@ struct Cooler
     void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
               const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
               const std::optional<double>                          t_sim          = std::nullopt);
+    void init_new(const double ms_sim, const double kp_sim, const int comoving_coordinates,
+              const std::optional<double> t_sim);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
@@ -97,8 +102,40 @@ struct Cooler
                    T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
                    T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
 
+    template<class Archive>
+    void loadOrStoreAttributes(Archive* ar)
+    {
+        auto fieldNames = getFieldNames();
+        auto fields     = getFields();
+        //! @brief load or store an attribute, skips non-existing attributes on load.
+        auto optionalIO = [ar](const std::string& attribute, auto* location, size_t attrSize)
+        {
+            std::cout << "read " << "chem::" + attribute << std::endl;
+            try
+            {
+                ar->stepAttribute("chem::" + attribute, location, attrSize);
+            }
+            catch (std::out_of_range&)
+            {
+                std::cout << "Attribute chem::" << attribute << " not set in file, setting to default value "
+                          << *location << std::endl;
+            }
+        };
+        for (size_t i = 0; i < fieldNames.size(); i++)
+        {
+            //std::cout << "f"<< fieldNames.size() << std::endl;
+
+            //std::cout << "i"<< i << std::endl;
+            std::visit([&](auto* location) { optionalIO(std::string(fieldNames[i]), location, 1); }, fields[i]);
+        }
+        //std::exit(0);
+    }
+
 private:
+    using FieldVariant = std::variant<int*, double*>;
     struct Impl;
-    std::unique_ptr<Impl> impl_ptr;
+    std::unique_ptr<Impl>           impl_ptr;
+    std::vector<const char*> getFieldNames();
+    std::vector<FieldVariant>       getFields();
 };
 } // namespace cooling

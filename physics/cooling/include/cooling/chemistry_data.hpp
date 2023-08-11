@@ -60,8 +60,8 @@ public:
 
     auto data()
     {
-        //using FieldType =
-        //    std::variant<FieldVector<float>*, FieldVector<double>*, FieldVector<unsigned>*, FieldVector<uint64_t>*>;
+        // using FieldType =
+        //     std::variant<FieldVector<float>*, FieldVector<double>*, FieldVector<unsigned>*, FieldVector<uint64_t>*>;
 
         return std::apply([](auto&... fields) { return std::array<FieldVariant, sizeof...(fields)>{&fields...}; },
                           dataTuple());
@@ -106,11 +106,68 @@ public:
 
     static_assert(fieldNames.size() == numFields);
 
-    T m_code_in_ms = 1e16;
+    // Units
+    T m_code_in_ms  = 1e16;
     T l_code_in_kpc = 46400.;
+    std::map<std::string, std::any> cooling_options;
 
+    /*struct CoolingAttrs
+    {
+        using Types = std::variant<T, int>;
 
+        // Grackle parameters
+        int use_grackle{1};
+        int with_radiative_cooling{1};
+        int primordial_chemistry{3};
+        int dust_chemistry{0};
+        int metal_cooling{0};
+        int UVbackground{0};
 
+        auto dataTuple()
+        {
+            return std::tie(use_grackle, with_radiative_cooling, primordial_chemistry,
+                            dust_chemistry, metal_cooling, UVbackground);
+        }
+        auto data()
+        {
+            return std::apply(
+                [](auto&... attribute)
+                {
+                    return std::array<Types, sizeof...(attribute)> { &attribute... }
+                },
+                dataTuple());
+        }
+    } attrs;*/
+
+    //! @brief Unified interface to attribute initialization, reading and writing
+    template<class Archive>
+    void loadOrStoreAttributes(Archive* ar)
+    {
+        //! @brief load or store an attribute, skips non-existing attributes on load.
+        auto optionalIO = [ar](const std::string& attribute, auto* location, size_t attrSize)
+        {
+            try
+            {
+                ar->stepAttribute("chem::" + attribute, location, attrSize);
+            }
+            catch (std::out_of_range&)
+            {
+                std::cout << "Attribute chem::" << attribute << " not set in file, setting to default value "
+                          << *location << std::endl;
+            }
+        };
+
+        optionalIO("m_code_in_ms", &m_code_in_ms, 1);
+        optionalIO("l_code_in_kpc", &l_code_in_kpc, 1);
+        cooling_data.loadOrStoreAttributes(ar);
+        //optionalIO("use_grackle", &use_grackle, 1);
+        //optionalIO("with_radiative_cooling", &with_radiative_cooling, 1);
+        //optionalIO("primordial_chemistry", &primordial_chemistry, 1);
+        //optionalIO("dust_chemistry", &dust_chemistry, 1);
+        //optionalIO("metal_cooling", &metal_cooling, 1);
+        //optionalIO("UVbackground", &UVbackground, 1);
+    }
+    cooling::Cooler<T> cooling_data;
 
 private:
     template<size_t... Is>

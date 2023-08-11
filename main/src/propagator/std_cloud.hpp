@@ -57,7 +57,7 @@ class CloudProp final : public HydroProp<DomainType, DataType>
     using T       = typename DataType::RealType;
     using KeyType = typename DataType::KeyType;
 
-    cooling::Cooler<T> cooling_data;
+    // cooling::Cooler<T> cooling_data;
 
     /*! @brief the list of conserved particles fields with values preserved between iterations
      *
@@ -80,20 +80,6 @@ public:
     CloudProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
-
-        constexpr float ms_sim = 1e8; // 1e9;//1e16;
-        constexpr float kp_sim = 1.0; // 1.0;//46400.;
-
-        std::map<std::string, std::any> grackleOptions;
-        grackleOptions["use_grackle"]              = 1;
-        grackleOptions["with_radiative_cooling"]   = 1;
-        grackleOptions["primordial_chemistry"]     = 1;
-        grackleOptions["dust_chemistry"]           = 0;
-        grackleOptions["metal_cooling"]            = 0;
-        grackleOptions["UVbackground"]             = 0;
-        grackleOptions["use_temperature_floor"]    = 1;
-        grackleOptions["temperature_floor_scalar"] = 3000.;
-        cooling_data.init(ms_sim, kp_sim, 0, grackleOptions, std::nullopt);
     }
 
     std::vector<std::string> conservedFields() const override
@@ -118,6 +104,16 @@ public:
         d.devData.setDependent("keys");
         std::apply([&d](auto... f) { d.devData.setConserved(f.value...); }, make_tuple(ConservedFields{}));
         std::apply([&d](auto... f) { d.devData.setDependent(f.value...); }, make_tuple(DependentFields{}));
+
+        std::map<std::string, std::any> grackleOptions;
+        // grackleOptions["use_grackle"]            = simData.chem.use_grackle;
+        // grackleOptions["with_radiative_cooling"] = simData.chem.with_radiative_cooling;
+        // grackleOptions["primordial_chemistry"]   = simData.chem.primordial_chemistry;
+        // grackleOptions["dust_chemistry"]         = simData.chem.dust_chemistry;
+        // grackleOptions["metal_cooling"]          = simData.chem.metal_cooling;
+        // grackleOptions["UVbackground"]           = simData.chem.UVbackground;
+
+        //simData.chem.cooling_data.init_new(simData.chem.m_code_in_ms, simData.chem.l_code_in_kpc, 0, std::nullopt);
     }
 
     void sync(DomainType& domain, DataType& simData) override
@@ -154,7 +150,7 @@ public:
         computeDensity(first, last, d, domain.box());
         timer.step("Density");
         // computeEOS_HydroStd(first, last, d);
-        eos_cooling(first, last, d, simData.chem, cooling_data);
+        eos_cooling(first, last, d, simData.chem, simData.chem.cooling_data);
         timer.step("EquationOfState");
 
         domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
@@ -259,14 +255,14 @@ public:
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-        computeTimestep_cool(first, last, d, cooling_data, simData.chem);
+        computeTimestep_cool(first, last, d, simData.chem.cooling_data, simData.chem);
         timer.step("Timestep");
 
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
             T u_cool = d.u[i];
-            T temp = cooling_data.energy_to_temperature(
+            T temp   = simData.chem.cooling_data.energy_to_temperature(
                 d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
@@ -282,20 +278,20 @@ public:
         }
 
         double tot_diff = 0.;
-        double tot_ct = 0.;
+        double tot_ct   = 0.;
 
-#pragma omp parallel for schedule(static) reduction(+: tot_diff) reduction(+: tot_ct)
+#pragma omp parallel for schedule(static) reduction(+ : tot_diff) reduction(+ : tot_ct)
         for (size_t i = first; i < last; i++)
         {
-            //bool haveMui = !d.mui.empty();
-            //T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
+            // bool haveMui = !d.mui.empty();
+            // T    cv      = idealGasCv(haveMui ? d.mui[i] : d.muiConst, d.gamma);
 
             // T u_old  = cv * d.temp[i];
             // T u_cool = u_old;
-            //if (d.rho[i] > 0.1) continue;
+            // if (d.rho[i] > 0.1) continue;
             T u_old  = d.u[i];
             T u_cool = d.u[i];
-            cooling_data.cool_particle(
+            simData.chem.cooling_data.cool_particle(
                 d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
@@ -329,33 +325,31 @@ public:
                     const cstone::Box<T>& box) override
     {
         Base::saveFields(writer, first, last, simData, box);
-        //should be customized and namespace
-        auto&            chem             = simData.chem;
-        auto             fieldPointers = chem.data();
-        //std::vector<int> outputFields  = chem.outputFieldIndices;
+        // should be customized and namespace
+        auto& chem          = simData.chem;
+        auto  fieldPointers = chem.data();
+        // std::vector<int> outputFields  = chem.outputFieldIndices;
 
         auto output = [&]()
         {
             for (int i = int(fieldPointers.size()) - 1; i >= 0; --i)
             {
-                //int fidx = outputFields[i];
-                //if (d.isAllocated(fidx))
+                // int fidx = outputFields[i];
+                // if (d.isAllocated(fidx))
                 //{
-                    //int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
-                     //            d.outputFieldIndices.begin();
-                    transferToHost(chem, first, last, {chem.fieldNames[i]});
-                    std::visit([writer, i, key = chem.fieldNames[i]](auto field)
-                               { writer->writeField(key, field->data(), i); },
-                               fieldPointers[i]);
-                    //outputFields.erase(outputFields.begin() + i);
+                // int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
+                //             d.outputFieldIndices.begin();
+                transferToHost(chem, first, last, {chem.fieldNames[i]});
+                std::visit([writer, i, key = chem.fieldNames[i]](auto field)
+                           { writer->writeField(key, field->data(), i); },
+                           fieldPointers[i]);
+                // outputFields.erase(outputFields.begin() + i);
                 //}
             }
         };
 
         output();
     }
-
-
 };
 
 } // namespace sphexa

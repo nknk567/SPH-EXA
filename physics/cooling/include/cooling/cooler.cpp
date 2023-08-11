@@ -50,6 +50,109 @@ private:
     };
     GlobalValues global_values;
 
+    //{"use_grackle", "primordial_chemistry"};
+    constexpr static std::array fieldNames{"use_grackle",
+                                           "with_radiative_cooling",
+                                           "primordial_chemistry",
+                                           "dust_chemistry",
+                                           "metal_cooling",
+                                           "UVbackground",
+                                           //!
+                                           //!d.char *grackle_data_file",
+                                           "cmb_temperature_floor",
+                                           "Gamma",
+                                           "h2_on_dust",
+                                           "use_dust_density_field",
+                                           "dust_recombination_cooling",
+                                           "photoelectric_heating",
+                                           "photoelectric_heating_rate",
+                                           "use_isrf_field",
+                                           "interstellar_radiation_field",
+                                           "use_volumetric_heating_rate",
+                                           "use_specific_heating_rate",
+                                           "three_body_rate",
+                                           "cie_cooling",
+                                           "h2_optical_depth_approximation",
+                                           "ih2co",
+                                           "ipiht",
+                                           "HydrogenFractionByMass",
+                                           "DeuteriumToHydrogenRatio",
+                                           "SolarMetalFractionByMass",
+                                           "local_dust_to_gas_ratio",
+                                           "NumberOfTemperatureBins",
+                                           "CaseBRecombination",
+                                           "TemperatureStart",
+                                           "TemperatureEnd",
+                                           "NumberOfDustTemperatureBins",
+                                           "DustTemperatureStart",
+                                           "DustTemperatureEnd",
+                                           "Compton_xray_heating",
+                                           "LWbackground_sawtooth_suppression",
+                                           "LWbackground_intensity",
+                                           "UVbackground_redshift_on",
+                                           "UVbackground_redshift_off",
+                                           "UVbackground_redshift_fullon",
+                                           "UVbackground_redshift_drop",
+                                           "cloudy_electron_fraction_factor",
+                                           "use_radiative_transfer",
+                                           "radiative_transfer_coupled_rate_solver",
+                                           "radiative_transfer_intermediate_step",
+                                           "radiative_transfer_hydrogen_only",
+                                           "self_shielding_method",
+                                           "H2_self_shielding",
+                                           "H2_custom_shielding",
+                                           "h2_charge_exchange_rate",
+                                           "h2_dust_rate",
+                                           "h2_h_cooling_rate",
+                                           "collisional_excitation_rates",
+                                           "collisional_ionisation_rates",
+                                           "recombination_cooling_rates",
+                                           "bremsstrahlung_cooling_rates"};
+    auto                        fieldsTuple()
+    {
+        auto& d = global_values.data;
+        //(d.use_grackle, d.primordial_chemistry);
+        return std::tie
+
+            (d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
+             d.UVbackground,
+             //!
+             //! d.char *grackle_data_file,
+             d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
+             d.photoelectric_heating, d.photoelectric_heating_rate, d.use_isrf_field, d.interstellar_radiation_field,
+             d.use_volumetric_heating_rate, d.use_specific_heating_rate, d.three_body_rate, d.cie_cooling,
+             d.h2_optical_depth_approximation, d.ih2co, d.ipiht, d.HydrogenFractionByMass, d.DeuteriumToHydrogenRatio,
+             d.SolarMetalFractionByMass, d.local_dust_to_gas_ratio, d.NumberOfTemperatureBins, d.CaseBRecombination,
+             d.TemperatureStart, d.TemperatureEnd, d.NumberOfDustTemperatureBins, d.DustTemperatureStart,
+             d.DustTemperatureEnd, d.Compton_xray_heating, d.LWbackground_sawtooth_suppression,
+             d.LWbackground_intensity, d.UVbackground_redshift_on, d.UVbackground_redshift_off,
+             d.UVbackground_redshift_fullon, d.UVbackground_redshift_drop, d.cloudy_electron_fraction_factor,
+             d.use_radiative_transfer, d.radiative_transfer_coupled_rate_solver, d.radiative_transfer_intermediate_step,
+             d.radiative_transfer_hydrogen_only, d.self_shielding_method, d.H2_self_shielding, d.H2_custom_shielding,
+             d.h2_charge_exchange_rate, d.h2_dust_rate, d.h2_h_cooling_rate, d.collisional_excitation_rates,
+             d.collisional_ionisation_rates, d.recombination_cooling_rates, d.bremsstrahlung_cooling_rates);
+    }
+    static_assert(fieldNames.size() == std::tuple_size_v<decltype(((Impl*)nullptr)->fieldsTuple())>);
+
+    std::vector<FieldVariant> getFields()
+    {
+        return std::apply(
+            [](auto&... a)
+            {
+                auto ret = std::vector<FieldVariant>{&a...};
+                std::cout << "ret " << ret.size() << std::endl;
+
+                return ret;
+            },
+            fieldsTuple());
+    }
+
+    std::vector<const char*> getFieldNames()
+    {
+        auto a = std::apply([](auto&... a) { return std::array<const char*, sizeof...(a)>{(&a[0])...}; }, fieldNames);
+        return std::vector(a.begin(), a.end());
+    }
+
     void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
               const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
               const std::optional<double>                          t_sim          = std::nullopt);
@@ -99,30 +202,6 @@ private:
                    T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
                    T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
                    T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
-
-    constexpr static std::array fieldNames{"use_grackle", "primordial_chemistry"};
-
-    auto fieldsTuple()
-    {
-        auto& d = global_values.data;
-        return std::tie(d.use_grackle, d.primordial_chemistry);
-    }
-    static_assert(fieldNames.size() == std::tuple_size_v<decltype(((Impl*)nullptr)->fieldsTuple())>);
-
-    std::vector<FieldVariant> getFields()
-    {
-        return std::apply([](auto&... a) {
-                              auto ret = std::vector<FieldVariant>{&a...};
-                              std::cout << "ret "<< ret.size() << std::endl;
-
-                              return ret;
-                          }, fieldsTuple());
-    }
-    std::vector<const char*> getFieldNames()
-    {
-        auto a = std::apply([](auto&... a) { return std::array<const char*, sizeof...(a)>{(&a[0])...}; }, fieldNames);
-        return std::vector(a.begin(), a.end());
-    }
 };
 
 // Implementation of Cooler
@@ -278,7 +357,7 @@ void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int c
     std::cout << global_values.units.density_units << "\t" << global_values.units.time_units << "\t"
               << global_values.units.length_units << "\n";
 #endif
-
+    global_values.data.grackle_data_file = &grackle_data_file_path[0];
     if (0 == _initialize_chemistry_data(&global_values.data, &global_values.rates, &global_values.units))
     {
         std::cout << global_values.data.with_radiative_cooling << std::endl;

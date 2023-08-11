@@ -38,6 +38,8 @@
 #include "cstone/fields/particles_get.hpp"
 #include "cstone/util/reallocate.hpp"
 
+#include "cooling/cooler.hpp"
+
 namespace cooling
 {
 

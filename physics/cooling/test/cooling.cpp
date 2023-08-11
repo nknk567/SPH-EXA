@@ -7,6 +7,8 @@
 #include <cmath>
 #include "gtest/gtest.h"
 
+#include "io/ifile_io.hpp"
+
 TEST(cooling_grackle, test1a)
 {
     using Real = double;
@@ -26,15 +28,20 @@ TEST(cooling_grackle, test1a)
     const Real mass_unit = std::pow(length_units, 3.0) * density_units / MSOLG;
 
     cooling::Cooler<Real>           cd;
-    std::map<std::string, std::any> grackleOptions;
-    grackleOptions["use_grackle"]            = 1;
-    grackleOptions["with_radiative_cooling"] = 1;
-    grackleOptions["primordial_chemistry"]   = 3;
-    grackleOptions["dust_chemistry"]         = 1;
-    grackleOptions["UVbackground"]           = 1;
-    grackleOptions["metal_cooling"]          = 1;
 
-    cd.init(mass_unit, 1.0 / KPCCM, 0, grackleOptions, time_units);
+    std::map<std::string, double> grackleOptions;
+    grackleOptions["chem::use_grackle"]            = 1;
+    grackleOptions["chem::with_radiative_cooling"] = 1;
+    grackleOptions["chem::primordial_chemistry"]   = 3;
+    grackleOptions["chem::dust_chemistry"]         = 1;
+    grackleOptions["chem::UVbackground"]           = 1;
+    grackleOptions["chem::metal_cooling"]          = 1;
+
+    sphexa::BuiltinWriter attributeSetter(grackleOptions);
+    cd.loadOrStoreAttributes(&attributeSetter);
+
+
+    cd.init(mass_unit, 1.0 / KPCCM, 0, time_units);
 
     constexpr Real tiny_number = 1.e-20;
     constexpr Real dt          = 3.15e7 * 1e6; // grackle_units.time_units;
@@ -114,7 +121,7 @@ TEST(cooling_grackle2, test2)
     using Real = double;
     cooling::Cooler<Real> cd;
     // auto options = cd.getDefaultChemistryData();
-    std::map<std::string, std::any> grackleOptions;
+    std::map<std::string, double> grackleOptions;
     grackleOptions["use_grackle"]            = 1;
     grackleOptions["with_radiative_cooling"] = 1;
     grackleOptions["primordial_chemistry"]   = 1;
@@ -122,7 +129,9 @@ TEST(cooling_grackle2, test2)
     grackleOptions["UVbackground"]           = 0;
     grackleOptions["metal_cooling"]          = 0;
 
-    cd.init(1e16, 46400., 0, grackleOptions, std::nullopt);
+    sphexa::BuiltinWriter attributeSetter(grackleOptions);
+    cd.loadOrStoreAttributes(&attributeSetter);
+    cd.init(1e16, 46400., 0, std::nullopt);
 
     constexpr Real tiny_number = 1.e-20;
     constexpr Real dt          = 0.01; // grackle_units.time_units;

@@ -51,7 +51,7 @@ struct Cooler
     ~Cooler();
 
     //! @brief Init Cooler. Must be called before any other function is used and after parameters are set
-    void init(const int comoving_coordinates, std::optional<T> time_unit=std::nullopt);
+    void init(const int comoving_coordinates, std::optional<T> time_unit = std::nullopt);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
@@ -121,16 +121,6 @@ struct Cooler
             std::visit([&](auto* location) { optionalIO(std::string(fieldNames[i]), location, 1); }, fields[i]);
         }
     }
-    /*template<typename ChemAttributes>
-    void copyAttributes(const ChemAttributes& chem_attrs)
-    {
-        const auto& chem_data = chem_attrs.data();
-        auto&       data      = getFields();
-        for (size_t i = 0; i < data.size(); i++)
-        {
-            *(data[i]) = *(chem_data[i]);
-        }
-    }*/
 
 private:
     struct Impl;

@@ -66,20 +66,19 @@ public:
     EvrardGlassSphereCooling(std::string initBlock)
         : sphexa::EvrardGlassSphere<Dataset>(initBlock)
     {
-        Base::updateSettings(evrardCoolingConstants());
+        Base::updateSettings(sphexa::evrardConstants());
     }
 
     cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
                                                  Dataset& simData) const override
     {
         auto box = sphexa::EvrardGlassSphere<Dataset>::init(rank, numRanks, cbrtNumPart, simData);
-        std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
+        //std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
 
-        cooling::initChemistryData(simData.chem, simData.hydro.x.size());
+        //cooling::initChemistryData(simData.chem, simData.hydro.x.size());
 
-        sphexa::BuiltinWriter attributeSetter(Base::constants());
-        simData.chem.loadOrStoreAttributes(&attributeSetter);
-        simData.chem.cooling_data.init(simData.chem.m_code_in_ms, simData.chem.l_code_in_kpc, 0, std::nullopt);
+        //sphexa::BuiltinWriter attributeSetter(Base::constants());
+        //simData.chem.loadOrStoreAttributes(&attributeSetter);
 
         return box;
     }

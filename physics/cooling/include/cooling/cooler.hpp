@@ -122,12 +122,22 @@ struct Cooler
             std::visit([&](auto* location) { optionalIO(std::string(fieldNames[i]), location, 1); }, fields[i]);
         }
     }
+    /*template<typename ChemAttributes>
+    void copyAttributes(const ChemAttributes& chem_attrs)
+    {
+        const auto& chem_data = chem_attrs.data();
+        auto&       data      = getFields();
+        for (size_t i = 0; i < data.size(); i++)
+        {
+            *(data[i]) = *(chem_data[i]);
+        }
+    }*/
 
 private:
-    using FieldVariant = std::variant<int*, double*>;
     struct Impl;
-    std::unique_ptr<Impl>     impl_ptr;
-    std::vector<const char*>  getFieldNames();
-    std::vector<FieldVariant> getFields();
+    std::unique_ptr<Impl> impl_ptr;
+    using FieldVariant = std::variant<int*, double*>;
+    static std::vector<const char*> getFieldNames();
+    std::vector<FieldVariant>       getFields();
 };
 } // namespace cooling

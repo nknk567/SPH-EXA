@@ -73,12 +73,39 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
                   "metal_fraction", "volumetric_heating_rate", "specific_heating_rate", "RT_heating_rate",
                   "RT_HI_ionization_rate", "RT_HeI_ionization_rate", "RT_HeII_ionization_rate",
                   "RT_H2_dissociation_rate", "H2_self_shielding_length">;
+    cooling::Cooler<T> cooling_data;
 
 public:
     HydroGrackleProp(std::ostream& output, size_t rank)
         : Base(output, rank)
     {
     }
+
+    void load(const std::string& initCond, MPI_Comm comm) override
+    {
+        if (initCond == "evrard-cooling")
+        {
+            BuiltinWriter attributeSetter(evrardCoolingConstants());
+            cooling_data.loadOrStoreAttributes(&attributeSetter);
+        }
+        else
+        {
+            std::string path = strBeforeSign(initCond, ":");
+            if (std::filesystem::exists(path))
+            {
+                std::unique_ptr<IFileReader> reader;
+                reader = std::make_unique<H5PartReader>(comm);
+                reader->setStep(path, -1);
+                cooling_data.loadOrStoreAttributes(reader.get());
+                reader->closeStep();
+            }
+            else
+                throw std::runtime_error("");
+        }
+        cooling_data.init(1e16, 46400, 0, std::nullopt);
+    }
+
+    void save(IFileWriter* writer) override { cooling_data.loadOrStoreAttributes(writer); }
 
     std::vector<std::string> conservedFields() const override
     {
@@ -137,8 +164,7 @@ public:
 
         computeDensity(first, last, d, domain.box());
         timer.step("Density");
-
-        eos_cooling(first, last, d, simData.chem, simData.chem.cooling_data);
+        eos_cooling(first, last, d, simData.chem, cooling_data);
         timer.step("EquationOfState");
 
         domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
@@ -179,7 +205,7 @@ public:
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-        computeTimestep_cool(first, last, d, simData.chem.cooling_data, simData.chem);
+        computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
 
 #pragma omp parallel for schedule(static)
@@ -187,7 +213,7 @@ public:
         {
             T u_old  = d.u[i];
             T u_cool = d.u[i];
-            simData.chem.cooling_data.cool_particle(
+            cooling_data.cool_particle(
                 d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],

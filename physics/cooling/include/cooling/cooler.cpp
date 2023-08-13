@@ -69,29 +69,29 @@ private:
         "radiative_transfer_hydrogen_only", "self_shielding_method", "H2_self_shielding", "H2_custom_shielding",
         "h2_charge_exchange_rate", "h2_dust_rate", "h2_h_cooling_rate", "collisional_excitation_rates",
         "collisional_ionisation_rates", "recombination_cooling_rates", "bremsstrahlung_cooling_rates"};
-    auto fieldsTuple()
-    {
-        auto& d = global_values.data;
-        //(d.use_grackle, d.primordial_chemistry);
-        return std::tie
 
-            (d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
-             d.UVbackground,
-             //!
-             //! d.char *grackle_data_file,
-             d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
-             d.photoelectric_heating, d.photoelectric_heating_rate, d.use_isrf_field, d.interstellar_radiation_field,
-             d.use_volumetric_heating_rate, d.use_specific_heating_rate, d.three_body_rate, d.cie_cooling,
-             d.h2_optical_depth_approximation, d.ih2co, d.ipiht, d.HydrogenFractionByMass, d.DeuteriumToHydrogenRatio,
-             d.SolarMetalFractionByMass, d.local_dust_to_gas_ratio, d.NumberOfTemperatureBins, d.CaseBRecombination,
-             d.TemperatureStart, d.TemperatureEnd, d.NumberOfDustTemperatureBins, d.DustTemperatureStart,
-             d.DustTemperatureEnd, d.Compton_xray_heating, d.LWbackground_sawtooth_suppression,
-             d.LWbackground_intensity, d.UVbackground_redshift_on, d.UVbackground_redshift_off,
-             d.UVbackground_redshift_fullon, d.UVbackground_redshift_drop, d.cloudy_electron_fraction_factor,
-             d.use_radiative_transfer, d.radiative_transfer_coupled_rate_solver, d.radiative_transfer_intermediate_step,
-             d.radiative_transfer_hydrogen_only, d.self_shielding_method, d.H2_self_shielding, d.H2_custom_shielding,
-             d.h2_charge_exchange_rate, d.h2_dust_rate, d.h2_h_cooling_rate, d.collisional_excitation_rates,
-             d.collisional_ionisation_rates, d.recombination_cooling_rates, d.bremsstrahlung_cooling_rates);
+    auto fieldsTuple() { return fieldsTupleHelper(global_values.data); }
+
+    static auto fieldsTupleHelper(chemistry_data& d)
+    {
+        return std::tie(
+            d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
+            d.UVbackground,
+            //!
+            //! d.char *grackle_data_file,
+            d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
+            d.photoelectric_heating, d.photoelectric_heating_rate, d.use_isrf_field, d.interstellar_radiation_field,
+            d.use_volumetric_heating_rate, d.use_specific_heating_rate, d.three_body_rate, d.cie_cooling,
+            d.h2_optical_depth_approximation, d.ih2co, d.ipiht, d.HydrogenFractionByMass, d.DeuteriumToHydrogenRatio,
+            d.SolarMetalFractionByMass, d.local_dust_to_gas_ratio, d.NumberOfTemperatureBins, d.CaseBRecombination,
+            d.TemperatureStart, d.TemperatureEnd, d.NumberOfDustTemperatureBins, d.DustTemperatureStart,
+            d.DustTemperatureEnd, d.Compton_xray_heating, d.LWbackground_sawtooth_suppression, d.LWbackground_intensity,
+            d.UVbackground_redshift_on, d.UVbackground_redshift_off, d.UVbackground_redshift_fullon,
+            d.UVbackground_redshift_drop, d.cloudy_electron_fraction_factor, d.use_radiative_transfer,
+            d.radiative_transfer_coupled_rate_solver, d.radiative_transfer_intermediate_step,
+            d.radiative_transfer_hydrogen_only, d.self_shielding_method, d.H2_self_shielding, d.H2_custom_shielding,
+            d.h2_charge_exchange_rate, d.h2_dust_rate, d.h2_h_cooling_rate, d.collisional_excitation_rates,
+            d.collisional_ionisation_rates, d.recombination_cooling_rates, d.bremsstrahlung_cooling_rates);
     }
     static_assert(fieldNames.size() == std::tuple_size_v<decltype(((Impl*)nullptr)->fieldsTuple())>);
 
@@ -108,7 +108,7 @@ private:
             fieldsTuple());
     }
 
-    std::vector<const char*> getFieldNames()
+    static std::vector<const char*> getFieldNames()
     {
         auto a = std::apply([](auto&... a) { return std::array<const char*, sizeof...(a)>{(&a[0])...}; }, fieldNames);
         return std::vector(a.begin(), a.end());
@@ -191,7 +191,7 @@ std::vector<typename Cooler<T>::FieldVariant> Cooler<T>::getFields()
 template<typename T>
 std::vector<const char*> Cooler<T>::getFieldNames()
 {
-    return impl_ptr->getFieldNames();
+    return Cooler<T>::Impl::getFieldNames();
 }
 
 template<typename T>

@@ -27,9 +27,11 @@ TEST(cooling_grackle, test1a)
 
     const Real mass_unit = std::pow(length_units, 3.0) * density_units / MSOLG;
 
-    cooling::Cooler<Real>           cd;
+    cooling::Cooler<Real> cd;
 
     std::map<std::string, double> grackleOptions;
+    grackleOptions["chem::m_code_in_ms"]           = mass_unit;
+    grackleOptions["chem::l_code_in_kpc"]          = 1. / KPCCM;
     grackleOptions["chem::use_grackle"]            = 1;
     grackleOptions["chem::with_radiative_cooling"] = 1;
     grackleOptions["chem::primordial_chemistry"]   = 3;
@@ -40,8 +42,7 @@ TEST(cooling_grackle, test1a)
     sphexa::BuiltinWriter attributeSetter(grackleOptions);
     cd.loadOrStoreAttributes(&attributeSetter);
 
-
-    cd.init(mass_unit, 1.0 / KPCCM, 0, time_units);
+    cd.init(0, time_units);
 
     constexpr Real tiny_number = 1.e-20;
     constexpr Real dt          = 3.15e7 * 1e6; // grackle_units.time_units;
@@ -93,45 +94,28 @@ TEST(cooling_grackle, test1a)
 
     EXPECT_NEAR(HI_fraction[0], 0.630705, 1e-6);
     EXPECT_NEAR(u[0], 2.95159e+35, 1e30);
-
-    /*constexpr Real R = 8.317e7;
-    constexpr Real mui = 1.21;
-    constexpr Real conv = Real(1.5) * R / mui;
-
-    gr_float grackle_conv = 1./get_temperature_units(&cd.global_values.units);
-    double grackle_R = grackle_conv * mui * 1.5;
-    std::cout << grackle_R << std::endl;
-    double gamma;
-    calculate_gamma(&cd.global_values.units, &cd.global_values.data, &gamma);
-
-    std::cout << gamma << std::endl; */
-
-    /* get_temperature_units();
-     calculate_gamma();
-     calculate_pressure();
-     calculate_temperature();*/
-    // cleanGrackle();
 }
 // This test just produces a table of cooling values for different choices of rho and u
 TEST(cooling_grackle2, test2)
 {
     // Path where to write the table
-    const std::string writePath{"~/cooling_test1/sphexa.txt"};
+    const std::string writePath{"sphexa_cooling_test.txt"};
 
     using Real = double;
-    cooling::Cooler<Real> cd;
-    // auto options = cd.getDefaultChemistryData();
+    cooling::Cooler<Real>         cd;
     std::map<std::string, double> grackleOptions;
-    grackleOptions["use_grackle"]            = 1;
-    grackleOptions["with_radiative_cooling"] = 1;
-    grackleOptions["primordial_chemistry"]   = 1;
-    grackleOptions["dust_chemistry"]         = 0;
-    grackleOptions["UVbackground"]           = 0;
-    grackleOptions["metal_cooling"]          = 0;
+    grackleOptions["chem::m_code_in_ms"]           = 1e16;
+    grackleOptions["chem::l_code_in_kpc"]          = 46400;
+    grackleOptions["chem::use_grackle"]            = 1;
+    grackleOptions["chem::with_radiative_cooling"] = 1;
+    grackleOptions["chem::primordial_chemistry"]   = 1;
+    grackleOptions["chem::dust_chemistry"]         = 0;
+    grackleOptions["chem::UVbackground"]           = 0;
+    grackleOptions["chem::metal_cooling"]          = 0;
 
     sphexa::BuiltinWriter attributeSetter(grackleOptions);
     cd.loadOrStoreAttributes(&attributeSetter);
-    cd.init(1e16, 46400., 0, std::nullopt);
+    cd.init(0);
 
     constexpr Real tiny_number = 1.e-20;
     constexpr Real dt          = 0.01; // grackle_units.time_units;

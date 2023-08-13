@@ -50,8 +50,8 @@ struct Cooler
 
     ~Cooler();
 
-    //! @brief Init Cooler. Must be called before any other function is used and before parameters are set
-    void init(const int comoving_coordinates);
+    //! @brief Init Cooler. Must be called before any other function is used and after parameters are set
+    void init(const int comoving_coordinates, std::optional<T> time_unit=std::nullopt);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,

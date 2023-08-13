@@ -73,11 +73,10 @@ private:
 
     auto fieldsTuple()
     {
-        auto &d = global_values.data;
+        auto& d = global_values.data;
         return std::tie(
-            m_code_in_ms, l_code_in_kpc,
-            d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
-            d.UVbackground,
+            m_code_in_ms, l_code_in_kpc, d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry,
+            d.dust_chemistry, d.metal_cooling, d.UVbackground,
             //!
             //! d.char *grackle_data_file,
             d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
@@ -115,11 +114,7 @@ private:
         return std::vector(a.begin(), a.end());
     }
 
-    /*void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-              const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
-              const std::optional<double>                          t_sim          = std::nullopt);
-*/
-    void init(int comoving_coordinates);
+    void init(int comoving_coordinates, std::optional<T> time_unit);
 
     chemistry_data getDefaultChemistryData()
     {
@@ -177,9 +172,9 @@ template<typename T>
 Cooler<T>::~Cooler() = default;
 
 template<typename T>
-void Cooler<T>::init(const int comoving_coordinates)
+void Cooler<T>::init(const int comoving_coordinates, const std::optional<T> time_unit)
 {
-    impl_ptr->init(comoving_coordinates);
+    impl_ptr->init(comoving_coordinates, time_unit);
 }
 
 template<typename T>
@@ -280,14 +275,14 @@ Cooler<T>::Impl::Impl()
 }
 
 template<typename T>
-void Cooler<T>::Impl::init(const int comoving_coordinates)
+void Cooler<T>::Impl::init(const int comoving_coordinates, std::optional<T> tu)
 {
     grackle_verbose = 1;
 
     // Density
     const double density_unit = m_code_in_ms * ms_g / std::pow(l_code_in_kpc * kp_cm, 3);
     // Time
-    const double time_unit = std::sqrt(1. / (density_unit * G_newton));
+    const double time_unit = tu.value_or(std::sqrt(1. / (density_unit * G_newton)));
     // Length
     const double length_unit = l_code_in_kpc * kp_cm;
     // Velocity

@@ -37,8 +37,10 @@
 #include "cstone/fields/particles_get.hpp"
 #include "sph/particles_data.hpp"
 #include "sph/sph.hpp"
+
 #include "cooling/cooler.hpp"
 #include "cooling/eos_cooling.hpp"
+
 #include "ipropagator.hpp"
 #include "gravity_wrapper.hpp"
 
@@ -57,6 +59,8 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
     using T       = typename DataType::RealType;
     using KeyType = typename DataType::KeyType;
 
+    cooling::Cooler<T> cooling_data;
+
     /*! @brief the list of conserved particles fields with values preserved between iterations
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
@@ -73,7 +77,6 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
                   "metal_fraction", "volumetric_heating_rate", "specific_heating_rate", "RT_heating_rate",
                   "RT_HI_ionization_rate", "RT_HeI_ionization_rate", "RT_HeII_ionization_rate",
                   "RT_H2_dissociation_rate", "H2_self_shielding_length">;
-    cooling::Cooler<T> cooling_data;
 
 public:
     HydroGrackleProp(std::ostream& output, size_t rank)

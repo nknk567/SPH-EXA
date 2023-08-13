@@ -100,6 +100,7 @@ auto localConservedQuantities(size_t startIndex, size_t endIndex, Dataset& d)
             eInt += cv * temp[i] * mi;
         }
     }
+
     return std::make_tuple(0.5 * eKin, eInt, linmom, angmom);
 }
 

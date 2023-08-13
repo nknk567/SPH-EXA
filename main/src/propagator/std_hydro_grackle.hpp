@@ -102,7 +102,7 @@ public:
             else
                 throw std::runtime_error("");
         }
-        cooling_data.init(1e16, 46400, 0, std::nullopt);
+        cooling_data.init(0);
     }
 
     void save(IFileWriter* writer) override { cooling_data.loadOrStoreAttributes(writer); }

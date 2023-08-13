@@ -225,8 +225,6 @@ public:
         }
     } coolingAttrs;*/
     // Units
-    T m_code_in_ms  = 1e16;
-    T l_code_in_kpc = 46400.;
 
     //! @brief Unified interface to attribute initialization, reading and writing
     template<class Archive>
@@ -249,8 +247,6 @@ public:
             }
         };
 
-        optionalIO("m_code_in_ms", &m_code_in_ms, 1);
-        optionalIO("l_code_in_kpc", &l_code_in_kpc, 1);
         /*std::apply(
             [&](auto&... attribute)
             {

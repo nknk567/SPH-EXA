@@ -33,9 +33,9 @@ private:
     //! @brief Gravitational constant in cgs units
     constexpr static T G_newton = 6.674e-8;
     //! @brief code unit mass in solar masses
-    T ms = 1e16;
+    T m_code_in_ms = 1e16;
     //! @brief code unit length in kpc
-    T kpc = 46400.;
+    T l_code_in_kpc = 46400.;
     //! @brief Path to Grackle data file
     std::string grackle_data_file_path = CMAKE_SOURCE_DIR "/extern/grackle/grackle_repo/input/CloudyData_UVB=HM2012.h5";
 
@@ -50,8 +50,9 @@ private:
     };
     GlobalValues global_values;
 
-    //{"use_grackle", "primordial_chemistry"};
     constexpr static std::array fieldNames{
+        "m_code_in_ms", "l_code_in_kpc",
+        // Grackle parameters
         "use_grackle", "with_radiative_cooling", "primordial_chemistry", "dust_chemistry", "metal_cooling",
         "UVbackground",
         //!
@@ -70,11 +71,11 @@ private:
         "h2_charge_exchange_rate", "h2_dust_rate", "h2_h_cooling_rate", "collisional_excitation_rates",
         "collisional_ionisation_rates", "recombination_cooling_rates", "bremsstrahlung_cooling_rates"};
 
-    auto fieldsTuple() { return fieldsTupleHelper(global_values.data); }
-
-    static auto fieldsTupleHelper(chemistry_data& d)
+    auto fieldsTuple()
     {
+        auto &d = global_values.data;
         return std::tie(
+            m_code_in_ms, l_code_in_kpc,
             d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
             d.UVbackground,
             //!
@@ -114,11 +115,11 @@ private:
         return std::vector(a.begin(), a.end());
     }
 
-    void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
+    /*void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
               const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
               const std::optional<double>                          t_sim          = std::nullopt);
-
-    void init(double ms_sim, double kp_sim, int comoving_coordinates, std::optional<double> t_sim);
+*/
+    void init(int comoving_coordinates);
 
     chemistry_data getDefaultChemistryData()
     {
@@ -176,10 +177,9 @@ template<typename T>
 Cooler<T>::~Cooler() = default;
 
 template<typename T>
-void Cooler<T>::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                     const std::optional<double> t_sim)
+void Cooler<T>::init(const int comoving_coordinates)
 {
-    impl_ptr->init(ms_sim, kp_sim, comoving_coordinates, t_sim);
+    impl_ptr->init(comoving_coordinates);
 }
 
 template<typename T>
@@ -280,19 +280,16 @@ Cooler<T>::Impl::Impl()
 }
 
 template<typename T>
-void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                           const std::optional<double> t_sim)
+void Cooler<T>::Impl::init(const int comoving_coordinates)
 {
-    ms              = ms_sim;
-    kpc             = kp_sim;
     grackle_verbose = 1;
 
     // Density
-    const double density_unit = ms * ms_g / std::pow(kpc * kp_cm, 3);
+    const double density_unit = m_code_in_ms * ms_g / std::pow(l_code_in_kpc * kp_cm, 3);
     // Time
-    const double time_unit = t_sim.value_or(std::sqrt(1. / (density_unit * G_newton)));
+    const double time_unit = std::sqrt(1. / (density_unit * G_newton));
     // Length
-    const double length_unit = kpc * kp_cm;
+    const double length_unit = l_code_in_kpc * kp_cm;
     // Velocity
     const double velocity_unit = length_unit / time_unit;
 
@@ -306,7 +303,7 @@ void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int c
 
 #ifndef NDEBUG
     std::cout << "debug\n";
-    std::cout << ms << "\t" << ms_g << "\t" << kpc << "\n";
+    std::cout << m_code_in_ms << "\t" << ms_g << "\t" << l_code_in_kpc << "\n";
     std::cout << "code units\n";
     std::cout << global_values.units.density_units << "\t" << global_values.units.time_units << "\t"
               << global_values.units.length_units << "\n";
@@ -318,13 +315,13 @@ void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int c
         throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
     }
 }
-template<typename T>
+/*template<typename T>
 void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
                            const std::optional<std::map<std::string, std::any>> grackleOptions,
                            const std::optional<double>                          t_sim)
 {
-    ms              = ms_sim;
-    kpc             = kp_sim;
+    m_code_in_ms              = ms_sim;
+    l_code_in_kpc             = kp_sim;
     grackle_verbose = 1;
 
     // Density
@@ -368,7 +365,7 @@ void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int c
         std::cout << global_values.data.with_radiative_cooling << std::endl;
         throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
     }
-}
+}*/
 
 template<typename T>
 void Cooler<T>::Impl::initOptions(const std::map<std::string, std::any>& grackle_options)

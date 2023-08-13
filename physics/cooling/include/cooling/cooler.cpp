@@ -305,57 +305,6 @@ void Cooler<T>::Impl::init(const int comoving_coordinates, std::optional<T> tu)
         throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
     }
 }
-/*template<typename T>
-void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                           const std::optional<std::map<std::string, std::any>> grackleOptions,
-                           const std::optional<double>                          t_sim)
-{
-    m_code_in_ms              = ms_sim;
-    l_code_in_kpc             = kp_sim;
-    grackle_verbose = 1;
-
-    // Density
-    const double density_unit = ms * ms_g / std::pow(kpc * kp_cm, 3);
-    // Time
-    const double time_unit = t_sim.value_or(std::sqrt(1. / (density_unit * G_newton)));
-    // Length
-    const double length_unit = kpc * kp_cm;
-    // Velocity
-    const double velocity_unit = length_unit / time_unit;
-
-    global_values.units.density_units        = density_unit; // m_sun / (pc * pc * pc);
-    global_values.units.time_units           = time_unit;    // code_time;
-    global_values.units.length_units         = length_unit;  // pc;
-    global_values.units.velocity_units       = velocity_unit;
-    global_values.units.a_units              = 1.0;
-    global_values.units.a_value              = 1.0;
-    global_values.units.comoving_coordinates = comoving_coordinates;
-
-    std::cout << "debug\n";
-    std::cout << ms << "\t" << ms_g << "\t" << kpc << "\n";
-    std::cout << "code units\n";
-    std::cout << global_values.units.density_units << "\t" << global_values.units.time_units << "\t"
-              << global_values.units.length_units << "\n";
-
-    global_values.data = _set_default_chemistry_parameters();
-
-    global_values.data.grackle_data_file = &grackle_data_file_path[0];
-
-    if (grackleOptions.has_value()) { initOptions(grackleOptions.value()); }
-    else
-    {
-        global_values.data     = getDefaultChemistryData();
-        grackle_data_file_path = std::string(global_values.data.grackle_data_file);
-        std::cout << grackle_data_file_path << std::endl;
-        global_values.data.grackle_data_file = &grackle_data_file_path[0];
-    }
-
-    if (0 == _initialize_chemistry_data(&global_values.data, &global_values.rates, &global_values.units))
-    {
-        std::cout << global_values.data.with_radiative_cooling << std::endl;
-        throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
-    }
-}*/
 
 template<typename T>
 void Cooler<T>::Impl::initOptions(const std::map<std::string, std::any>& grackle_options)

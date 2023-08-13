@@ -100,11 +100,11 @@ struct Cooler
         {
             try
             {
-                ar->stepAttribute("chem::" + attribute, location, attrSize);
+                ar->stepAttribute("cooling::" + attribute, location, attrSize);
             }
             catch (std::out_of_range&)
             {
-                std::cout << "Attribute chem::" << attribute
+                std::cout << "Attribute cooling::" << attribute
                           << " not set in file or initializer, setting to default value " << *location << std::endl;
             }
         };

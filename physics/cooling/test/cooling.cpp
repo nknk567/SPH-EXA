@@ -30,14 +30,14 @@ TEST(cooling_grackle, test1a)
     cooling::Cooler<Real> cd;
 
     std::map<std::string, double> grackleOptions;
-    grackleOptions["chem::m_code_in_ms"]           = mass_unit;
-    grackleOptions["chem::l_code_in_kpc"]          = 1. / KPCCM;
-    grackleOptions["chem::use_grackle"]            = 1;
-    grackleOptions["chem::with_radiative_cooling"] = 1;
-    grackleOptions["chem::primordial_chemistry"]   = 3;
-    grackleOptions["chem::dust_chemistry"]         = 1;
-    grackleOptions["chem::UVbackground"]           = 1;
-    grackleOptions["chem::metal_cooling"]          = 1;
+    grackleOptions["cooling::m_code_in_ms"]           = mass_unit;
+    grackleOptions["cooling::l_code_in_kpc"]          = 1. / KPCCM;
+    grackleOptions["cooling::use_grackle"]            = 1;
+    grackleOptions["cooling::with_radiative_cooling"] = 1;
+    grackleOptions["cooling::primordial_chemistry"]   = 3;
+    grackleOptions["cooling::dust_chemistry"]         = 1;
+    grackleOptions["cooling::UVbackground"]           = 1;
+    grackleOptions["cooling::metal_cooling"]          = 1;
 
     sphexa::BuiltinWriter attributeSetter(grackleOptions);
     cd.loadOrStoreAttributes(&attributeSetter);
@@ -104,14 +104,14 @@ TEST(cooling_grackle2, test2)
     using Real = double;
     cooling::Cooler<Real>         cd;
     std::map<std::string, double> grackleOptions;
-    grackleOptions["chem::m_code_in_ms"]           = 1e16;
-    grackleOptions["chem::l_code_in_kpc"]          = 46400;
-    grackleOptions["chem::use_grackle"]            = 1;
-    grackleOptions["chem::with_radiative_cooling"] = 1;
-    grackleOptions["chem::primordial_chemistry"]   = 1;
-    grackleOptions["chem::dust_chemistry"]         = 0;
-    grackleOptions["chem::UVbackground"]           = 0;
-    grackleOptions["chem::metal_cooling"]          = 0;
+    grackleOptions["cooling::m_code_in_ms"]           = 1e16;
+    grackleOptions["cooling::l_code_in_kpc"]          = 46400;
+    grackleOptions["cooling::use_grackle"]            = 1;
+    grackleOptions["cooling::with_radiative_cooling"] = 1;
+    grackleOptions["cooling::primordial_chemistry"]   = 1;
+    grackleOptions["cooling::dust_chemistry"]         = 0;
+    grackleOptions["cooling::UVbackground"]           = 0;
+    grackleOptions["cooling::metal_cooling"]          = 0;
 
     sphexa::BuiltinWriter attributeSetter(grackleOptions);
     cd.loadOrStoreAttributes(&attributeSetter);

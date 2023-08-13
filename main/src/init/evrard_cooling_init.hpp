@@ -73,12 +73,12 @@ public:
                                                  Dataset& simData) const override
     {
         auto box = sphexa::EvrardGlassSphere<Dataset>::init(rank, numRanks, cbrtNumPart, simData);
-        //std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
+        std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
 
-        //cooling::initChemistryData(simData.chem, simData.hydro.x.size());
+        cooling::initChemistryData(simData.chem, simData.hydro.x.size());
 
-        //sphexa::BuiltinWriter attributeSetter(Base::constants());
-        //simData.chem.loadOrStoreAttributes(&attributeSetter);
+        sphexa::BuiltinWriter attributeSetter(Base::constants());
+        simData.chem.loadOrStoreAttributes(&attributeSetter);
 
         return box;
     }

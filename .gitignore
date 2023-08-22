@@ -45,3 +45,5 @@ test/constants.txt
 *.exe
 *.out
 *.app
+
+.idea

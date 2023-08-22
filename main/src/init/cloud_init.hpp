@@ -62,7 +62,7 @@ std::map<std::string, double> cloudConstants()
             {"hydrogen_fraction", 0.76},
             {"d_to_h_ratio", 1e-5},
             {"cooling::use_grackle", 1},
-            {"cooling::with_radiative_cooling", 1},
+            {"cooling::with_radiative_cooling", 0},
             {"cooling::primordial_chemistry", 1},
             {"cooling::dust_chemistry", 0},
             {"cooling::metal_cooling", 0},

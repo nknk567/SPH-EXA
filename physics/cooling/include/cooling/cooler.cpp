@@ -33,14 +33,13 @@ private:
     //! @brief Gravitational constant in cgs units
     constexpr static T G_newton = 6.674e-8;
     //! @brief code unit mass in solar masses
-    T ms = 1e16;
+    T m_code_in_ms = 1e16;
     //! @brief code unit length in kpc
-    T kpc = 46400.;
+    T l_code_in_kpc = 46400.;
     //! @brief Path to Grackle data file
     std::string grackle_data_file_path = CMAKE_SOURCE_DIR "/extern/grackle/grackle_repo/input/CloudyData_UVB=HM2012.h5";
 
     Impl();
-    void initOptions(const std::map<std::string, std::any>& grackle_options);
 
     struct GlobalValues
     {
@@ -50,8 +49,9 @@ private:
     };
     GlobalValues global_values;
 
-    //{"use_grackle", "primordial_chemistry"};
     constexpr static std::array fieldNames{
+        "m_code_in_ms", "l_code_in_kpc",
+        // Grackle parameters
         "use_grackle", "with_radiative_cooling", "primordial_chemistry", "dust_chemistry", "metal_cooling",
         "UVbackground",
         //!
@@ -68,61 +68,52 @@ private:
         "radiative_transfer_coupled_rate_solver", "radiative_transfer_intermediate_step",
         "radiative_transfer_hydrogen_only", "self_shielding_method", "H2_self_shielding", "H2_custom_shielding",
         "h2_charge_exchange_rate", "h2_dust_rate", "h2_h_cooling_rate", "collisional_excitation_rates",
-        "collisional_ionisation_rates", "recombination_cooling_rates", "bremsstrahlung_cooling_rates"};
+        "collisional_ionisation_rates", "recombination_cooling_rates", "bremsstrahlung_cooling_rates", "max_iterations",
+        "exit_after_iterations_exceeded"};
+
     auto fieldsTuple()
     {
         auto& d = global_values.data;
-        //(d.use_grackle, d.primordial_chemistry);
-        return std::tie
-
-            (d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry, d.dust_chemistry, d.metal_cooling,
-             d.UVbackground,
-             //!
-             //! d.char *grackle_data_file,
-             d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
-             d.photoelectric_heating, d.photoelectric_heating_rate, d.use_isrf_field, d.interstellar_radiation_field,
-             d.use_volumetric_heating_rate, d.use_specific_heating_rate, d.three_body_rate, d.cie_cooling,
-             d.h2_optical_depth_approximation, d.ih2co, d.ipiht, d.HydrogenFractionByMass, d.DeuteriumToHydrogenRatio,
-             d.SolarMetalFractionByMass, d.local_dust_to_gas_ratio, d.NumberOfTemperatureBins, d.CaseBRecombination,
-             d.TemperatureStart, d.TemperatureEnd, d.NumberOfDustTemperatureBins, d.DustTemperatureStart,
-             d.DustTemperatureEnd, d.Compton_xray_heating, d.LWbackground_sawtooth_suppression,
-             d.LWbackground_intensity, d.UVbackground_redshift_on, d.UVbackground_redshift_off,
-             d.UVbackground_redshift_fullon, d.UVbackground_redshift_drop, d.cloudy_electron_fraction_factor,
-             d.use_radiative_transfer, d.radiative_transfer_coupled_rate_solver, d.radiative_transfer_intermediate_step,
-             d.radiative_transfer_hydrogen_only, d.self_shielding_method, d.H2_self_shielding, d.H2_custom_shielding,
-             d.h2_charge_exchange_rate, d.h2_dust_rate, d.h2_h_cooling_rate, d.collisional_excitation_rates,
-             d.collisional_ionisation_rates, d.recombination_cooling_rates, d.bremsstrahlung_cooling_rates);
+        return std::tie(
+            m_code_in_ms, l_code_in_kpc, d.use_grackle, d.with_radiative_cooling, d.primordial_chemistry,
+            d.dust_chemistry, d.metal_cooling, d.UVbackground,
+            //!
+            //! d.char *grackle_data_file,
+            d.cmb_temperature_floor, d.Gamma, d.h2_on_dust, d.use_dust_density_field, d.dust_recombination_cooling,
+            d.photoelectric_heating, d.photoelectric_heating_rate, d.use_isrf_field, d.interstellar_radiation_field,
+            d.use_volumetric_heating_rate, d.use_specific_heating_rate, d.three_body_rate, d.cie_cooling,
+            d.h2_optical_depth_approximation, d.ih2co, d.ipiht, d.HydrogenFractionByMass, d.DeuteriumToHydrogenRatio,
+            d.SolarMetalFractionByMass, d.local_dust_to_gas_ratio, d.NumberOfTemperatureBins, d.CaseBRecombination,
+            d.TemperatureStart, d.TemperatureEnd, d.NumberOfDustTemperatureBins, d.DustTemperatureStart,
+            d.DustTemperatureEnd, d.Compton_xray_heating, d.LWbackground_sawtooth_suppression, d.LWbackground_intensity,
+            d.UVbackground_redshift_on, d.UVbackground_redshift_off, d.UVbackground_redshift_fullon,
+            d.UVbackground_redshift_drop, d.cloudy_electron_fraction_factor, d.use_radiative_transfer,
+            d.radiative_transfer_coupled_rate_solver, d.radiative_transfer_intermediate_step,
+            d.radiative_transfer_hydrogen_only, d.self_shielding_method, d.H2_self_shielding, d.H2_custom_shielding,
+            d.h2_charge_exchange_rate, d.h2_dust_rate, d.h2_h_cooling_rate, d.collisional_excitation_rates,
+            d.collisional_ionisation_rates, d.recombination_cooling_rates, d.bremsstrahlung_cooling_rates,
+            d.max_iterations, d.exit_after_iterations_exceeded);
     }
     static_assert(fieldNames.size() == std::tuple_size_v<decltype(((Impl*)nullptr)->fieldsTuple())>);
 
     std::vector<FieldVariant> getFields()
     {
-        return std::apply(
-            [](auto&... a)
-            {
-                auto ret = std::vector<FieldVariant>{&a...};
-                std::cout << "ret " << ret.size() << std::endl;
-
-                return ret;
-            },
-            fieldsTuple());
+        return std::apply([](auto&... a) { return std::vector<FieldVariant>{&a...}; }, fieldsTuple());
     }
 
-    std::vector<const char*> getFieldNames()
+    static std::vector<const char*> getFieldNames()
     {
         auto a = std::apply([](auto&... a) { return std::array<const char*, sizeof...(a)>{(&a[0])...}; }, fieldNames);
         return std::vector(a.begin(), a.end());
     }
 
-    void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-              const std::optional<std::map<std::string, std::any>> grackleOptions = std::nullopt,
-              const std::optional<double>                          t_sim          = std::nullopt);
-
-    void init(double ms_sim, double kp_sim, int comoving_coordinates, std::optional<double> t_sim);
+    void init(int comoving_coordinates, std::optional<T> time_unit);
 
     chemistry_data getDefaultChemistryData()
     {
-        chemistry_data data_default    = _set_default_chemistry_parameters();
+
+        chemistry_data data_default;
+        local_initialize_chemistry_parameters(&data_default);
         data_default.grackle_data_file = &grackle_data_file_path[0];
         return data_default;
     }
@@ -152,12 +143,6 @@ private:
                       T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
                       T& specific_heating_rate, T& RT_heating_rate, T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate,
                       T& RT_HeII_ionization_rate, T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
-    T temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
-                            T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction,
-                            T& DII_fraction, T& HDI_fraction, T& e_fraction, T& metal_fraction,
-                            T& volumetric_heating_rate, T& specific_heating_rate, T& RT_heating_rate,
-                            T& RT_HI_ionization_rate, T& RT_HeI_ionization_rate, T& RT_HeII_ionization_rate,
-                            T& RT_H2_dissociation_rate, T& H2_self_shielding_length);
     T cooling_time(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction, T& HeII_fraction,
                    T& HeIII_fraction, T& H2I_fraction, T& H2II_fraction, T& DI_fraction, T& DII_fraction,
                    T& HDI_fraction, T& e_fraction, T& metal_fraction, T& volumetric_heating_rate,
@@ -176,10 +161,9 @@ template<typename T>
 Cooler<T>::~Cooler() = default;
 
 template<typename T>
-void Cooler<T>::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                     const std::optional<double> t_sim)
+void Cooler<T>::init(const int comoving_coordinates, const std::optional<T> time_unit)
 {
-    impl_ptr->init(ms_sim, kp_sim, comoving_coordinates, t_sim);
+    impl_ptr->init(comoving_coordinates, time_unit);
 }
 
 template<typename T>
@@ -191,7 +175,7 @@ std::vector<typename Cooler<T>::FieldVariant> Cooler<T>::getFields()
 template<typename T>
 std::vector<const char*> Cooler<T>::getFieldNames()
 {
-    return impl_ptr->getFieldNames();
+    return Cooler<T>::Impl::getFieldNames();
 }
 
 template<typename T>
@@ -275,24 +259,21 @@ template struct Cooler<float>;
 template<typename T>
 Cooler<T>::Impl::Impl()
 {
-    global_values.data                   = _set_default_chemistry_parameters();
+    local_initialize_chemistry_parameters(&global_values.data);
     global_values.data.grackle_data_file = &grackle_data_file_path[0];
 }
 
 template<typename T>
-void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                           const std::optional<double> t_sim)
+void Cooler<T>::Impl::init(const int comoving_coordinates, std::optional<T> tu)
 {
-    ms              = ms_sim;
-    kpc             = kp_sim;
     grackle_verbose = 1;
 
     // Density
-    const double density_unit = ms * ms_g / std::pow(kpc * kp_cm, 3);
+    const double density_unit = m_code_in_ms * ms_g / std::pow(l_code_in_kpc * kp_cm, 3);
     // Time
-    const double time_unit = t_sim.value_or(std::sqrt(1. / (density_unit * G_newton)));
+    const double time_unit = tu.value_or(std::sqrt(1. / (density_unit * G_newton)));
     // Length
-    const double length_unit = kpc * kp_cm;
+    const double length_unit = l_code_in_kpc * kp_cm;
     // Velocity
     const double velocity_unit = length_unit / time_unit;
 
@@ -306,132 +287,20 @@ void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int c
 
 #ifndef NDEBUG
     std::cout << "debug\n";
-    std::cout << ms << "\t" << ms_g << "\t" << kpc << "\n";
+    std::cout << m_code_in_ms << "\t" << ms_g << "\t" << l_code_in_kpc << "\n";
     std::cout << "code units\n";
     std::cout << global_values.units.density_units << "\t" << global_values.units.time_units << "\t"
               << global_values.units.length_units << "\n";
+
 #endif
     global_values.data.grackle_data_file = &grackle_data_file_path[0];
-    if (0 == _initialize_chemistry_data(&global_values.data, &global_values.rates, &global_values.units))
-    {
-        std::cout << global_values.data.with_radiative_cooling << std::endl;
-        throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
-    }
-}
-template<typename T>
-void Cooler<T>::Impl::init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                           const std::optional<std::map<std::string, std::any>> grackleOptions,
-                           const std::optional<double>                          t_sim)
-{
-    ms              = ms_sim;
-    kpc             = kp_sim;
-    grackle_verbose = 1;
-
-    // Density
-    const double density_unit = ms * ms_g / std::pow(kpc * kp_cm, 3);
-    // Time
-    const double time_unit = t_sim.value_or(std::sqrt(1. / (density_unit * G_newton)));
-    // Length
-    const double length_unit = kpc * kp_cm;
-    // Velocity
-    const double velocity_unit = length_unit / time_unit;
-
-    global_values.units.density_units        = density_unit; // m_sun / (pc * pc * pc);
-    global_values.units.time_units           = time_unit;    // code_time;
-    global_values.units.length_units         = length_unit;  // pc;
-    global_values.units.velocity_units       = velocity_unit;
-    global_values.units.a_units              = 1.0;
-    global_values.units.a_value              = 1.0;
-    global_values.units.comoving_coordinates = comoving_coordinates;
-
-    std::cout << "debug\n";
-    std::cout << ms << "\t" << ms_g << "\t" << kpc << "\n";
-    std::cout << "code units\n";
-    std::cout << global_values.units.density_units << "\t" << global_values.units.time_units << "\t"
-              << global_values.units.length_units << "\n";
-
-    global_values.data = _set_default_chemistry_parameters();
-
-    global_values.data.grackle_data_file = &grackle_data_file_path[0];
-
-    if (grackleOptions.has_value()) { initOptions(grackleOptions.value()); }
-    else
-    {
-        global_values.data     = getDefaultChemistryData();
-        grackle_data_file_path = std::string(global_values.data.grackle_data_file);
-        std::cout << grackle_data_file_path << std::endl;
-        global_values.data.grackle_data_file = &grackle_data_file_path[0];
-    }
-
-    if (0 == _initialize_chemistry_data(&global_values.data, &global_values.rates, &global_values.units))
+    if (0 == local_initialize_chemistry_data(&global_values.data, &global_values.rates, &global_values.units))
     {
         std::cout << global_values.data.with_radiative_cooling << std::endl;
         throw std::runtime_error("Grackle: Error in _initialize_chemistry_data");
     }
 }
 
-template<typename T>
-void Cooler<T>::Impl::initOptions(const std::map<std::string, std::any>& grackle_options)
-{
-    for (auto [key, value] : grackle_options)
-    {
-        try
-        {
-            if (key == "grackle_data_file_path")
-            {
-                grackle_data_file_path = std::any_cast<std::string>(value);
-                global_values.data.grackle_data_file;
-            }
-            if (key == ("use_grackle")) global_values.data.use_grackle = std::any_cast<int>(value);
-            if (key == ("with_radiative_cooling"))
-                global_values.data.with_radiative_cooling = std::any_cast<int>(value);
-            if (key == ("primordial_chemistry")) global_values.data.primordial_chemistry = std::any_cast<int>(value);
-            if (key == ("h2_on_dust")) global_values.data.h2_on_dust = std::any_cast<int>(value);
-            if (key == ("metal_cooling")) global_values.data.metal_cooling = std::any_cast<int>(value);
-            if (key == ("cmb_temperature_floor")) global_values.data.cmb_temperature_floor = std::any_cast<int>(value);
-            if (key == ("UVbackground")) global_values.data.UVbackground = std::any_cast<int>(value);
-            if (key == ("UVbackground_redshift_on"))
-                global_values.data.UVbackground_redshift_on = std::any_cast<int>(value);
-            if (key == ("UVbackground_redshift_fullon"))
-                global_values.data.UVbackground_redshift_fullon = std::any_cast<int>(value);
-            if (key == ("UVbackground_redshift_drop"))
-                global_values.data.UVbackground_redshift_drop = std::any_cast<int>(value);
-            if (key == ("UVbackground_redshift_off"))
-                global_values.data.UVbackground_redshift_off = std::any_cast<int>(value);
-            if (key == ("Gamma")) global_values.data.Gamma = std::any_cast<int>(value);
-            if (key == ("three_body_rate")) global_values.data.three_body_rate = std::any_cast<int>(value);
-            if (key == ("cie_cooling")) global_values.data.cie_cooling = std::any_cast<int>(value);
-            if (key == ("h2_optical_depth_approximation"))
-                global_values.data.h2_optical_depth_approximation = std::any_cast<int>(value);
-            if (key == ("photoelectric_heating_rate"))
-                global_values.data.photoelectric_heating_rate = std::any_cast<int>(value);
-            if (key == ("Compton_xray_heating")) global_values.data.Compton_xray_heating = std::any_cast<int>(value);
-            if (key == ("LWbackground_intensity"))
-                global_values.data.LWbackground_intensity = std::any_cast<int>(value);
-            if (key == ("LWbackground_sawtooth_suppression"))
-                global_values.data.LWbackground_sawtooth_suppression = std::any_cast<int>(value);
-            if (key == ("use_volumetric_heating_rate"))
-                global_values.data.use_volumetric_heating_rate = std::any_cast<int>(value);
-            if (key == ("use_specific_heating_rate"))
-                global_values.data.use_specific_heating_rate = std::any_cast<int>(value);
-            if (key == ("use_radiative_transfer"))
-                global_values.data.use_radiative_transfer = std::any_cast<int>(value);
-            if (key == ("radiative_transfer_coupled_rate_solver"))
-                global_values.data.radiative_transfer_coupled_rate_solver = std::any_cast<int>(value);
-            if (key == ("radiative_transfer_intermediate_step"))
-                global_values.data.radiative_transfer_intermediate_step = std::any_cast<int>(value);
-            if (key == ("radiative_transfer_hydrogen_only"))
-                global_values.data.radiative_transfer_hydrogen_only = std::any_cast<int>(value);
-            if (key == ("H2_self_shielding")) global_values.data.H2_self_shielding = std::any_cast<int>(value);
-            if (key == ("dust_chemistry")) global_values.data.dust_chemistry = std::any_cast<int>(value);
-        }
-        catch (std::bad_any_cast& e)
-        {
-            std::cout << "Wrong datatype " << key << std::endl;
-            std::cout << e.what();
-        }
-    }
-}
 template<typename T>
 void Cooler<T>::Impl::cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction,
                                     T& HeI_fraction, T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction,
@@ -485,7 +354,7 @@ T Cooler<T>::Impl::energy_to_temperature(const T& dt, T& rho, T& u, T& HI_fracti
     return temp;
 }
 
-template<typename T>
+/*template<typename T>
 T Cooler<T>::Impl::temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII_fraction, T& HM_fraction,
                                          T& HeI_fraction, T& HeII_fraction, T& HeIII_fraction, T& H2I_fraction,
                                          T& H2II_fraction, T& DI_fraction, T& DII_fraction, T& HDI_fraction,
@@ -506,7 +375,7 @@ T Cooler<T>::Impl::temperature_to_energy(T& rho, T& temp, T& HI_fraction, T& HII
         specific_heating_rate, RT_heating_rate, RT_HI_ionization_rate, RT_HeI_ionization_rate, RT_HeII_ionization_rate,
         RT_H2_dissociation_rate, H2_self_shielding_length);
     return T(temp / temp_units / mu / (gamma - 1.0));
-}
+}*/
 
 template<typename T>
 T Cooler<T>::Impl::pressure(T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,

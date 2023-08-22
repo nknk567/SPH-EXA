@@ -64,10 +64,10 @@ std::unique_ptr<Propagator<DomainType, ParticleDataType>> propagatorFactory(cons
     {
         return std::make_unique<HydroGrackleProp<DomainType, ParticleDataType>>(output, rank);
     }
-    if (choice == "cloud")
+    /*if (choice == "cloud")
     {
         return std::make_unique<CloudProp<DomainType, ParticleDataType>>(output, rank);
-    }
+    }*/
 #endif
     if (choice == "nbody") { return std::make_unique<NbodyProp<DomainType, ParticleDataType>>(output, rank); }
     if (choice == "turbulence")

@@ -50,9 +50,8 @@ struct Cooler
 
     ~Cooler();
 
-    //! @brief Init Cooler. Must be called before any other function is used.
-    void init(const double ms_sim, const double kp_sim, const int comoving_coordinates,
-                  const std::optional<double> t_sim);
+    //! @brief Init Cooler. Must be called before any other function is used and after parameters are set
+    void init(int comoving_coordinates, std::optional<T> time_unit = std::nullopt);
 
     //! @brief Calls the GRACKLE library to integrate the cooling and chemistry fields
     void cool_particle(const T& dt, T& rho, T& u, T& HI_fraction, T& HII_fraction, T& HM_fraction, T& HeI_fraction,
@@ -109,11 +108,11 @@ struct Cooler
         {
             try
             {
-                ar->stepAttribute("chem::" + attribute, location, attrSize);
+                ar->stepAttribute("cooling::" + attribute, location, attrSize);
             }
             catch (std::out_of_range&)
             {
-                std::cout << "Attribute chem::" << attribute
+                std::cout << "Attribute cooling::" << attribute
                           << " not set in file or initializer, setting to default value " << *location << std::endl;
             }
         };
@@ -123,11 +122,25 @@ struct Cooler
         }
     }
 
+    /*template <typename T>
+    void setAttribute(const std::string& attr)
+    {
+        auto   fieldNames = getFieldNames();
+        size_t i;
+        while (i < fieldNames.size())
+        {
+            if (attr == fieldNames[i]) break;
+            i++;
+        }
+        auto fields = getFields();
+
+    }*/
+
 private:
-    using FieldVariant = std::variant<int*, double*>;
     struct Impl;
-    std::unique_ptr<Impl>     impl_ptr;
-    std::vector<const char*>  getFieldNames();
-    std::vector<FieldVariant> getFields();
+    std::unique_ptr<Impl> impl_ptr;
+    using FieldVariant = std::variant<float*, double*, int*>;
+    static std::vector<const char*> getFieldNames();
+    std::vector<FieldVariant>       getFields();
 };
 } // namespace cooling

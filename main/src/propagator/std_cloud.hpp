@@ -30,7 +30,7 @@
  */
 
 #pragma once
-
+#if 0
 #include <variant>
 
 #include "cstone/fields/particles_get.hpp"
@@ -353,3 +353,4 @@ public:
 };
 
 } // namespace sphexa
+#endif

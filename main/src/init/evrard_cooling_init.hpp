@@ -47,14 +47,14 @@ std::map<std::string, double> evrardCoolingConstants()
             {"mui", 10},
             {"ng0", 100},
             {"ngmax", 150},
-            {"chem::use_grackle", 1},
-            {"chem::with_radiative_cooling", 1},
-            {"chem::primordial_chemistry", 1},
-            {"chem::dust_chemistry", 0},
-            {"chem::metal_cooling", 0},
-            {"chem::UVbackground", 0},
-            {"chem::m_code_in_ms", 1e16},
-            {"chem::l_code_in_kpc", 46400.}};
+            {"cooling::use_grackle", 1},
+            {"cooling::with_radiative_cooling", 1},
+            {"cooling::primordial_chemistry", 1},
+            {"cooling::dust_chemistry", 0},
+            {"cooling::metal_cooling", 0},
+            {"cooling::UVbackground", 0},
+            {"cooling::m_code_in_ms", 1e16},
+            {"cooling::l_code_in_kpc", 46400.}};
 }
 
 template<class Dataset>
@@ -74,13 +74,7 @@ public:
     {
         auto box = sphexa::EvrardGlassSphere<Dataset>::init(rank, numRanks, cbrtNumPart, simData);
         std::fill(simData.hydro.u.begin(), simData.hydro.u.end(), Base::constants().at("u0"));
-
         cooling::initChemistryData(simData.chem, simData.hydro.x.size());
-
-        sphexa::BuiltinWriter attributeSetter(Base::constants());
-        simData.chem.loadOrStoreAttributes(&attributeSetter);
-        simData.chem.cooling_data.init(simData.chem.m_code_in_ms, simData.chem.l_code_in_kpc, 0, std::nullopt);
-
         return box;
     }
 };

@@ -61,14 +61,14 @@ std::map<std::string, double> cloudConstants()
             {"metal_fraction", 1e-6},
             {"hydrogen_fraction", 0.76},
             {"d_to_h_ratio", 1e-5},
-            {"chem::use_grackle", 1},
-            {"chem::with_radiative_cooling", 1},
-            {"chem::primordial_chemistry", 1},
-            {"chem::dust_chemistry", 0},
-            {"chem::metal_cooling", 0},
-            {"chem::UVbackground", 0},
-            {"chem::m_code_in_ms", 1e8},
-            {"chem::l_code_in_kpc", 1.0}};
+            {"cooling::use_grackle", 1},
+            {"cooling::with_radiative_cooling", 1},
+            {"cooling::primordial_chemistry", 1},
+            {"cooling::dust_chemistry", 0},
+            {"cooling::metal_cooling", 0},
+            {"cooling::UVbackground", 0},
+            {"cooling::m_code_in_ms", 1e8},
+            {"cooling::l_code_in_kpc", 1.0}};
 }
 
 template<class Dataset, typename ChemData>
@@ -108,7 +108,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < d.x.size(); i++)
     {
-        T radius = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
+        T    radius        = std::sqrt((d.x[i] * d.x[i]) + (d.y[i] * d.y[i]) + (d.z[i] * d.z[i]));
         auto concentration = [c0](double x, double y, double z)
         {
             const double r = std::sqrt(x * x + y * y + z * z);
@@ -161,7 +161,7 @@ public:
         Base::updateSettings(cloudConstants());
     }
 
-    bool initDependent(Dataset& simData) const
+    bool adjustInternalEnergy(Dataset& simData) const
     {
         using T    = typename Dataset::RealType;
         auto& d    = simData.hydro;
@@ -207,6 +207,72 @@ public:
         return good;
     }
 
+    template<typename Domain, typename Cooler>
+    void calculatePressure(Dataset& simData, Domain& domain, Cooler& cooling_data) const
+    {
+        using T            = typename Dataset::RealType;
+        auto&        d     = simData.hydro;
+        auto&        chem  = simData.chem;
+        const size_t first = domain.startIndex();
+        const size_t last  = domain.endIndex();
+
+#pragma omp parallel for schedule(static)
+        for (size_t i = first; i < last; ++i)
+        {
+            T pressure = cooling_data.pressure(
+                d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
+                get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
+                get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
+                get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
+                get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
+                get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
+                get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
+                get<"H2_self_shielding_length">(chem)[i]);
+            d.p[i] = pressure;
+        }
+    };
+
+    template<typename Domain, typename Cooler>
+    typename Dataset::RealType calculateChemistry(Dataset& simData, Domain& domain, Cooler& cooling_data,
+                                                  typename Dataset::RealType timestep) const
+    {
+        using T            = typename Dataset::RealType;
+        auto&        d     = simData.hydro;
+        auto&        chem  = simData.chem;
+        const size_t first = domain.startIndex();
+        const size_t last  = domain.endIndex();
+
+        T max_diff = 0.;
+
+#pragma omp parallel for schedule(static) reduction(max : max_diff)
+        for (size_t i = first; i < last; ++i)
+        {
+            std::array<T, chem.numFields> old;
+            for (size_t j = 0; j < chem.fields.size(); j++)
+            {
+                old[j] = chem.fields[j][i];
+            }
+            T u = d.u[i];
+            cooling_data.cool_particle(
+                timestep, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
+                get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
+                get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
+                get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
+                get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
+                get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
+                get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
+                get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
+                get<"H2_self_shielding_length">(chem)[i]);
+            for (size_t j = 0; j < chem.fields.size(); j++)
+            {
+                const T diff = std::abs(chem.fields[j][i] - old[j]) / timestep;
+                max_diff     = std::max(max_diff, diff);
+            }
+        }
+        return max_diff;
+    };
+
     void initPressure(Dataset& simData, const int rank, const int numRanks,
                       const cstone::Box<typename Dataset::RealType>& globalBox, const size_t numParticlesGlobal) const
     {
@@ -216,7 +282,6 @@ public:
         using cstone::FieldList;
         using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "u">;
 
-        //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
         using DependentFields = FieldList<"rho", "p", "c", "du", "nc">;
 
         using CoolingFields =
@@ -235,9 +300,13 @@ public:
 
         settings_["numParticlesGlobal"] = double(numParticlesGlobal);
         std::cout << "numParticlesGlobal: " << numParticlesGlobal << std::endl;
-        BuiltinWriter attributeSetter(settings_);
+        auto settings_init                               = settings_;
+        settings_init["cooling::with_radiative_cooling"] = 0;
+        settings_init["cooling::max_iterations"]         = 10000 * 10000;
+        BuiltinWriter attributeSetter(settings_init);
         d.loadOrStoreAttributes(&attributeSetter);
-        simData.chem.loadOrStoreAttributes(&attributeSetter);
+        cooling::Cooler<T> cooling_data;
+        cooling_data.loadOrStoreAttributes(&attributeSetter);
 
         initCloudFields(d, simData.chem, settings_, globalBox);
 
@@ -249,12 +318,12 @@ public:
 
         if (rank == 0) std::cout << "nLocalParticles " << get<"HI_fraction">(simData.chem).size() << std::endl;
 
-        auto bl = []()
+        /*auto bl = []()
         {
             std::vector<std::string> ret{"x", "y", "z", "h", "m"};
             for_each_tuple([&ret](auto f) { ret.push_back(f.value); }, make_tuple(ConservedFields{}));
             return ret;
-        };
+        };*/
 
         // transferToDevice(d, 0, d.x.size(), bl());
 
@@ -265,86 +334,30 @@ public:
 
         d.resize(domain.nParticlesWithHalos());
 
-        size_t first = domain.startIndex();
-        size_t last  = domain.endIndex();
-        // cooling::Cooler<T>              cooling_data;
-        constexpr float ms_sim = 1e8;
-        constexpr float kp_sim = 1.0;
-        // std::map<std::string, std::any> grackleOptions;
-        // grackleOptions["use_grackle"]            = 1;
-        // grackleOptions["with_radiative_cooling"] = 0;
-        // grackleOptions["primordial_chemistry"]   = 1;
-        // grackleOptions["dust_chemistry"]         = 0;
-        // grackleOptions["metal_cooling"]          = 0;
-        // grackleOptions["UVbackground"]           = 0;
-
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
+        const size_t first = domain.startIndex();
+        const size_t last  = domain.endIndex();
+
         sph::findNeighborsSfc(first, last, d, domain.box());
         sph::computeDensity(first, last, d, domain.box()); // halo exchange rho!!
-        simData.chem.cooling_data.init(ms_sim, kp_sim, 0, std::nullopt);
+        cooling_data.init(0);
 
-        auto calculatePressure = [&, &chem = simData.chem]()
-        {
-#pragma omp parallel for schedule(static)
-            for (size_t i = first; i < last; ++i)
-            {
-                T pressure = simData.chem.cooling_data.pressure(
-                    d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
-                    get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
-                    get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
-                    get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
-                    get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
-                    get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
-                    get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
-                    get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
-                    get<"H2_self_shielding_length">(chem)[i]);
-                d.p[i] = pressure;
-            }
-        };
-
-        auto calculateChemistry = [&, &chem = simData.chem]()
-        {
-            // const auto oldFields = chem.fields;
-            T max_diff = 0.;
-
-#pragma omp parallel for schedule(static) reduction(max : max_diff)
-            for (size_t i = first; i < last; ++i)
-            {
-                std::array<T, chem.numFields> old;
-                for (size_t j = 0; j < chem.fields.size(); j++)
-                {
-                    old[j] = chem.fields[j][i];
-                    //                    std::cout << " old " << old[j] << std::endl;
-                }
-                T u = d.u[i];
-                //  std::cout << "rho: " << d.rho[i] << "u " << u << "hi " << get<"HI_fraction">(chem)[i] << std::endl;
-                simData.chem.cooling_data.cool_particle(
-                    1e-8, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
-                    get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
-                    get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
-                    get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
-                    get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
-                    get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
-                    get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
-                    get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
-                    get<"H2_self_shielding_length">(chem)[i]);
-                for (size_t j = 0; j < chem.fields.size(); j++)
-                {
-                    const T diff = std::abs(chem.fields[j][i] - old[j]) / 1e-8;
-                    max_diff     = std::max(max_diff, diff);
-                }
-            }
-            return max_diff;
-        };
-
-        size_t n_it = 0;
+        size_t n_it     = 0;
+        T      timestep = 1.;
+        T      time     = 0.;
         while (true)
         {
-            calculatePressure();
-            bool good = (initDependent(simData));
+            calculatePressure(simData, domain, cooling_data);
+            bool good = (adjustInternalEnergy(simData));
+            auto diff = calculateChemistry(simData, domain, cooling_data, timestep);
             n_it++;
+            time += timestep;
             std::cout << "equilibrated " << n_it << std::endl;
-            if (good) break;
+            std::cout << "timestep " << timestep << std::endl;
+            std::cout << "diff " << diff << std::endl;
+            std::cout << "time " << time << std::endl;
+            if (good && diff < 1e-4) break;
+            // if (diff * timestep < 1e-3) timestep *= 1.5;
         }
     }
 

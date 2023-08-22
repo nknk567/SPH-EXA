@@ -103,34 +103,6 @@ public:
 
     static_assert(fieldNames.size() == numFields);
 
-    // Units
-    T m_code_in_ms  = 1e16;
-    T l_code_in_kpc = 46400.;
-
-    //! @brief Unified interface to attribute initialization, reading and writing
-    template<class Archive>
-    void loadOrStoreAttributes(Archive* ar)
-    {
-        //! @brief load or store an attribute, skips non-existing attributes on load.
-        auto optionalIO = [ar](const std::string& attribute, auto* location, size_t attrSize)
-        {
-            try
-            {
-                ar->stepAttribute("chem::" + attribute, location, attrSize);
-            }
-            catch (std::out_of_range&)
-            {
-                std::cout << "Attribute chem::" << attribute << " not set in file, setting to default value "
-                          << *location << std::endl;
-            }
-        };
-
-        optionalIO("m_code_in_ms", &m_code_in_ms, 1);
-        optionalIO("l_code_in_kpc", &l_code_in_kpc, 1);
-        cooling_data.loadOrStoreAttributes(ar);
-    }
-    cooling::Cooler<T> cooling_data;
-
 private:
     template<size_t... Is>
     auto dataTuple_helper(std::index_sequence<Is...>)

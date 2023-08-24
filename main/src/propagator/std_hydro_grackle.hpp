@@ -219,7 +219,7 @@ public:
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            const T temp = cooling_data.energy_to_temperature(
+            const T temp = cooling_data.energy_to_temperature(0.1,
                 d.rho[i], d.u[i], get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],

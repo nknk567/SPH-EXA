@@ -262,6 +262,30 @@ public:
 
         timer.stop();
     }
+    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
+                    const cstone::Box<T>& box) override
+    {
+        Base::saveFields(writer, first, last, simData, box);
+        auto&            d             = simData.chem;
+        auto             fieldPointers = d.data();
+
+        auto output = [&]()
+        {
+            for (int i = int(d.fields.size()) - 1; i >= 0; --i)
+            {
+                if (d.isAllocated(i))
+                {
+                    transferToHost(d, first, last, {d.fieldNames[i]});
+                    std::visit([writer, c = i, key = d.fieldNames[i]](auto field)
+                               { writer->writeField(key, field->data(), c); },
+                               fieldPointers[i]);
+                }
+            }
+        };
+
+        output();
+
+    }
 };
 
 } // namespace sphexa

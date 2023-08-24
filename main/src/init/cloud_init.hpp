@@ -302,6 +302,7 @@ public:
         std::cout << "numParticlesGlobal: " << numParticlesGlobal << std::endl;
         auto settings_init                               = settings_;
         settings_init["cooling::with_radiative_cooling"] = 0;
+        settings_init["cooling::primordial_chemistry"] = 1;
         settings_init["cooling::max_iterations"]         = 10000 * 10000;
         BuiltinWriter attributeSetter(settings_init);
         d.loadOrStoreAttributes(&attributeSetter);

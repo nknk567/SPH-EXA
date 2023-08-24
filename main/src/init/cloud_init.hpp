@@ -92,6 +92,9 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.0);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.0);
 
+    std::fill(d.soft.begin(), d.soft.end(), 0.05);
+
+
     const T u_guess{0.2};
     std::fill(d.u.begin(), d.u.end(), u_guess);
 

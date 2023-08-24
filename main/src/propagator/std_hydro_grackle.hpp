@@ -69,7 +69,7 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
-        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc">;
+        FieldList<"rho", "p", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc", "temp">;
 
     using CoolingFields =
         FieldList<"HI_fraction", "HII_fraction", "HM_fraction", "HeI_fraction", "HeII_fraction", "HeIII_fraction",
@@ -215,14 +215,12 @@ public:
 
         computeTimestep_cool(first, last, d, cooling_data, simData.chem);
         timer.step("Timestep");
-/*
+
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            T u_old  = d.u[i];
-            T u_cool = d.u[i];
-            cooling_data.cool_particle(
-                d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
+            const T temp = cooling_data.energy_to_temperature(
+                d.rho[i], d.u[i], get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
                 get<"H2I_fraction">(simData.chem)[i], get<"H2II_fraction">(simData.chem)[i],
@@ -233,13 +231,32 @@ public:
                 get<"RT_HI_ionization_rate">(simData.chem)[i], get<"RT_HeI_ionization_rate">(simData.chem)[i],
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
-            const T du = (u_cool - u_old) / d.minDt;
-            d.du[i] += du;
+            d.temp[i] = temp;
         }
-        timer.step("GRACKLE chemistry and cooling");
+        /*
+        #pragma omp parallel for schedule(static)
+                for (size_t i = first; i < last; i++)
+                {
+                    T u_old  = d.u[i];
+                    T u_cool = d.u[i];
+                    cooling_data.cool_particle(
+                        d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i],
+        get<"HII_fraction">(simData.chem)[i], get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
+                        get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
+                        get<"H2I_fraction">(simData.chem)[i], get<"H2II_fraction">(simData.chem)[i],
+                        get<"DI_fraction">(simData.chem)[i], get<"DII_fraction">(simData.chem)[i],
+                        get<"HDI_fraction">(simData.chem)[i], get<"e_fraction">(simData.chem)[i],
+                        get<"metal_fraction">(simData.chem)[i], get<"volumetric_heating_rate">(simData.chem)[i],
+                        get<"specific_heating_rate">(simData.chem)[i], get<"RT_heating_rate">(simData.chem)[i],
+                        get<"RT_HI_ionization_rate">(simData.chem)[i], get<"RT_HeI_ionization_rate">(simData.chem)[i],
+                        get<"RT_HeII_ionization_rate">(simData.chem)[i],
+        get<"RT_H2_dissociation_rate">(simData.chem)[i], get<"H2_self_shielding_length">(simData.chem)[i]); const T du =
+        (u_cool - u_old) / d.minDt; d.du[i] += du;
+                }
+                timer.step("GRACKLE chemistry and cooling");
 
-        computePositions(first, last, d, domain.box());
-        timer.step("UpdateQuantities");*/
+                computePositions(first, last, d, domain.box());
+                timer.step("UpdateQuantities");*/
         updateSmoothingLength(first, last, d);
         timer.step("UpdateSmoothingLength");
 

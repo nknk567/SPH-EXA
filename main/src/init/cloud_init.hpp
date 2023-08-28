@@ -364,7 +364,7 @@ public:
             std::cout << "timestep " << timestep << std::endl;
             std::cout << "diff " << diff << std::endl;
             std::cout << "time " << time << std::endl;
-            if (good && diff < 1e-4) break;
+            if (good && diff < 0.039/*1e-4"/) break;
             // if (diff * timestep < 1e-3) timestep *= 1.5;
         }
     }

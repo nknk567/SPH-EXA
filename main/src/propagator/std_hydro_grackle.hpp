@@ -254,7 +254,7 @@ public:
         {
             //T u_old  = d.u[i];
             //T u_cool = d.u[i];
-            T du = d.du[i] * std::pow(length_unit, 2.) * std::pow(time_unit, 3.);
+            T du = d.du[i] * std::pow(length_unit, 2.) / std::pow(time_unit, 3.);
             cooling_data.cool_particle(
                 d.minDt, d.rho[i], d.u[i], get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],

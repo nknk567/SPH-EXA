@@ -43,10 +43,10 @@
 namespace sphexa
 {
 
-template<class Dataset>
-cstone::Box<typename Dataset::RealType> restoreData(IFileReader* reader, int rank, Dataset& simData)
+template<class SimulationData>
+cstone::Box<typename SimulationData::RealType> restoreData(IFileReader* reader, int rank, SimulationData& simData)
 {
-    using T = typename Dataset::RealType;
+    using T = typename SimulationData::RealType;
 
     cstone::Box<T> box(0, 1);
     box.loadOrStore(reader);

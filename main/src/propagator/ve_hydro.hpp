@@ -34,7 +34,7 @@
 
 #include <variant>
 
-#include "cstone/fields/particles_get.hpp"
+#include "cstone/fields/field_get.hpp"
 #include "sph/particles_data.hpp"
 #include "sph/sph.hpp"
 
@@ -45,7 +45,7 @@ namespace sphexa
 {
 
 using namespace sph;
-using cstone::FieldList;
+using util::FieldList;
 
 template<bool avClean, class DomainType, class DataType>
 class HydroVeProp : public Propagator<DomainType, DataType>
@@ -59,10 +59,9 @@ protected:
     using Tmass         = typename DataType::HydroData::Tmass;
     using MultipoleType = ryoanji::CartesianQuadrupole<Tmass>;
 
-    using Acc = typename DataType::AcceleratorType;
-    using MHolder_t =
-        typename cstone::AccelSwitchType<Acc, MultipoleHolderCpu,
-                                         MultipoleHolderGpu>::template type<MultipoleType, KeyType, T, T, Tmass, T, T>;
+    using Acc       = typename DataType::AcceleratorType;
+    using MHolder_t = typename cstone::AccelSwitchType<Acc, MultipoleHolderCpu, MultipoleHolderGpu>::template type<
+        MultipoleType, DomainType, typename DataType::HydroData>;
 
     MHolder_t mHolder_;
 

@@ -232,7 +232,7 @@ public:
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
             d.temp[i] = temp;
-        }
+        }/*
         //! @brief Solar mass in g
         constexpr static T ms_g = 1.989e33;
         //! @brief kpc in cm
@@ -248,27 +248,27 @@ public:
         // Time
         const double time_unit = (std::sqrt(1. / (density_unit * G_newton)));
         // Length
-        const double length_unit = l_code_in_kpc * kp_cm;
+        const double length_unit = l_code_in_kpc * kp_cm;*/
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            //T u_old  = d.u[i];
-            //T u_cool = d.u[i];
-            T du = d.du[i] * std::pow(length_unit, 2.) / std::pow(time_unit, 3.);
+            T u_old  = d.u[i];
+            T u_cool = d.u[i];
+            //T du = d.du[i] * std::pow(length_unit, 2.) / std::pow(time_unit, 3.);
             cooling_data.cool_particle(
-                d.minDt, d.rho[i], d.u[i], get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
+                d.minDt, d.rho[i], u_cool, get<"HI_fraction">(simData.chem)[i], get<"HII_fraction">(simData.chem)[i],
                 get<"HM_fraction">(simData.chem)[i], get<"HeI_fraction">(simData.chem)[i],
                 get<"HeII_fraction">(simData.chem)[i], get<"HeIII_fraction">(simData.chem)[i],
                 get<"H2I_fraction">(simData.chem)[i], get<"H2II_fraction">(simData.chem)[i],
                 get<"DI_fraction">(simData.chem)[i], get<"DII_fraction">(simData.chem)[i],
                 get<"HDI_fraction">(simData.chem)[i], get<"e_fraction">(simData.chem)[i],
                 get<"metal_fraction">(simData.chem)[i], get<"volumetric_heating_rate">(simData.chem)[i],
-                du, get<"RT_heating_rate">(simData.chem)[i],
+                get<"specific_heating_rate">(simData.chem)[i], get<"RT_heating_rate">(simData.chem)[i],
                 get<"RT_HI_ionization_rate">(simData.chem)[i], get<"RT_HeI_ionization_rate">(simData.chem)[i],
                 get<"RT_HeII_ionization_rate">(simData.chem)[i], get<"RT_H2_dissociation_rate">(simData.chem)[i],
                 get<"H2_self_shielding_length">(simData.chem)[i]);
-            //const T du = (u_cool - u_old) / d.minDt;
-            //d.du[i] += du;
+            const T du = (u_cool - u_old) / d.minDt;
+            d.du[i] += du;
         }
         timer.step("GRACKLE chemistry and cooling");
 

@@ -69,10 +69,10 @@ std::map<std::string, double> cloudConstants()
             {"cooling::UVbackground", 0},
             {"cooling::m_code_in_ms", 1e8},
             {"cooling::l_code_in_kpc", 1.0},
-            {"cooling::collisional_excitation_rates", 0},
-            {"cooling::collisional_ionisation_rates", 0},
-            {"cooling::recombination_cooling_rates", 0},
-            {"cooling::bremsstrahlung_cooling_rates", 0}};
+            {"cooling::collisional_excitation_rates", 1},
+            {"cooling::collisional_ionisation_rates", 1},
+            {"cooling::recombination_cooling_rates", 1},
+            {"cooling::bremsstrahlung_cooling_rates", 1}};
 }
 
 template<class Dataset, typename ChemData>

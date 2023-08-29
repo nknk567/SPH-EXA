@@ -72,7 +72,8 @@ std::map<std::string, double> cloudConstants()
             {"cooling::collisional_excitation_rates", 1},
             {"cooling::collisional_ionisation_rates", 1},
             {"cooling::recombination_cooling_rates", 1},
-            {"cooling::bremsstrahlung_cooling_rates", 1}};
+            {"cooling::bremsstrahlung_cooling_rates", 1},
+            {"cooling::use_specific_heating_rate", 1}};
 }
 
 template<class Dataset, typename ChemData>

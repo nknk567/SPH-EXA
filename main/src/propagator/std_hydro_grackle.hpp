@@ -236,9 +236,9 @@ public:
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
                     const cstone::Box<T>& box) override
     {
-        auto output = [&](auto& tuple)
+        auto output = [&](auto& d)
         {
-            auto& [d, prefix]              = tuple;
+            const auto&      prefix        = d.datasetPrefix;
             auto             fieldPointers = d.data();
             std::vector<int> outputFields  = d.outputFieldIndices;
             for (int i = int(outputFields.size()) - 1; i >= 0; --i)
@@ -256,7 +256,7 @@ public:
                 }
             }
         };
-        for_each_tuple(output, zip_tuples(simData.dataTuple(), simData.dataPrefix));
+        for_each_tuple(output, simData.dataTuple()); // zip_tuples(simData.dataTuple(), simData.dataPrefix));
     }
 };
 

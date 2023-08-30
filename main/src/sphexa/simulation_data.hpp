@@ -31,7 +31,7 @@
 #pragma once
 
 #include <mpi.h>
-
+#include "cstone/util/traits.hpp"
 #include "cooling/chemistry_data.hpp"
 #include "sph/particles_data.hpp"
 
@@ -61,44 +61,53 @@ public:
 
     MPI_Comm comm;
 
-    inline static constexpr std::array dataPrefix{"", "chem::"};
-
     auto dataTuple()
     {
         auto ret = std::tie(hydro, chem);
-        static_assert(std::tuple_size_v<decltype(ret)> == dataPrefix.size());
         return ret;
+    }
+
+    auto data()
+    {
+        using FieldVariant = std::variant<HydroData*, ChemData*>;
+        return std::apply([](auto&... fields) { return std::array<FieldVariant, sizeof...(fields)>{&fields...}; },
+                          dataTuple());
     }
 
     void setOutputFields(const std::vector<std::string>& outFields)
     {
-        std::array<std::vector<std::string>, dataPrefix.size()> outFieldsFwd;
+        const auto&                                      ds         = data();
+        constexpr size_t                                 n_datasets = std::tuple_size_v<decltype(dataTuple())>;
+        std::array<std::vector<std::string>, n_datasets> outFieldsFwd;
 
-        auto assign_name = [&outFieldsFwd](std::string outField)
+        auto assign_if_correct =
+            [](const auto* d, const std::string& outFieldName, std::vector<std::string>& outFieldsVec)
         {
-            for (size_t i = dataPrefix.size() - 1; i >= 0; i--)
+            std::string prefix(d->datasetPrefix);
+            const auto  m = std::mismatch(prefix.begin(), prefix.end(), outFieldName.begin());
+            if (m.first == prefix.end())
             {
-                std::string prefix(dataPrefix[i]);
-                const auto  m = std::mismatch(prefix.begin(), prefix.end(), outField.begin());
-                if (m.first == prefix.end())
-                {
-                    outFieldsFwd[i].emplace_back(m.second, outField.end());
-                    break;
-                }
+                outFieldsVec.emplace_back(m.second, outFieldName.end());
+                return true;
             }
+            return false;
         };
 
-        std::for_each(outFields.begin(), outFields.end(), assign_name);
-
-        auto data              = dataTuple();
-        auto outFieldsFwdTuple = std::tuple_cat(outFieldsFwd);
-        for_each_tuple(
-            [](auto& tuple)
+        auto assign_field_to_dataset = [&](const std::string& outFieldName)
+        {
+            for (size_t i = outFieldsFwd.size() - 1; i >= 0; i--)
             {
-                auto& [d, f] = tuple;
-                d.setOutputFields(f);
-            },
-            zip_tuples(data, outFieldsFwdTuple));
+                const bool correct = std::visit(
+                    [&](const auto* d) { return assign_if_correct(d, outFieldName, outFieldsFwd[i]); }, ds[i]);
+                if (correct) { return; }
+            }
+        };
+        std::for_each(outFields.begin(), outFields.end(), assign_field_to_dataset);
+
+        for (size_t i = 0; i < n_datasets; i++)
+        {
+            std::visit([&](auto* d) { d->setOutputFields(outFieldsFwd[i]); }, ds[i]);
+        }
     }
 };
 

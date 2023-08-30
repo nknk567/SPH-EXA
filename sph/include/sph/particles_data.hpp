@@ -79,6 +79,8 @@ public:
     ParticlesData() { devData.uploadTables(wh, whd); }
     ParticlesData(const ParticlesData&) = delete;
 
+    inline static constexpr char datasetPrefix[]{""};
+
     uint64_t iteration{1};
     uint64_t numParticlesGlobal{0};
 

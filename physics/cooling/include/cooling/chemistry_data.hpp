@@ -54,6 +54,8 @@ public:
     using FieldVariant =
         std::variant<FieldVector<float>*, FieldVector<double>*, FieldVector<unsigned>*, FieldVector<uint64_t>*>;
 
+    inline static constexpr char datasetPrefix[]{"chem::"};
+
     //! Grackle field names
     inline static constexpr std::array fieldNames = Cooler<RealType>::fieldNames;
     inline static constexpr size_t     numFields  = fieldNames.size();

@@ -53,16 +53,16 @@ cstone::Box<typename SimulationData::RealType> restoreData(IFileReader* reader, 
 
     auto& d = simData.hydro;
     d.loadOrStoreAttributes(reader);
-    simData.hydro.iteration++;
+    d.iteration++;
 
-    if (simData.hydro.numParticlesGlobal != reader->globalNumParticles())
+    if (d.numParticlesGlobal != reader->globalNumParticles())
     {
         throw std::runtime_error("numParticlesGlobal mismatch\n");
     }
 
-    auto read = [&rank, &reader](auto &tuple)
+    auto read = [&](auto& d)
     {
-        auto& [d, prefix] = tuple;
+        const auto& prefix = d.datasetPrefix;
         d.resize(reader->localNumParticles());
         auto fieldPointers = d.data();
         for (size_t i = 0; i < fieldPointers.size(); ++i)
@@ -77,9 +77,7 @@ cstone::Box<typename SimulationData::RealType> restoreData(IFileReader* reader, 
         }
     };
 
-    auto data          = simData.dataTuple();
-    auto prefixesTuple = std::tuple_cat(simData.dataPrefix);
-    for_each_tuple(read, zip_tuples(data, prefixesTuple));
+    for_each_tuple(read, simData.dataTuple());
     return box;
 }
 

@@ -35,7 +35,7 @@
 #include <random>
 
 #include "cstone/sfc/box.hpp"
-#include "cstone/util/tuple_zip.hpp"
+
 #include "io/arg_parser.hpp"
 #include "io/factory.hpp"
 #include "isim_init.hpp"

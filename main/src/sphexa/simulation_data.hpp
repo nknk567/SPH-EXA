@@ -31,7 +31,7 @@
 #pragma once
 
 #include <mpi.h>
-#include "cstone/util/traits.hpp"
+
 #include "cooling/chemistry_data.hpp"
 #include "sph/particles_data.hpp"
 

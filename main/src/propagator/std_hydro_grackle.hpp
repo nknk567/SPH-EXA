@@ -37,7 +37,6 @@
 
 #include "cstone/fields/field_get.hpp"
 #include "cstone/util/value_list.hpp"
-#include "cstone/util/tuple_zip.hpp"
 #include "sph/particles_data.hpp"
 #include "sph/sph.hpp"
 
@@ -256,7 +255,7 @@ public:
                 }
             }
         };
-        for_each_tuple(output, simData.dataTuple()); // zip_tuples(simData.dataTuple(), simData.dataPrefix));
+        for_each_tuple(output, simData.dataTuple());
     }
 };
 

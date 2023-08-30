@@ -70,7 +70,7 @@ cstone::Box<typename SimulationData::RealType> restoreData(IFileReader* reader, 
             if (d.isConserved(i))
             {
                 if (rank == 0) { std::cout << "restoring " << d.fieldNames[i] << std::endl; }
-                std::visit([reader, key = d.fieldNames[i], prefix](auto field)
+                std::visit([reader, key = d.fieldNames[i], &prefix](auto field)
                            { reader->readField(std::string(prefix) + key, field->data()); },
                            fieldPointers[i]);
             }

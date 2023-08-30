@@ -233,35 +233,12 @@ public:
         timer.stop();
     }
 
-   /* template<class Tuple>
-    auto zip_tuples_ele(Tuple&& tup, size_t i)
-    {
-        return std::apply([i](auto&... tupEle) { return std::make_tuple(std::get<i>(tupEle)...); }, std::forward<Tuple>(tup));
-    }
-
-    template<typename type>
-    using list = std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<type>>>;
-
-
-    template<class ...Tuples>
-    auto zip_tuples(Tuples&& ...tups)
-    {
-        using type = typename std::tuple_element<0, std::tuple<Tuples...>>::type;
-
-        return std::apply([&](auto&... l) {
-                              return std::make_tuple(zip_tuples_ele(tups..., l)...);
-                          },
-                          list<type>{});
-    }*/
-
-
-
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
                     const cstone::Box<T>& box) override
     {
-        auto output = [&](auto &tuple)
+        auto output = [&](auto& tuple)
         {
-            auto& [d, prefix] = tuple;
+            auto& [d, prefix]              = tuple;
             auto             fieldPointers = d.data();
             std::vector<int> outputFields  = d.outputFieldIndices;
             for (int i = int(outputFields.size()) - 1; i >= 0; --i)
@@ -279,17 +256,7 @@ public:
                 }
             }
         };
-        //const auto& prefixesTuple = std::tuple_cat(simData.dataPrefix);
-        //const auto& dataTuple = simData.dataTuple();
-        auto arg = zip_tuples(simData.dataTuple(), simData.dataPrefix);
-        for_each_tuple(output, arg);
-
-        /*auto out = [&]<size_t ...Is>(std::index_sequence<Is...> seq) {
-            return std::make_tuple(std::tie(std::get<Is>(dataTuple), std::get<Is>(prefixesTuple))...);
-        };
-        auto arg = out(std::make_index_sequence<std::tuple_size_v<decltype(simData.dataPrefix)>>());*/
-        //auto arg = zip_tuples(simData.dataTuple(), prefixesTuple);
-        //for_each_tuple_zip(output, simData.dataTuple(), prefixesTuple);
+        for_each_tuple(output, zip_tuples(simData.dataTuple(), simData.dataPrefix));
     }
 };
 

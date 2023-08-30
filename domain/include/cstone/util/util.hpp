@@ -127,18 +127,18 @@ constexpr HOST_DEVICE_FUN StrongType<T, Phantom> operator-(const StrongType<T, P
 }
 
 //! @brief Utility to call function with each element in tuple_1 and tuple_2
-template<class F, class T1, class T2>
-void for_each_tuple_zip(F&& func, T1&& tuple_1, T2&& tuple_2)
-{
-    std::apply(
-        [&func, &tuple_2](auto&... args1)
-        {
-            std::apply([&args1..., f = func](auto&... args2)
-                       { [[maybe_unused]] auto list = std::initializer_list<int>{(f(args1, args2), 0)...}; },
-                       tuple_2);
-        },
-        tuple_1);
-}
+//template<class F, class T1, class T2>
+//void for_each_tuple_zip(F&& func, T1&& tuple_1, T2&& tuple_2)
+//{
+//    std::apply(
+//        [&func, &tuple_2](auto&... args1)
+//        {
+//            std::apply([&args1..., f = func](auto&... args2)
+//                       { [[maybe_unused]] auto list = std::initializer_list<int>{(f(args1, args2), 0)...}; },
+//                       tuple_2);
+//        },
+//        tuple_1);
+//}
 
 //! @brief Utility to call function with each element in tuple_
 template<class F, class... Ts>

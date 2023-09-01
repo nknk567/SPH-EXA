@@ -124,8 +124,9 @@ public:
         }
         else
         {
-            domain.sync(get<"keys">(d), get<"x">(d), get<"y">(d), get<"z">(d), get<"h">(d),
-                        std::tuple_cat(std::tie(get<"m">(d)), get<ConservedFields>(d)), get<DependentFields>(d));
+            domain.sync(get<"keys">(d), get<"x">(d), get<"y">(d), get<"z">(d), get<"h">(d), get<"m">(d),
+                            std::tuple_cat(get<ConservedFields>(d), get<CoolingFields>(simData.chem)),
+                            get<DependentFields>(d));
         }
         d.treeView = domain.octreeProperties();
     }

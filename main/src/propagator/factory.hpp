@@ -40,6 +40,7 @@
 #include "ve_hydro.hpp"
 #ifdef SPH_EXA_HAVE_GRACKLE
 #include "std_hydro_grackle.hpp"
+#include "ve_grackle.hpp"
 #endif
 #ifdef SPH_EXA_HAVE_H5PART
 #include "turb_ve.hpp"
@@ -62,6 +63,10 @@ std::unique_ptr<Propagator<DomainType, ParticleDataType>> propagatorFactory(cons
     if (choice == "std-cooling")
     {
         return std::make_unique<HydroGrackleProp<DomainType, ParticleDataType>>(output, rank);
+    }
+    if (choice == "ve-cooling")
+    {
+        return std::make_unique<VeCooling<true, DomainType, ParticleDataType>>(output, rank);
     }
 #endif
     if (choice == "nbody") { return std::make_unique<NbodyProp<DomainType, ParticleDataType>>(output, rank); }

@@ -20,6 +20,8 @@ auto coolingTimestep(size_t first, size_t last, Dataset& d, Cooler& cooler, Chem
               << "c " << d.c.size() << "\n"
               << "m " << d.m.size() << "\n"
               << "chem " << get<"HI_fraction">(chem).size() << "\n"
+              << "u " << d.u.size() << "\n"
+
               << std::endl;
     using T             = typename Dataset::RealType;
     using CoolingFields = typename Cooler::CoolingFields;

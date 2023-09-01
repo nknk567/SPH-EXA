@@ -274,7 +274,9 @@ public:
         // second output pass: write temporary quantities produced by the EOS
         d.acquire(/*"rho", "p", */"gradh");
         d.devData.acquire(/*"rho", "p", */"gradh");
-        computeEOS(first, last, d);
+        //computeEOS(first, last, d);
+        eos_cooling_ve(first, last, d, simData.chem, cooling_data);
+
         output();
         d.devData.release(/*"rho", "p"*/"gradh");
         d.release(/*"rho", "p", */"gradh");

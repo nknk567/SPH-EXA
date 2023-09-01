@@ -177,10 +177,10 @@ public:
 
         computeTimestep(first, last, d);
         timer.step("Timestep");
-        computePositions(first, last, d, domain.box());
+        /*computePositions(first, last, d, domain.box());
         timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);
-        timer.step("UpdateSmoothingLength");
+        timer.step("UpdateSmoothingLength");*/
 
         timer.stop();
     }

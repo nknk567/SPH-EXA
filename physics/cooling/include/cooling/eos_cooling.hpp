@@ -19,6 +19,7 @@ auto coolingTimestep(size_t first, size_t last, Dataset& d, Cooler& cooler, Chem
     for (size_t i = first; i < last; i++)
     {
         const T cooling_time = cooler.cooling_time(d.rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        d.ct[i] = cooling_time;
         minTc                = std::min(std::abs(cooler.ct_crit * cooling_time), minTc);
     }
     return minTc;

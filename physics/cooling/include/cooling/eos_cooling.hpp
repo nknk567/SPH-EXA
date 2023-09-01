@@ -11,6 +11,16 @@ namespace cooling
 template<class Dataset, typename Cooler, typename Chem>
 auto coolingTimestep(size_t first, size_t last, Dataset& d, Cooler& cooler, Chem& chem)
 {
+    std::cout << "rho" << d.rho.size() << "u " << d.u.size() << "\n"
+              << "m " << d.m.size() << "\n"
+              << "kx " << d.kx.size() << "\n"
+              << "xm " << d.xm.size() << "\n"
+              << "gradh " << d.gradh.size() << "\n"
+              << "prho " << d.prho.size() << "\n"
+              << "c " << d.c.size() << "\n"
+              << "m " << d.m.size() << "\n"
+              << "chem " << get<"HI_fraction">(chem).size() << "\n"
+              << std::endl;
     using T             = typename Dataset::RealType;
     using CoolingFields = typename Cooler::CoolingFields;
 
@@ -65,15 +75,7 @@ void eos_cooling_ve(size_t startIndex, size_t endIndex, HydroData& d, ChemData& 
 
     auto* p   = d.p.data();
     auto* rho = d.rho.data();
-    std::cout << "rho" << d.rho.size() << "u " << d.u.size() << "\n"
-              << "m " << d.m.size() << "\n"
-              << "kx " << d.kx.size() << "\n"
-              << "xm " << d.xm.size() << "\n"
-              << "gradh " << d.gradh.size() << "\n"
-              << "prho " << d.prho.size() << "\n"
-              << "c " << d.c.size() << "\n"
-              << "m " << d.m.size() << "\n"
-              << std::endl;
+
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)

@@ -273,10 +273,10 @@ public:
 
         // second output pass: write temporary quantities produced by the EOS
         d.acquire(/*"rho", "p", */"gradh");
-        d.devData.acquire("rho", "p", "gradh");
+        d.devData.acquire(/*"rho", "p", */"gradh");
         computeEOS(first, last, d);
         output();
-        d.devData.release("rho", "p", "gradh");
+        d.devData.release(/*"rho", "p"*/"gradh");
         d.release(/*"rho", "p", */"gradh");
 
         // third output pass: curlv and divv

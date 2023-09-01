@@ -66,7 +66,7 @@ std::unique_ptr<Propagator<DomainType, ParticleDataType>> propagatorFactory(cons
     }
     if (choice == "ve-cooling")
     {
-        return std::make_unique<VeCooling<true, DomainType, ParticleDataType>>(output, rank);
+        return std::make_unique<VeCooling<false, DomainType, ParticleDataType>>(output, rank);
     }
 #endif
     if (choice == "nbody") { return std::make_unique<NbodyProp<DomainType, ParticleDataType>>(output, rank); }

@@ -213,7 +213,7 @@ public:
         auto minDtCooling = cooling::coolingTimestep(first, last, d, cooling_data, simData.chem);
         computeTimestep(first, last, d, minDtCooling);
         timer.step("Timestep");
-/*
+
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
@@ -230,7 +230,7 @@ public:
         timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);
         timer.step("UpdateSmoothingLength");
-*/
+
         timer.stop();
     }
 

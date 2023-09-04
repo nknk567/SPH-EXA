@@ -518,8 +518,9 @@ HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, 
     //Softening change
     Vec3<Tc> dX = pos_j - pos_i;
     Tc       R2 = norm2(dX);
-    const Tc epsilon_new = 0.5 * (h_i + h_j);
-    const Tc epsilon_new2 = epsilon_new * epsilon_new;
+    //const Tc epsilon_new = 0.5 * (h_i + h_j);
+    //const Tc epsilon_new2 = epsilon_new * epsilon_new;
+    const Tc epsilon_new2 = h_i * h_i + h_j * h_j;
     const Tc r2_denom = R2 + epsilon_new2;
     const Tc denom = std::pow(std::sqrt(r2_denom), 3.0);
     const Tc res = m_j / denom;

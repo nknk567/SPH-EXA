@@ -219,7 +219,7 @@ void computeGravity(const TreeNodeIndex* childOffsets, const TreeNodeIndex* inte
         for (LocalIndex k = 0; k < groupSizeValid; ++k)
         {
             egravLoc += G * m[i + k] * potAndAcc[k][0];
-            phi[i + k] += G * m[i + k] * potAndAcc[k][0];
+            phi[i + k] += G * potAndAcc[k][0];
             ax[i + k] += G * potAndAcc[k][1];
             ay[i + k] += G * potAndAcc[k][2];
             az[i + k] += G * potAndAcc[k][3];

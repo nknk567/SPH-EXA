@@ -260,7 +260,7 @@ public:
     std::vector<int>         outputFieldIndices;
     std::vector<std::string> outputFieldNames;
 
-    constexpr static T sincIndex     = 6.0;
+    constexpr static T sincIndex     = 4.0;
     constexpr static T maxDtIncrease = 1.1;
 
     // Min. Atwood number in ramp function in momentum equation (crossed/uncrossed selection)

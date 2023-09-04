@@ -34,7 +34,7 @@ HOST_DEVICE_FUN inline T densityJLoop(cstone::LocalIndex i, T K, const cstone::B
         roloc += w * m[j];
     }
 
-    return K * (roloc/* + m[i]*/) * h3Inv;
+    return K * (roloc + m[i]) * h3Inv;
 }
 
 } // namespace sph

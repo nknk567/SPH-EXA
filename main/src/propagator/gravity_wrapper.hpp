@@ -69,7 +69,7 @@ public:
         ryoanji::computeGravity(octree.childOffsets, octree.internalToLeaf, focusTree.expansionCenters().data(),
                                 multipoles_.data(), domain.layout().data(), domain.startCell(), domain.endCell(),
                                 d.x.data(), d.y.data(), d.z.data(), d.soft.data(), d.m.data(), domain.box(), d.g,
-                                d.ax.data(), d.ay.data(), d.az.data(), &d.egrav);
+                                d.ax.data(), d.ay.data(), d.az.data(), &d.egrav, d.phi.data());
     }
 
     util::array<uint64_t, 5> readStats() const { return {0, 0, 0, 0, 0}; }

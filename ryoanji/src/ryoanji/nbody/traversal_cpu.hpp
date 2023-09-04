@@ -176,7 +176,7 @@ void computeGravity(const TreeNodeIndex* childOffsets, const TreeNodeIndex* inte
                     const cstone::SourceCenterType<T1>* macSpheres, const MType* multipoles, const LocalIndex* layout,
                     TreeNodeIndex firstLeafIndex, TreeNodeIndex lastLeafIndex, const T1* x, const T1* y, const T1* z,
                     const T2* h, const Tm* m, const cstone::Box<T1>& box, float G, T1* ax, T1* ay, T1* az, T1* egravTot,
-                    int numShells = 0)
+                    T1* phi, int numShells = 0)
 {
     constexpr LocalIndex groupSize   = 16;
     LocalIndex           firstTarget = layout[firstLeafIndex];
@@ -219,6 +219,7 @@ void computeGravity(const TreeNodeIndex* childOffsets, const TreeNodeIndex* inte
         for (LocalIndex k = 0; k < groupSizeValid; ++k)
         {
             egravLoc += G * m[i + k] * potAndAcc[k][0];
+            phi[i + k] += G * m[i + k] * potAndAcc[k][0];
             ax[i + k] += G * potAndAcc[k][1];
             ay[i + k] += G * potAndAcc[k][2];
             az[i + k] += G * potAndAcc[k][3];

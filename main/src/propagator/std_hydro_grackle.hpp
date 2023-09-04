@@ -164,7 +164,7 @@ public:
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
-        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.0025);
+        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.004);
         fill(get<"phi">(d), 0, domain.nParticlesWithHalos(), 0.);
 
         computeDensity(first, last, d, domain.box());

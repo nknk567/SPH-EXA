@@ -515,7 +515,23 @@ template<class Ta, class Tc, class Th, class Tm>
 HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, const Vec3<Tc>& pos_j, Tm m_j, Th h_i,
                                            Th h_j)
 {
+    //Softening change
     Vec3<Tc> dX = pos_j - pos_i;
+    Tc       R2 = norm2(dX);
+    const Tc epsilon_new = 0.5 * (h_i + h_j);
+    const Tc epsilon_new2 = epsilon_new * epsilon_new;
+    const Tc r2_denom = R2 + epsilon_new2;
+    const Tc denom = std::pow(std::sqrt(r2_denom), 3.0);
+    const Tc res = m_j / denom;
+
+    acc[0] -= m_j / std::sqrt(r2_denom);
+    acc[1] += dX[0] * res;
+    acc[2] += dX[1] * res;
+    acc[3] += dX[2] * res;
+    return acc;
+    //**
+
+    /*Vec3<Tc> dX = pos_j - pos_i;
     Tc       R2 = norm2(dX);
 
     Th h_ij  = h_i + h_j;
@@ -531,7 +547,7 @@ HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, 
     acc[2] += dX[1] * invR3m;
     acc[3] += dX[2] * invR3m;
 
-    return acc;
+    return acc;*/
 }
 
 /*! @brief apply a spherial multipole to a particle

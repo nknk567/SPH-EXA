@@ -46,15 +46,19 @@ void eos_cooling(size_t startIndex, size_t endIndex, HydroData& d, ChemData& che
 
     auto* p = d.p.data();
     auto* c = d.c.data();
+    auto* t = d.temp.data();
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
         T pressure    = cooler.pressure(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
         T gamma       = cooler.adiabatic_index(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        T temp       = cooler.energy_to_temperature(0.,rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+
         T sound_speed = std::sqrt(gamma * pressure / rho[i]);
         p[i]          = pressure;
         c[i]          = sound_speed;
+        t[i] = temp;
     }
 }
 template<typename HydroData, typename ChemData, typename Cooler>

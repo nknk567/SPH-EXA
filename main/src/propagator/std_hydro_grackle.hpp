@@ -68,7 +68,7 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "ct", "soft", "phi">;
+    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "ct", "soft", "phi", "temp", "rho">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -213,7 +213,7 @@ public:
         auto minDtCooling = cooling::coolingTimestep(first, last, d, cooling_data, simData.chem);
         computeTimestep(first, last, d, minDtCooling);
         timer.step("Timestep");
-
+/*
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
@@ -230,7 +230,7 @@ public:
         timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);
         timer.step("UpdateSmoothingLength");
-
+*/
         timer.stop();
     }
 

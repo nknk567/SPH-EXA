@@ -53,12 +53,12 @@ void eos_cooling(size_t startIndex, size_t endIndex, HydroData& d, ChemData& che
     {
         T pressure    = cooler.pressure(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
         T gamma       = cooler.adiabatic_index(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
-        T temp       = cooler.energy_to_temperature(0.,rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        //T temp       = cooler.energy_to_temperature(0.,rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
 
         T sound_speed = std::sqrt(gamma * pressure / rho[i]);
         p[i]          = pressure;
         c[i]          = sound_speed;
-        t[i] = temp;
+        //t[i] = temp;
     }
 }
 template<typename HydroData, typename ChemData, typename Cooler>

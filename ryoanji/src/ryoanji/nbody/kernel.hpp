@@ -541,8 +541,8 @@ HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, 
     Vec3<Tc> dX = pos_j - pos_i;
     Tc       R2 = norm2(dX);
     Tc       R  = std::sqrt(R2);
-    auto phi_d_i = spline_soft_d(R, h_i);
-    auto phi_d_j = spline_soft_d(R, h_j);
+    auto phi_d_i = -spline_soft_d(R, h_i);
+    auto phi_d_j = -spline_soft_d(R, h_j);
     auto res = m_j + 0.5 * (phi_d_i + phi_d_j) / R;
     acc[1] += dX[0] * res;
     acc[2] += dX[1] * res;

@@ -501,6 +501,29 @@ HOST_DEVICE_FUN DEVICE_INLINE void M2M(int begin, int end, const Vec4<T>& Xout, 
     }
 }
 
+template<class Tq, class Th>
+HOST_DEVICE_FUN DEVICE_INLINE Tq spline_soft_d(Tq r_abs, Th h_i)
+{
+    Tq q = r_abs / h_i;
+    if (q >= 2.)
+        return -1. / (r_abs * r_abs);
+    else if (q >= 1.)
+    {
+        Tq q2   = q * 1;
+        Tq q2_1 = 1. / q2;
+        Tq q3   = q2 * q;
+        Tq q4   = q2 * q2;
+        return 1. / (h_i * h_i) * (8. / 3. * q - 3. * q2 - 6. / 5. * q3 - 1. / 6. * q4 - 1. / (15 * q2));
+    }
+    else
+    {
+        Tq q2 = q * 1;
+        Tq q3 = q2 * q;
+        Tq q4 = q2 * q2;
+        return 1. / (h_i * h_i) * (4. / 3. * q - 6. / 5. * q3 + 1. / 2. * q4);
+    }
+}
+
 /*! @brief interaction between two particles
  *
  * @param acc     acceleration to add to
@@ -515,20 +538,30 @@ template<class Ta, class Tc, class Th, class Tm>
 HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, const Vec3<Tc>& pos_j, Tm m_j, Th h_i,
                                            Th h_j)
 {
-    //Softening change
     Vec3<Tc> dX = pos_j - pos_i;
     Tc       R2 = norm2(dX);
-    //const Tc epsilon_new = 0.5 * (h_i + h_j);
-    //const Tc epsilon_new2 = epsilon_new * epsilon_new;
+    Tc       R  = std::sqrt(R2);
+    auto phi_d_i = spline_soft_d(R, h_i);
+    auto phi_d_j = spline_soft_d(R, h_j);
+    auto res = m_j + 0.5 * (phi_d_i + phi_d_j) / R;
+    acc[1] += dX[0] * res;
+    acc[2] += dX[1] * res;
+    acc[3] += dX[2] * res;
+
+    /*// Softening change (eps^2 softening)
+    Vec3<Tc> dX = pos_j - pos_i;
+    Tc       R2 = norm2(dX);
+    // const Tc epsilon_new = 0.5 * (h_i + h_j);
+    // const Tc epsilon_new2 = epsilon_new * epsilon_new;
     const Tc epsilon_new2 = h_i * h_i + h_j * h_j;
-    const Tc r2_denom = R2 + epsilon_new2;
-    const Tc denom = std::pow(std::sqrt(r2_denom), 3.0);
-    const Tc res = m_j / denom;
+    const Tc r2_denom     = R2 + epsilon_new2;
+    const Tc denom        = std::pow(std::sqrt(r2_denom), 3.0);
+    const Tc res          = m_j / denom;
 
     acc[0] -= m_j / std::sqrt(r2_denom);
     acc[1] += dX[0] * res;
     acc[2] += dX[1] * res;
-    acc[3] += dX[2] * res;
+    acc[3] += dX[2] * res;*/
     return acc;
     //**
 

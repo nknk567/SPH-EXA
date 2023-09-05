@@ -46,7 +46,7 @@ std::map<std::string, double> evrardCoolingConstants()
             {"minDt_m1", 1e-4},
             {"mui", 10},
             {"ng0", 100},
-            {"ngmax", 150},
+            {"ngmax", 101},
             //{"Kcour", 0.1},
             //{"etaAcc", 0.025},
             {"cooling::use_grackle", 1},

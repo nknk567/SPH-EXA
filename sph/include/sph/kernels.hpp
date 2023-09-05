@@ -6,7 +6,14 @@
 namespace sph
 {
 
+//cubic spline
 template<typename T>
+HOST_DEVICE_FUN inline T compute_3d_k(T n)
+{
+    return  1. / M_PI;
+}
+
+/*template<typename T>
 HOST_DEVICE_FUN inline T compute_3d_k(T n)
 {
     // b0, b1, b2 and b3 are defined in "SPHYNX: an accurate density-based SPH method for astrophysical applications",
@@ -17,7 +24,7 @@ HOST_DEVICE_FUN inline T compute_3d_k(T n)
     T b3 = 4.7013839e-2;
 
     return b0 + b1 * std::sqrt(n) + b2 * n + b3 * std::sqrt(n * n * n);
-}
+}*/
 
 //! @brief compute time-step based on the signal velocity
 template<class T1, class T2, class T3>
@@ -48,17 +55,33 @@ HOST_DEVICE_FUN T updateH(unsigned ng0, unsigned nc, T h)
 template<typename T>
 HOST_DEVICE_FUN inline T wharmonic_std(T v)
 {
+    if (v > 2.) return 0.;
+    else if (v > 1.) return 0.25 * (2. - v) * (2. - v) * (2. - v);
+    else return 1. - 1.5 * v * v * (1 - 0.5 * v);
+}
+/*//! @brief sinc(PI/2 * v)
+template<typename T>
+HOST_DEVICE_FUN inline T wharmonic_std(T v)
+{
     if (v == 0.0) { return 1.0; }
 
     const T Pv = M_PI_2 * v;
     return std::sin(Pv) / Pv;
-}
+}*/
 
 /*! @brief Derivative of sinc(PI/2 * v) w.r to v
  *
  * Unoptimized for clarity as this is only used to construct look-up tables
  */
 template<typename T>
+HOST_DEVICE_FUN inline T wharmonic_derivative_std(T v)
+{
+   if (v > 2.) return 0.;
+   else if (v > 1.) return -0.75 * (2. - v) * (2. - v);
+   else return -3. * v + 9. / 4. * v * v;
+}
+
+    /*template<typename T>
 HOST_DEVICE_FUN inline T wharmonic_derivative_std(T v)
 {
     if (v == 0.0) return 0.0;
@@ -68,9 +91,9 @@ HOST_DEVICE_FUN inline T wharmonic_derivative_std(T v)
     const T     sincv  = std::sin(Pv) / (Pv);
 
     return sincv * piHalf * ((std::cos(Pv) / std::sin(Pv)) - T(1) / Pv);
-}
+}*/
 
-template<typename T>
+/*template<typename T>
 HOST_DEVICE_FUN inline T wharmonic_derivative(T v, T powsincv)
 {
     if (v == T(0)) return T(0);
@@ -78,7 +101,7 @@ HOST_DEVICE_FUN inline T wharmonic_derivative(T v, T powsincv)
     constexpr T piHalf = M_PI_2;
     const T     Pv     = piHalf * v;
     return powsincv * piHalf * (T(1) / std::tan(Pv) - T(1) / Pv);
-}
+}*/
 
 /*! @brief Old viscosity according to Monaghan & Gringold 1983
  *

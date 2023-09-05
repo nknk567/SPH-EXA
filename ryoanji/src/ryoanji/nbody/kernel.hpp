@@ -506,7 +506,7 @@ HOST_DEVICE_FUN DEVICE_INLINE Tq spline_soft_d(Tq r_abs, Th h_i)
 {
     Tq q = r_abs / h_i;
     if (q >= 2.)
-        return -1. / (r_abs * r_abs);
+        return 1. / (r_abs * r_abs);
     else if (q >= 1.)
     {
         Tq q2   = q * q;
@@ -546,9 +546,6 @@ HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, 
     auto     res     = m_j * 0.5 * (phi_d_i + phi_d_j);
     if (R == 0.)
     {
-        acc[1] = 0.;
-        acc[2] = 0.;
-        acc[3] = 0.;
         return acc;
     }
     assert(!std::isnan(res));

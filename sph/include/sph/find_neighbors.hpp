@@ -51,35 +51,36 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
             dist[j]       = (x[nb_j] * x[nb_j] + y[nb_j] * y[nb_j] + z[nb_j] * z[nb_j]);
         }
         std::iota(arg.begin(), arg.end(), 0l);
-        std::sort(arg.begin(), arg.end(), [&dist](size_t i, size_t j) { return dist[i] > dist[j]; });
+        std::sort(arg.begin(), arg.end(), [&dist](size_t i, size_t j) { return dist[i] < dist[j]; });
 
         std::vector<size_t> sorted(n);
         for (size_t j = 0; j < n; j++)
         {
             sorted[j] = *(neighbors + i * ngmax + arg[j]);
         }
-        for (size_t j = 0; j < n; j++)
+        for (size_t j = 0; j < ng0; j++)
         {
             *(neighbors + i * ngmax + j) = sorted[j];
         }
+        h[i] = std::sqrt(dist[arg[ng0 - 1]])/2.;
     }
-        if (numFails)
-        {
-            std::cout << "Coupled h-neighbor count updated failed to converge for " << numFails << " particles"
-                      << std::endl;
-        }
-    }
-
-    //! @brief perform neighbor search together with updating the smoothing lengths
-    template<class T, class Dataset>
-    void findNeighborsSfc(size_t startIndex, size_t endIndex, Dataset & d, const cstone::Box<T>& box)
+    if (numFails)
     {
-        if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{}) { return; }
-
-        if (d.ng0 > d.ngmax) { throw std::runtime_error("ng0 should be smaller than ngmax\n"); }
-
-        findNeighborsSph(d.x.data(), d.y.data(), d.z.data(), d.h.data(), startIndex, endIndex, box, d.treeView.nsView(),
-                         d.ng0, d.ngmax, d.neighbors.data(), d.nc.data() + startIndex);
+        std::cout << "Coupled h-neighbor count updated failed to converge for " << numFails << " particles"
+                  << std::endl;
     }
+}
+
+//! @brief perform neighbor search together with updating the smoothing lengths
+template<class T, class Dataset>
+void findNeighborsSfc(size_t startIndex, size_t endIndex, Dataset& d, const cstone::Box<T>& box)
+{
+    if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{}) { return; }
+
+    if (d.ng0 > d.ngmax) { throw std::runtime_error("ng0 should be smaller than ngmax\n"); }
+
+    findNeighborsSph(d.x.data(), d.y.data(), d.z.data(), d.h.data(), startIndex, endIndex, box, d.treeView.nsView(),
+                     d.ng0, d.ngmax, d.neighbors.data(), d.nc.data() + startIndex);
+}
 
 } // namespace sph

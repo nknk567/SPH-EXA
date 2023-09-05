@@ -509,7 +509,7 @@ HOST_DEVICE_FUN DEVICE_INLINE Tq spline_soft_d(Tq r_abs, Th h_i)
         return 1. / (r_abs * r_abs);
     else if (q >= 1.)
     {
-        Tq q2   = q * 1;
+        Tq q2   = q * q;
         Tq q2_1 = 1. / q2;
         Tq q3   = q2 * q;
         Tq q4   = q2 * q2;
@@ -517,7 +517,7 @@ HOST_DEVICE_FUN DEVICE_INLINE Tq spline_soft_d(Tq r_abs, Th h_i)
     }
     else
     {
-        Tq q2 = q * 1;
+        Tq q2 = q * q;
         Tq q3 = q2 * q;
         Tq q4 = q2 * q2;
         return 1. / (h_i * h_i) * (4. / 3. * q - 6. / 5. * q3 + 1. / 2. * q4);
@@ -541,8 +541,8 @@ HOST_DEVICE_FUN DEVICE_INLINE Vec4<Ta> P2P(Vec4<Ta> acc, const Vec3<Tc>& pos_i, 
     Vec3<Tc> dX      = pos_j - pos_i;
     Tc       R2      = norm2(dX);
     Tc       R       = std::sqrt(R2);
-    auto     phi_d_i = spline_soft_d(R, h_i);
-    auto     phi_d_j = spline_soft_d(R, h_j);
+    auto     phi_d_i = -spline_soft_d(R, h_i);
+    auto     phi_d_j = -spline_soft_d(R, h_j);
     auto     res     = m_j * 0.5 * (phi_d_i + phi_d_j);
     if (R == 0.)
     {

@@ -56,7 +56,9 @@ std::map<std::string, double> evrardCoolingConstants()
             {"cooling::metal_cooling", 0},
             {"cooling::UVbackground", 0},
             {"cooling::m_code_in_ms", 1e16},
-            {"cooling::l_code_in_kpc", 46400.}};
+            {"cooling::l_code_in_kpc", 46400.},
+            {"cooling::SolarMetalFractionByMass", 0.},
+            {"cooling::ct_crit", 0.01}};
 }
 
 template<class Dataset>

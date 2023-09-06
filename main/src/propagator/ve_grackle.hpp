@@ -44,7 +44,8 @@ protected:
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "rho", "p">;
+    using ConservedFields =
+        FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "rho", "p", "soft", "phi", "temp">;
 
     //! @brief list of dependent fields, these may be used as scratch space during domain sync
     using DependentFields_ = FieldList<"prho", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33",
@@ -151,6 +152,8 @@ public:
 
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
+        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.005 * 2.8);
+        fill(get<"phi">(d), 0, domain.nParticlesWithHalos(), 0.);
 
         computeXMass(first, last, d, domain.box());
         timer.step("XMass");
@@ -272,14 +275,14 @@ public:
         d.devData.release("ax", "ay", "az");
 
         // second output pass: write temporary quantities produced by the EOS
-        d.acquire(/*"rho", "p", */"gradh");
-        d.devData.acquire(/*"rho", "p", */"gradh");
-        //computeEOS(first, last, d);
+        d.acquire(/*"rho", "p", */ "gradh");
+        d.devData.acquire(/*"rho", "p", */ "gradh");
+        // computeEOS(first, last, d);
         eos_cooling_ve(first, last, d, simData.chem, cooling_data);
 
         output();
-        d.devData.release(/*"rho", "p"*/"gradh");
-        d.release(/*"rho", "p", */"gradh");
+        d.devData.release(/*"rho", "p"*/ "gradh");
+        d.release(/*"rho", "p", */ "gradh");
 
         // third output pass: curlv and divv
         d.acquire("divv", "curlv");

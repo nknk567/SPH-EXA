@@ -68,7 +68,8 @@ class HydroGrackleProp final : public HydroProp<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "ct", "soft", "phi", "rho">;
+    using ConservedFields =
+        FieldList<"u", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "ct", "soft", "phi", "rho", "temp", "edot">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
@@ -164,7 +165,7 @@ public:
         resizeNeighbors(d, domain.nParticles() * d.ngmax);
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
-        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.005);
+        fill(get<"soft">(d), 0, domain.nParticlesWithHalos(), 0.005*2.8);
         fill(get<"phi">(d), 0, domain.nParticlesWithHalos(), 0.);
 
         computeDensity(first, last, d, domain.box());
@@ -222,6 +223,7 @@ public:
             cooling_data.cool_particle(d.minDt, d.rho[i], u_cool,
                                        cstone::getPointers(get<CoolingFields>(simData.chem), i));
             const T du = (u_cool - u_old) / d.minDt;
+            d.edot[i] = du;
             d.du[i] += du;
         }
         timer.step("GRACKLE chemistry and cooling");

@@ -159,7 +159,7 @@ void computePositions(size_t startIndex, size_t endIndex, Dataset& d, const csto
     {
         updatePositionsHost(startIndex, endIndex, d, box);
 
-        if (!d.temp.empty()) { updateTempHost(startIndex, endIndex, d); }
+        if (0/*!d.temp.empty()*/) { updateTempHost(startIndex, endIndex, d); }
         else if (!d.u.empty()) { updateIntEnergyHost(startIndex, endIndex, d); }
     }
 }

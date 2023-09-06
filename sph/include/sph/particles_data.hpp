@@ -110,6 +110,8 @@ public:
     //! @brief acceleration based time-step control
     T etaAcc{0.2};
 
+    T etaU{0.2};
+
     //! @brief adiabatic index
     T gamma{5.0 / 3.0};
 
@@ -185,6 +187,7 @@ public:
     FieldVector<T>        ct;                                 // cooling time
     FieldVector<T>        soft;
     FieldVector<T>        phi;
+    FieldVector<T>        edot;
 
 
     //! @brief Indices of neighbors for each particle, length is number of assigned particles * ngmax. CPU version only.
@@ -203,7 +206,7 @@ public:
         "x",     "y",    "z",   "x_m1", "y_m1", "z_m1", "vx",   "vy",   "vz",    "rho",  "u",     "p",
         "prho",  "h",    "m",   "c",    "ax",   "ay",   "az",   "du",   "du_m1", "c11",  "c12",   "c13",
         "c22",   "c23",  "c33", "mue",  "mui",  "temp", "cv",   "xm",   "kx",    "divv", "curlv", "alpha",
-        "gradh", "keys", "nc",  "dV11", "dV12", "dV13", "dV22", "dV23", "dV33", "ct", "soft", "phi"};
+        "gradh", "keys", "nc",  "dV11", "dV12", "dV13", "dV22", "dV23", "dV33", "ct", "soft", "phi", "edot"};
 
     static_assert(!cstone::HaveGpu<AcceleratorType>{} ||
                       fieldNames.size() == DeviceData_t<AccType, T, KeyType>::fieldNames.size(),
@@ -217,7 +220,7 @@ public:
     {
         auto ret = std::tie(x, y, z, x_m1, y_m1, z_m1, vx, vy, vz, rho, u, p, prho, h, m, c, ax, ay, az, du, du_m1, c11,
                             c12, c13, c22, c23, c33, mue, mui, temp, cv, xm, kx, divv, curlv, alpha, gradh, keys, nc,
-                            dV11, dV12, dV13, dV22, dV23, dV33, ct, soft, phi);
+                            dV11, dV12, dV13, dV22, dV23, dV33, ct, soft, phi, edot);
 
         static_assert(std::tuple_size_v<decltype(ret)> == fieldNames.size());
         return ret;

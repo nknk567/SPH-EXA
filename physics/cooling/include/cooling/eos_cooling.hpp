@@ -32,7 +32,10 @@ auto coolingTimestep(size_t first, size_t last, Dataset& d, Cooler& cooler, Chem
     {
         const T cooling_time = cooler.cooling_time(d.rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
         d.ct[i]              = cooling_time;
-        minTc                = std::min(std::abs(cooler.ct_crit * cooling_time), minTc);
+        const T expansion_time = d.u[i] / d.du[i];
+
+        minTc = std::min(std::abs(cooler.ct_crit * cooling_time), minTc);
+        minTc = std::min(std::abs(d.etaU * expansion_time), minTc);
     }
     return minTc;
 }
@@ -51,14 +54,14 @@ void eos_cooling(size_t startIndex, size_t endIndex, HydroData& d, ChemData& che
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
-        T pressure    = cooler.pressure(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
-        T gamma       = cooler.adiabatic_index(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
-        //T temp       = cooler.energy_to_temperature(0.,rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        T pressure = cooler.pressure(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        T gamma    = cooler.adiabatic_index(rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
+        T temp     = cooler.energy_to_temperature(0., rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
 
         T sound_speed = std::sqrt(gamma * pressure / rho[i]);
         p[i]          = pressure;
         c[i]          = sound_speed;
-        //t[i] = temp;
+        t[i]          = temp;
     }
 }
 template<typename HydroData, typename ChemData, typename Cooler>
@@ -81,7 +84,6 @@ void eos_cooling_ve(size_t startIndex, size_t endIndex, HydroData& d, ChemData& 
 
     auto* p   = d.p.data();
     auto* rho = d.rho.data();
-
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)

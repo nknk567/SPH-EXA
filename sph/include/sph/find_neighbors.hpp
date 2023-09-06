@@ -48,7 +48,10 @@ void findNeighborsSph(const T* x, const T* y, const T* z, T* h, LocalIndex first
         for (size_t j = 0; j < n; j++)
         {
             unsigned nb_j = *(neighbors + i * ngmax + j);
-            dist[j]       = (x[nb_j] * x[nb_j] + y[nb_j] * y[nb_j] + z[nb_j] * z[nb_j]);
+            auto dx = x[nb_j] - x[i];
+            auto dy = y[nb_j] - y[i];
+            auto dz = z[nb_j] - z[i];
+            dist[j]       = (dx*dx + dy*dy + dz*dz);
         }
         std::iota(arg.begin(), arg.end(), 0l);
         std::sort(arg.begin(), arg.end(), [&dist](size_t i, size_t j) { return dist[i] < dist[j]; });

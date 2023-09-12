@@ -76,38 +76,15 @@ public:
 
     void setOutputFields(const std::vector<std::string>& outFields)
     {
-        const auto&                                      ds         = data();
-        constexpr size_t                                 n_datasets = std::tuple_size_v<decltype(dataTuple())>;
-        std::array<std::vector<std::string>, n_datasets> outFieldsFwd;
+        const auto&      ds         = data();
+        constexpr size_t n_datasets = std::tuple_size_v<decltype(dataTuple())>;
 
-        auto assign_if_correct =
-            [](const auto* d, const std::string& outFieldName, std::vector<std::string>& outFieldsVec)
+        std::vector<std::string> outFieldsCopy{outFields};
+        for (int i = n_datasets - 1; i >= 0; i--)
         {
-            std::string prefix(d->datasetPrefix);
-            const auto  m = std::mismatch(prefix.begin(), prefix.end(), outFieldName.begin());
-            if (m.first == prefix.end())
-            {
-                outFieldsVec.emplace_back(m.second, outFieldName.end());
-                return true;
-            }
-            return false;
-        };
-
-        auto assign_field_to_dataset = [&](const std::string& outFieldName)
-        {
-            for (size_t i = outFieldsFwd.size() - 1; i >= 0; i--)
-            {
-                const bool correct = std::visit(
-                    [&](const auto* d) { return assign_if_correct(d, outFieldName, outFieldsFwd[i]); }, ds[i]);
-                if (correct) { return; }
-            }
-        };
-        std::for_each(outFields.begin(), outFields.end(), assign_field_to_dataset);
-
-        for (size_t i = 0; i < n_datasets; i++)
-        {
-            std::visit([&](auto* d) { d->setOutputFields(outFieldsFwd[i]); }, ds[i]);
+            std::visit([&](auto* d) { d->setOutputFieldsIfAvailable(outFieldsCopy); }, ds[i]);
         }
+        if (!outFieldsCopy.empty()) { throw std::runtime_error("Field not found: " + outFieldsCopy[0]); }
     }
 };
 

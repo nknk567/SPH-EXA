@@ -88,13 +88,30 @@ public:
     std::vector<int>         outputFieldIndices;
     std::vector<std::string> outputFieldNames;
 
-    void setOutputFields(const std::vector<std::string>& outFields)
+    void setOutputFieldsIfAvailable(std::vector<std::string>& outFields)
     {
-        std::cout << "setting outFields chemistry" << std::endl;
-        for (auto f : outFields)
-            std::cout << f << std::endl;
-        outputFieldNames   = outFields;
-        outputFieldIndices = cstone::fieldStringsToInt(outFields, fieldNames);
+        std::vector<std::string> unassigned;
+        outputFieldNames   = {};
+        outputFieldIndices = {};
+
+        for (size_t i = 0; i < outFields.size(); i++)
+        {
+            const std::string prefix{datasetPrefix};
+            const auto        m = std::mismatch(prefix.begin(), prefix.end(), outFields[i].begin());
+            if (m.first == prefix.end())
+            {
+                std::string outField(m.second, outFields[i].end());
+                const auto  index = cstone::getFieldIndex(outField, fieldNames);
+                if (index != fieldNames.size())
+                {
+                    outputFieldNames.push_back(outField);
+                    outputFieldIndices.push_back(index);
+                    continue;
+                }
+            }
+            unassigned.push_back(outFields[i]);
+        }
+        outFields = unassigned;
     }
 
 private:

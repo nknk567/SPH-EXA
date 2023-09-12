@@ -230,10 +230,21 @@ public:
                           dataTuple());
     }
 
-    void setOutputFields(const std::vector<std::string>& outFields)
-    {
-        outputFieldNames   = outFields;
-        outputFieldIndices = cstone::fieldStringsToInt(outFields, fieldNames);
+    auto setOutputFieldsIfAvailable(std::vector<std::string>& outFields) {
+        std::vector<std::string> unassigned;
+        outputFieldNames = {};
+        outputFieldIndices  = {};
+        for (size_t i = 0; i < outFields.size(); i++)
+        {
+            const auto index = cstone::getFieldIndex(outFields[i], fieldNames);
+            if (index == fieldNames.size()) unassigned.push_back(outFields[i]);
+            else
+            {
+                outputFieldNames.push_back(outFields[i]);
+                outputFieldIndices.push_back(index);
+            }
+        }
+        outFields = unassigned;
     }
 
     void resize(size_t size)

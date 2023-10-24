@@ -81,6 +81,8 @@ public:
      * @param[in]  bufDesc         Buffer description of @a keys, @a x, @a y, @a z with range of assigned particles
      * @param[in]  sfcSorter       records the SFC order of the owned input coordinates
      * @param[out] particleKeys    will contain sorted particle SFC keys, length = bufDesc.size, on DEVICE
+     * @param[-]   s0              device scratch vector
+     * @param[-]   s1              device scratch vector
      * @param[in]  x               x coordinates, length = bufDesc.size, ON DEVICE
      * @param[in]  y               y coordinates, length = bufDesc.size, ON DEVICE
      * @param[in]  z               z coordinates, length = bufDesc.size, ON DEVICE
@@ -88,9 +90,15 @@ public:
      *
      * This function does not modify / communicate any particle data.
      */
-    template<class Sorter>
-    LocalIndex
-    assign(BufferDescription bufDesc, Sorter& sfcSorter, KeyType* particleKeys, const T* x, const T* y, const T* z)
+    template<class Sorter, class DevVector>
+    LocalIndex assign(BufferDescription bufDesc,
+                      Sorter& sfcSorter,
+                      DevVector& s0,
+                      DevVector& s1,
+                      KeyType* particleKeys,
+                      const T* x,
+                      const T* y,
+                      const T* z)
     {
         // number of locally assigned particles to consider for global tree building
         LocalIndex numParticles = bufDesc.end - bufDesc.start;
@@ -103,7 +111,7 @@ public:
         computeSfcKeysGpu(x + start, y + start, z + start, sfcKindPointer(keyView.data()), numParticles, box_);
 
         // sort keys and keep track of ordering for later use
-        sfcSorter.setMapFromCodes(keyView.begin(), keyView.end());
+        sfcSorter.setMapFromCodes(keyView.begin(), keyView.end(), s0, s1);
 
         gsl::span<const KeyType> oldLeaves = tree_.treeLeaves();
         std::vector<KeyType> oldBoundaries(assignment_.numRanks() + 1);
@@ -166,9 +174,9 @@ public:
                     T* z,
                     Arrays... particleProperties) const
     {
-        receiveLog_.clear();
-        exchangeParticlesGpu(exchanges_, myRank_, bufDesc, numAssigned(), sendScratch, receiveScratch,
-                             sfcSorter.getMap(), receiveLog_, x, y, z, particleProperties...);
+        recvLog_.clear();
+        exchangeParticlesGpu(0, recvLog_, exchanges_, myRank_, bufDesc, numAssigned(), sendScratch, receiveScratch,
+                             sfcSorter.getMap(), x, y, z, particleProperties...);
 
         auto [newStart, newEnd]    = domain_exchange::assignedEnvelope(bufDesc, numPresent(), numAssigned());
         LocalIndex envelopeSize    = newEnd - newStart;
@@ -176,7 +184,7 @@ public:
 
         computeSfcKeysGpu(x + newStart, y + newStart, z + newStart, sfcKindPointer(keyView.data()), envelopeSize, box_);
         // sort keys and keep track of the ordering
-        sfcSorter.setMapFromCodes(keyView.begin(), keyView.end());
+        sfcSorter.setMapFromCodes(keyView.begin(), keyView.end(), sendScratch, receiveScratch);
 
         return std::make_tuple(newStart, keyView.subspan(numSendDown(), numAssigned()));
     }
@@ -189,7 +197,7 @@ public:
                       SVec& /*s2*/,
                       Arrays... particleProperties) const
     {
-        exchangeParticles(exchanges_, myRank_, bufDesc, numAssigned(), ordering, receiveLog_, particleProperties...);
+        exchangeParticles(1, recvLog_, exchanges_, myRank_, bufDesc, numAssigned(), ordering, particleProperties...);
     }
 
     //! @brief read only visibility of the global octree leaves to the outside
@@ -203,6 +211,7 @@ public:
     //! @brief return the space filling curve rank assignment of the last call to @a assign()
     const SpaceCurveAssignment& assignment() const { return assignment_; }
 
+    //! @brief number of local particles to be sent to lower ranks
     LocalIndex numSendDown() const { return exchanges_[myRank_]; }
     LocalIndex numPresent() const { return exchanges_.count(myRank_); }
     LocalIndex numAssigned() const { return assignment_.totalCount(myRank_); }
@@ -217,7 +226,7 @@ private:
 
     SpaceCurveAssignment assignment_;
     SendRanges exchanges_;
-    mutable std::vector<std::tuple<int, LocalIndex>> receiveLog_;
+    mutable ExchangeLog recvLog_;
 
     //! @brief For locating global domain boundaries in local particle key arrays
     thrust::device_vector<KeyType> d_boundaryKeys_;

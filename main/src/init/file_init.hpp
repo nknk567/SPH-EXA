@@ -39,50 +39,17 @@
 #include "io/arg_parser.hpp"
 #include "io/factory.hpp"
 #include "isim_init.hpp"
-#include "cstone/fields/particles_get.hpp"
+//#include "cstone/fields/particles_get.hpp"
 
 
 namespace sphexa
 {
 
-template <typename ChemData>
-void restoreChemistryData(IFileReader* reader, int rank, ChemData& chem)
+template<class Dataset>
+void restoreDataset(IFileReader* reader, int rank, Dataset& d)
 {
-    using T = typename ChemData::RealType;
-    auto n = reader->localNumParticles();
-    chem.resize(n);
-    auto fieldPointers = chem.data();
-
-    //auto h1 = cstone::get<"HI_fraction">(chem).data();
-    //reader->readField("HI_fraction", h1);
-
-    for (size_t i = 0; i < fieldPointers.size(); i++) {
-        if (rank == 0) { std::cout << "restoring " << chem.fieldNames[i] << std::endl; }
-        std::visit([reader, key = chem.fieldNames[i]](auto field)
-                   {
-                       std::cout << "key: " << key << std::endl;
-                       reader->readField(key, field->data());
-                   },
-                   fieldPointers[i]);
-    }
-}
-
-template<class HydroData>
-cstone::Box<typename HydroData::RealType> restoreHydroData(IFileReader* reader, int rank, HydroData& d)
-{
-    using T = typename HydroData::RealType;
-
-    cstone::Box<T> box(0, 1);
-    box.loadOrStore(reader);
-
     d.loadOrStoreAttributes(reader);
-    d.iteration++;
     d.resize(reader->localNumParticles());
-
-    if (d.numParticlesGlobal != reader->globalNumParticles())
-    {
-        throw std::runtime_error("numParticlesGlobal mismatch\n");
-    }
 
     auto fieldPointers = d.data();
     for (size_t i = 0; i < fieldPointers.size(); ++i)
@@ -90,10 +57,25 @@ cstone::Box<typename HydroData::RealType> restoreHydroData(IFileReader* reader, 
         if (d.isConserved(i))
         {
             if (rank == 0) { std::cout << "restoring " << d.fieldNames[i] << std::endl; }
-            std::visit([reader, key = d.fieldNames[i]](auto field) { reader->readField(key, field->data()); },
+            std::visit([reader, key = d.fieldNames[i]](auto field)
+                       { reader->readField(Dataset::prefix + key, field->data()); },
                        fieldPointers[i]);
         }
     }
+}
+
+template<class SimulationData>
+auto restoreData(IFileReader* reader, int rank, SimulationData& simData)
+{
+    using T = typename SimulationData::RealType;
+
+    cstone::Box<T> box(0, 1);
+    box.loadOrStore(reader);
+
+    restoreDataset(reader, rank, simData.hydro);
+    restoreDataset(reader, rank, simData.chem);
+
+    simData.hydro.iteration++;
 
     return box;
 }
@@ -119,8 +101,8 @@ public:
         reader = std::make_unique<H5PartReader>(simData.comm);
         reader->setStep(h5_fname, initStep);
 
-        auto box = restoreHydroData(reader.get(), rank, simData.hydro);
-        restoreChemistryData(reader.get(), rank, simData.chem);
+        auto box = restoreData(reader.get(), rank, simData);
+
         // Read file attributes and put them in constants_ such that they propagate to the new output after a restart
         auto fileAttributes = reader->fileAttributes();
         for (const auto& attr : fileAttributes)

@@ -80,9 +80,15 @@ public:
      *
      * This function does not modify / communicate any particle data.
      */
-    template<class Reorderer>
-    LocalIndex assign(
-        BufferDescription bufDesc, Reorderer& reorderFunctor, KeyType* particleKeys, const T* x, const T* y, const T* z)
+    template<class Reorderer, class Vector>
+    LocalIndex assign(BufferDescription bufDesc,
+                      Reorderer& reorderFunctor,
+                      Vector& /*sratch0*/,
+                      Vector& /*scratch1*/,
+                      KeyType* particleKeys,
+                      const T* x,
+                      const T* y,
+                      const T* z)
     {
         // number of locally assigned particles to consider for global tree building
         LocalIndex numParticles = bufDesc.end - bufDesc.start;
@@ -155,8 +161,8 @@ public:
                     T* z,
                     Arrays... particleProperties) const
     {
-        receiveLog_.clear();
-        exchangeParticles(exchanges_, myRank_, bufDesc, numAssigned(), reorderFunctor.getMap(), receiveLog_, x, y, z,
+        recvLog_.clear();
+        exchangeParticles(0, recvLog_, exchanges_, myRank_, bufDesc, numAssigned(), reorderFunctor.getMap(), x, y, z,
                           particleProperties...);
 
         auto [newStart, newEnd] = domain_exchange::assignedEnvelope(bufDesc, numPresent(), numAssigned());
@@ -178,7 +184,7 @@ public:
                       SVec& /*receiveScratch*/,
                       Arrays... particleProperties) const
     {
-        exchangeParticles(exchanges_, myRank_, bufDesc, numAssigned(), ordering, receiveLog_, particleProperties...);
+        exchangeParticles(1, recvLog_, exchanges_, myRank_, bufDesc, numAssigned(), ordering, particleProperties...);
     }
 
     //! @brief read only visibility of the global octree leaves to the outside
@@ -192,6 +198,7 @@ public:
     //! @brief return the space filling curve rank assignment of the last call to @a assign()
     const SpaceCurveAssignment& assignment() const { return assignment_; }
 
+    //! @brief number of local particles to be sent to lower ranks
     LocalIndex numSendDown() const { return exchanges_[myRank_]; }
     LocalIndex numPresent() const { return exchanges_.count(myRank_); }
     LocalIndex numAssigned() const { return assignment_.totalCount(myRank_); }
@@ -206,7 +213,7 @@ private:
 
     SpaceCurveAssignment assignment_;
     SendRanges exchanges_;
-    mutable std::vector<std::tuple<int, LocalIndex>> receiveLog_;
+    mutable ExchangeLog recvLog_;
 
     //! @brief leaf particle counts
     std::vector<unsigned> nodeCounts_;

@@ -35,6 +35,7 @@
 
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/continuum.hpp"
+#include "cstone/util/constexpr_string.hpp"
 #include "sph/sph.hpp"
 //  #include "sph/eos.hpp"
 #include "sph/particles_data.hpp"
@@ -98,7 +99,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.0);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.0);
 
-    std::fill(d.soft.begin(), d.soft.end(), 0.05);
+    //std::fill(d.soft.begin(), d.soft.end(), 0.05);
 
 
     const T u_guess{0.2};
@@ -224,20 +225,13 @@ public:
         auto&        chem  = simData.chem;
         const size_t first = domain.startIndex();
         const size_t last  = domain.endIndex();
+        using ChemData = typename Dataset::ChemData;
+        using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
 
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; ++i)
         {
-            T pressure = cooling_data.pressure(
-                d.rho[i], d.u[i], get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
-                get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
-                get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
-                get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
-                get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
-                get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
-                get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
-                get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
-                get<"H2_self_shielding_length">(chem)[i]);
+            T pressure = cooling_data.pressure(d.rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
             d.p[i] = pressure;
         }
     };
@@ -251,6 +245,8 @@ public:
         auto&        chem  = simData.chem;
         const size_t first = domain.startIndex();
         const size_t last  = domain.endIndex();
+        using ChemData = typename Dataset::ChemData;
+        using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
 
         T max_diff = 0.;
 
@@ -263,16 +259,8 @@ public:
                 old[j] = chem.fields[j][i];
             }
             T u = d.u[i];
-            cooling_data.cool_particle(
-                timestep, d.rho[i], u, get<"HI_fraction">(chem)[i], get<"HII_fraction">(chem)[i],
-                get<"HM_fraction">(chem)[i], get<"HeI_fraction">(chem)[i], get<"HeII_fraction">(chem)[i],
-                get<"HeIII_fraction">(chem)[i], get<"H2I_fraction">(chem)[i], get<"H2II_fraction">(chem)[i],
-                get<"DI_fraction">(chem)[i], get<"DII_fraction">(chem)[i], get<"HDI_fraction">(chem)[i],
-                get<"e_fraction">(chem)[i], get<"metal_fraction">(chem)[i], get<"volumetric_heating_rate">(chem)[i],
-                get<"specific_heating_rate">(chem)[i], get<"RT_heating_rate">(chem)[i],
-                get<"RT_HI_ionization_rate">(chem)[i], get<"RT_HeI_ionization_rate">(chem)[i],
-                get<"RT_HeII_ionization_rate">(chem)[i], get<"RT_H2_dissociation_rate">(chem)[i],
-                get<"H2_self_shielding_length">(chem)[i]);
+            T rho = d.rho[i];
+            cooling_data.cool_particle(timestep, rho, u, cstone::getPointers(get<CoolingFields>(chem), i));
             for (size_t j = 0; j < chem.fields.size(); j++)
             {
                 const T diff = std::abs(chem.fields[j][i] - old[j]) / timestep;
@@ -288,7 +276,8 @@ public:
         auto& d       = simData.hydro;
         using KeyType = typename Dataset::KeyType;
         using T       = typename Dataset::RealType;
-        using cstone::FieldList;
+        //using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
+        using util::FieldList;
         using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "u">;
 
         using DependentFields = FieldList<"rho", "p", "c", "du", "nc">;

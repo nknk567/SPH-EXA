@@ -162,14 +162,18 @@ class CloudGlassSphere : public ISimInitializer<Dataset>
 {
     std::string glassBlock;
     using Base = ISimInitializer<Dataset>;
-    using Base::settings_;
+    mutable InitSettings settings_;
 
 public:
-    explicit CloudGlassSphere(std::string initBlock)
+    explicit CloudGlassSphere(std::string initBlock, std::string settingsFile, IFileReader* reader)
         : glassBlock(std::move(initBlock))
     {
-        Base::updateSettings(cloudConstants());
+        Dataset d;
+        settings_ = buildSettings(d, evrardCoolingConstants(), settingsFile, reader);
+        resetConstants(settings_);
+        //Base::updateSettings(cloudConstants());
     }
+    void resetConstants(InitSettings newSettings) { settings_ = std::move(newSettings); }
 
     bool adjustInternalEnergy(Dataset& simData) const
     {
@@ -361,14 +365,14 @@ public:
     }
 
     cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
-                                                 Dataset& simData) const override
+                                                 Dataset& simData, IFileReader* reader) const override
     {
         auto& d       = simData.hydro;
         using KeyType = typename Dataset::KeyType;
         using T       = typename Dataset::RealType;
 
         std::vector<T> xBlock, yBlock, zBlock;
-        fileutils::readTemplateBlock(glassBlock, xBlock, yBlock, zBlock);
+        sphexa::readTemplateBlock(glassBlock, reader, xBlock, yBlock, zBlock);
         size_t blockSize = xBlock.size();
 
         int               multi1D      = std::rint(cbrtNumPart / std::cbrt(blockSize));

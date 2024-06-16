@@ -201,7 +201,7 @@ public:
         planet::sumAccretedMassAndMomentum<DependentFields>(first, last, d, star);
         planet::exchangeAndAccreteOnStar(star, d.minDt_m1, rank);
 
-        domain.setEndIndex(last - star.n_accreted);
+        domain.setEndIndex(last - star.n_accreted_local);
 
         timer.step("accreteParticles");
 
@@ -211,7 +211,7 @@ public:
             printf("star mass: %lf\n", star.m);
             printf("additional pot. erg.: %lf\n", star.potential);
         }
-        printf("rank: %d, removed %zu\n", rank, star.n_accreted);
+        printf("rank: %d, removed %zu\n", rank, star.n_accreted_local);
     }
 
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,

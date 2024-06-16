@@ -28,12 +28,13 @@ void computeAccretionCondition(size_t first, size_t last, Dataset& d, const Star
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
         computeAccretionConditionGPU(first, last, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                                     rawPtr(d.devData.keys), star.position.data(), star.inner_size);
+                                     rawPtr(d.devData.h), rawPtr(d.devData.keys), star.position.data(),
+                                     star.inner_size, star.removal_limit_h);
     }
     else
     {
-        computeAccretionConditionImpl(first, last, d.x.data(), d.y.data(), d.z.data(), d.keys.data(),
-                                      star.position.data(), star.inner_size);
+        computeAccretionConditionImpl(first, last, d.x.data(), d.y.data(), d.z.data(), d.h.data(), d.keys.data(),
+                                      star.position.data(), star.inner_size, star.removal_limit_h);
     }
 }
 
@@ -43,9 +44,9 @@ void computeNewOrder(size_t first, size_t last, Dataset& d, StarData& star)
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        computeNewOrderGPU(first, last, rawPtr(get<"keys">(d)), &star.n_accreted);
+        computeNewOrderGPU(first, last, rawPtr(get<"keys">(d)), &star.n_accreted_local, &star.n_removed_local);
     }
-    else { computeNewOrderImpl(first, last, d.keys.data(), &star.n_accreted); }
+    else { computeNewOrderImpl(first, last, d.keys.data(), &star.n_accreted_local, &star.n_removed_local); }
 }
 
 //! @brief Apply the new particle ordering to all the conserved fields. Dependent fields are used as scratch buffer.
@@ -84,21 +85,22 @@ void applyNewOrder(size_t first, size_t last, Dataset& d, StarData& star)
 template<typename DependentFields, typename Dataset, typename StarData>
 void sumAccretedMassAndMomentum(size_t first, size_t last, Dataset& d, StarData& star)
 {
-    if (star.n_accreted > (last - first)) throw std::runtime_error("Accreting more particles than on rank");
+    if (star.n_accreted_local + star.n_removed_local > (last - first))
+        throw std::runtime_error("Accreting more particles than on rank");
     auto  scratchBuffers = get<DependentFields>(d);
     auto& scratch        = util::pickType<std::decay_t<decltype(get<"vx">(d))>&>(scratchBuffers);
 
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        sumMassAndMomentumGPU(last - star.n_accreted, last, rawPtr(get<"vx">(d)), rawPtr(get<"vy">(d)),
-                              rawPtr(get<"vz">(d)), rawPtr(get<"m">(d)), rawPtr(scratch), &star.m_accreted_local,
-                              star.p_accreted_local.data());
+        sumMassAndMomentumGPU(last - star.n_accreted_local - star.n_removed_local, last - star.n_removed_local,
+                              rawPtr(get<"vx">(d)), rawPtr(get<"vy">(d)), rawPtr(get<"vz">(d)), rawPtr(get<"m">(d)),
+                              rawPtr(scratch), &star.m_accreted_local, star.p_accreted_local.data());
     }
     else
     {
-        sumMassAndMomentumImpl(last - star.n_accreted, last, get<"vx">(d).data(), get<"vy">(d).data(),
-                               get<"vz">(d).data(), get<"m">(d).data(), scratch.data(), &star.m_accreted_local,
-                               star.p_accreted_local.data());
+        sumMassAndMomentumImpl(last - star.n_accreted_local - star.n_removed_local, last - star.n_removed_local,
+                               get<"vx">(d).data(), get<"vy">(d).data(), get<"vz">(d).data(), get<"m">(d).data(),
+                               scratch.data(), &star.m_accreted_local, star.p_accreted_local.data());
     }
 }
 
@@ -134,4 +136,4 @@ void exchangeAndAccreteOnStar(StarData& star, double minDt_m1, int rank)
     MPI_Bcast(&star.m, 1, MpiType<double>{}, 0, MPI_COMM_WORLD);
 }
 
-}; // namespace planet
+} // namespace planet

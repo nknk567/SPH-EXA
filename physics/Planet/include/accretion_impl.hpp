@@ -13,9 +13,9 @@
 namespace planet
 {
 
-template<typename T1, typename Tremove, typename T2>
-void computeAccretionConditionImpl(size_t first, size_t last, const T1* x, const T1* y, const T1* z, Tremove* remove,
-                                   const T2* spos, const T2 star_size)
+template<typename T1, typename Th, typename Tremove, typename T2>
+void computeAccretionConditionImpl(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
+                                   Tremove* remove, const T2* spos, const T2 star_size, const T2 removal_limit_h)
 {
     const double star_size2 = star_size * star_size;
 
@@ -27,19 +27,25 @@ void computeAccretionConditionImpl(size_t first, size_t last, const T1* x, const
         const double dz    = z[i] - spos[2];
         const double dist2 = dx * dx + dy * dy + dz * dz;
 
-        if (dist2 < star_size2) { remove[i] = 1; }
+        if (dist2 < star_size2) { remove[i] = 1; } // Accrete to star
+        else if (h[i] > removal_limit_h) { remove[i] = 2; }    // Remove from system
     }
 }
 
 template<typename Tremove>
-void computeNewOrderImpl(size_t first, size_t last, Tremove* remove, size_t* n_removed)
+void computeNewOrderImpl(size_t first, size_t last, Tremove* remove, size_t* n_accreted, size_t* n_removed)
 {
     std::vector<size_t> index(last - first);
     std::iota(index.begin(), index.end(), first);
 
-    auto       sort_by_removal    = [&remove](size_t i) { return (remove[i] == 0); };
-    const auto partition_iterator = std::stable_partition(index.begin(), index.end(), sort_by_removal);
-    *n_removed                    = index.end() - partition_iterator;
+    auto       keep_particle  = [&remove](size_t i) { return (remove[i] == 0); };
+    const auto begin_accreted = std::stable_partition(index.begin(), index.end(), keep_particle);
+
+    auto       accrete_particle = [&remove](size_t i) { return (remove[i] == 1); };
+    const auto begin_removed    = std::stable_partition(begin_accreted, index.end(), accrete_particle);
+
+    *n_accreted = begin_removed - begin_accreted;
+    *n_removed  = index.end() - begin_removed;
 
     std::copy(index.begin(), index.end(), remove + first);
 }

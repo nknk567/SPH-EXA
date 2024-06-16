@@ -96,7 +96,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
 
         T           wij          = rv / dist;
         constexpr T av_alpha     = T(1);
-        T           viscosity_ij = T(0.5) * artificial_viscosity(av_alpha, av_alpha, ci, cj, wij);
+        T           viscosity_ij = 0.;//T(0.5) * artificial_viscosity(av_alpha, av_alpha, ci, cj, wij);
 
         // For time-step calculations
         T vijsignal = ci + cj - T(3) * wij;

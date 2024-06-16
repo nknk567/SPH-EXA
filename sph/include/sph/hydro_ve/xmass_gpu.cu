@@ -114,7 +114,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                 //        updateH(ng0, ncSph, updateH(ng0, ncSph, h[i])));
             }
             //bool notEnough = ncSph < ng0 / 4;
-            bool notEnough = ncSph < ng0 - 2;
+            bool notEnough = ncSph < ng0 - 10;
             bool tooMany   = (ncSph - 1) > ngmax;
             bool repeat    = (notEnough || tooMany) && i < bodyEnd;
             // bool repeat = (ncSph < ng0 / 4 || (ncSph - 1) > ngmax) && i < bodyEnd;

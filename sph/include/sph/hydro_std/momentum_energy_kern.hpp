@@ -15,7 +15,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
                        unsigned neighborsCount, const Tc* x, const Tc* y, const Tc* z, const T* vx, const T* vy,
                        const T* vz, const T* h, const Tm* m, const T* rho, const T* p, const T* c, const T* c11,
                        const T* c12, const T* c13, const T* c22, const T* c23, const T* c33, const T* wh,
-                       const T* /*whd*/, T* grad_P_x, T* grad_P_y, T* grad_P_z, Tm1* du, T* maxvsignal)
+                       const T* /*whd*/, T* grad_P_x, T* grad_P_y, T* grad_P_z, Tm1* du, T* maxvsignal, T* maxkv)
 {
     constexpr T gradh_i = 1.0;
     constexpr T gradh_j = 1.0;
@@ -38,6 +38,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
     T hiInv3 = hiInv * hiInv * hiInv;
 
     T maxvsignali = 0.0;
+    T maxkvi = 0.;
     T momentum_x = 0.0, momentum_y = 0.0, momentum_z = 0.0, energy = 0.0;
 
     auto c11i = c11[i];
@@ -98,6 +99,10 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         constexpr T av_alpha     = T(1);
         T           viscosity_ij = T(0.5) * artificial_viscosity(av_alpha, av_alpha, ci, cj, wij);
 
+        T v_norm = std::sqrt(vx_ij * vx_ij + vy_ij * vy_ij + vz_ij * vz_ij);
+        T kin_visc = av_alpha * ci * hi + 2. * hi * hi * v_norm / dist;
+        maxkvi = (kin_visc > maxkvi) ? kin_visc : maxkvi;
+
         // For time-step calculations
         T vijsignal = ci + cj - T(3) * wij;
         maxvsignali = (vijsignal > maxvsignali) ? vijsignal : maxvsignali;
@@ -131,6 +136,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
     grad_P_y[i] = K * momentum_y;
     grad_P_z[i] = K * momentum_z;
     *maxvsignal = maxvsignali;
+    *maxkv = maxkvi;
 }
 
 } // namespace sph

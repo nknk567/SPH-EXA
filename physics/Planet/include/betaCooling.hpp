@@ -16,6 +16,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
                      Trho cooling_rho_limit = 1.683e-3)
 {
     *timestep = INFINITY;
+    double cooling_floor = 3e-6;
     for (size_t i = first; i < last; i++)
     {
         if (rho[i] > cooling_rho_limit) continue;
@@ -27,6 +28,11 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
         const double omega = std::sqrt(g * star_mass / (dist2 * dist));
         du[i] += -u[i] * omega / beta;
         *timestep = 0.1 * std::min(*timestep, std::abs(u[i] / du[i]));
+        if (u[i] <= cooling_floor)
+        {
+            u[i] = cooling_floor;
+            du[i] = std::max(0., du[i]);
+        }
     }
 }
 

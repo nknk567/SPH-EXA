@@ -10,9 +10,9 @@
 namespace planet
 {
 
-template<typename Tpos, typename Ts, typename Tdu, typename Trho>
-void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, Ts star_mass,
-                     const Ts* star_pos, Ts beta, Tpos g, Trho *rho, Trho cooling_rho_limit=1.683e-3)
+template<typename Tpos, typename Ts, typename Tdu, typename Trho, typename Tu>
+void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, const Tu* u, Ts star_mass,
+                     const Ts* star_pos, Ts beta, Tpos g, Trho* rho, Trho cooling_rho_limit = 1.683e-3)
 {
     for (size_t i = first; i < last; i++)
     {
@@ -23,7 +23,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
         const double dist2 = dx * dx + dy * dy + dz * dz;
         const double dist  = std::sqrt(dist2);
         const double omega = std::sqrt(g * star_mass / (dist2 * dist));
-        du[i] += -omega / beta;
+        du[i] += -u[i] * omega / beta;
     }
 }
 
@@ -33,11 +33,12 @@ void betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarData&
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
         betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                       rawPtr(d.devData.du), star.m, star.position.data(), star.beta, d.g, rawPtr(d.devData.rho), star.cooling_rho_limit);
+                       rawPtr(d.devData.du), rawPtr(d.devData.u), star.m, star.position.data(), star.beta, d.g, rawPtr(d.devData.rho),
+                       star.cooling_rho_limit);
     }
     else
     {
-        betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), star.m,
+        betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), d.u.data(), star.m,
                         star.position.data(), star.beta, d.g, d.rho.data(), star.cooling_rho_limit);
     }
 }

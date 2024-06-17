@@ -103,7 +103,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         T v_norm = std::sqrt(vx_ij * vx_ij + vy_ij * vy_ij + vz_ij * vz_ij);
         T kin_visc = av_alpha * ci * hi + 2. * hi * hi * v_norm / dist;
         maxkvi = (kin_visc > maxkvi) ? kin_visc : maxkvi;
-        //****
+        //*****
 
         //Full signal formula ***
         T vijsignal = std::sqrt(ci * ci + 2. * wij * wij) + std::sqrt(cj * cj + 2. * wij * wij) - wij;
@@ -111,6 +111,11 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
 
         // For time-step calculations
         //T vijsignal = ci + cj - T(3) * wij;
+
+        //Limited signal ***
+        //T vijsignal = ci + cj - std::min(0, T(3) * wij);
+        //*****
+
         maxvsignali = (vijsignal > maxvsignali) ? vijsignal : maxvsignali;
 
         auto mj        = m[j];

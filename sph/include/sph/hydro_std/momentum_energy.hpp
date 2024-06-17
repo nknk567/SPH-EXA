@@ -74,7 +74,7 @@ void computeMomentumEnergyStdImpl(size_t startIndex, size_t endIndex, Dataset& d
     const auto* whd = d.whd.data();
 
     T minDt = INFINITY;
-
+T minDtExp = INFINITY;
 #pragma omp parallel for schedule(static) reduction(min : minDt)
     for (size_t i = startIndex; i < endIndex; ++i)
     {

@@ -27,12 +27,15 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
         const double dist  = std::sqrt(dist2);
         const double omega = std::sqrt(g * star_mass / (dist2 * dist));
         du[i] += -u[i] * omega / beta;
-        *timestep = 0.1 * std::min(*timestep, std::abs(u[i] / du[i]));
+
         if (u[i] <= cooling_floor)
         {
             u[i] = cooling_floor;
             du[i] = std::max(0., du[i]);
         }
+
+        *timestep = 0.1 * std::min(*timestep, std::abs(u[i] / du[i]));
+
     }
 }
 

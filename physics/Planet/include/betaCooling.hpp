@@ -39,7 +39,7 @@ double betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarDat
         double timestep = 0.;
         betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), d.u.data(), star.m,
                         star.position.data(), star.beta, d.g, d.rho.data(), &timestep, star.cooling_rho_limit);
-        transferToDevice(d, startIndex, endIndex, {"x", "y", "z", "du", "u", "rho"});
+        transferToDevice(d, startIndex, endIndex, {"du"});
         return timestep;
 
         /*betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),

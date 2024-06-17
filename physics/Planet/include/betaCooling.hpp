@@ -36,7 +36,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
 
         *timestep = std::min(*timestep, std::abs(u[i] / du[i]));
     }
-    *timestep *= 0.1;
+    *timestep *= 0.25;
 }
 
 template<typename Dataset, typename StarData>

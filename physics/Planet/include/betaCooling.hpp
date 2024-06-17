@@ -11,7 +11,7 @@ namespace planet
 {
 
 template<typename Tpos, typename Ts, typename Tdu, typename Trho, typename Tu>
-void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, const Tu* u,
+void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, Tu* u,
                      Ts star_mass, const Ts* star_pos, Ts beta, Tpos g, Trho* rho, double* timestep,
                      Trho cooling_rho_limit = 1.683e-3)
 {
@@ -45,7 +45,7 @@ double betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarDat
         double timestep = 0.;
         betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), d.u.data(), star.m,
                         star.position.data(), star.beta, d.g, d.rho.data(), &timestep, star.cooling_rho_limit);
-        transferToDevice(d, startIndex, endIndex, {"du"});
+        transferToDevice(d, startIndex, endIndex, {"du", "u"});
         return timestep;
 
         /*betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),

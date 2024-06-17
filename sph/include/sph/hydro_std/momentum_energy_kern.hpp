@@ -110,10 +110,10 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         //*****
 
         // For time-step calculations
-        //T vijsignal = ci + cj - T(3) * wij;
+        T vijsignal = ci + cj - T(3) * wij;
 
         //Limited signal ***
-        T vijsignal = ci + cj - std::min(T{0.}, T(3) * wij);
+        //T vijsignal = ci + cj - std::min(T{0.}, T(3) * wij);
         //*****
 
         maxvsignali = (vijsignal > maxvsignali) ? vijsignal : maxvsignali;

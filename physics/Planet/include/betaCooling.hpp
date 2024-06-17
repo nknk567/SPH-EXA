@@ -16,7 +16,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
                      Trho cooling_rho_limit = 1.683e-3)
 {
     *timestep = INFINITY;
-    double cooling_floor = 6e-6;
+    double cooling_floor = 9.3e-6;
     for (size_t i = first; i < last; i++)
     {
         if (rho[i] > cooling_rho_limit) continue;

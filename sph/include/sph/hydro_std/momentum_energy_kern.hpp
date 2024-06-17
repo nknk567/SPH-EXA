@@ -99,12 +99,18 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         constexpr T av_alpha     = T(1);
         T           viscosity_ij = T(0.5) * artificial_viscosity(av_alpha, av_alpha, ci, cj, wij);
 
+        //Additional viscous timestep ***
         T v_norm = std::sqrt(vx_ij * vx_ij + vy_ij * vy_ij + vz_ij * vz_ij);
         T kin_visc = av_alpha * ci * hi + 2. * hi * hi * v_norm / dist;
         maxkvi = (kin_visc > maxkvi) ? kin_visc : maxkvi;
+        //****
+
+        //Full signal formula ***
+        T vijsignal = std::sqrt(ci * ci + 2. * wij * wij) + std::sqrt(cj * cj + 2. * wij * wij) - wij;
+        //*****
 
         // For time-step calculations
-        T vijsignal = ci + cj - T(3) * wij;
+        //T vijsignal = ci + cj - T(3) * wij;
         maxvsignali = (vijsignal > maxvsignali) ? vijsignal : maxvsignali;
 
         auto mj        = m[j];

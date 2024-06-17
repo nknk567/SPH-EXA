@@ -89,8 +89,8 @@ void computeMomentumEnergyStdImpl(size_t startIndex, size_t endIndex, Dataset& d
 
         T dt_i = tsKCourant(maxvsignal, h[i], c[i], d.Kcour);
         minDt  = std::min(minDt, dt_i);
-        T dt_visc_i = h[i] * h[i] / maxkv * 0.1;
-        minDt = std::min(minDt, dt_visc_i);
+        //T dt_visc_i = h[i] * h[i] / maxkv * 0.1;
+        //minDt = std::min(minDt, dt_visc_i);
     }
 
     d.minDtCourant = minDt;

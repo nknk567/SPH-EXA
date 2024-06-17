@@ -6,14 +6,16 @@
 #include <cmath>
 #include "cstone/tree/accel_switch.hpp"
 #include "betaCooling_gpu.hpp"
-
+#include "sph/particles_data.hpp"
 namespace planet
 {
 
 template<typename Tpos, typename Ts, typename Tdu, typename Trho, typename Tu>
-void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, const Tu* u, Ts star_mass,
-                     const Ts* star_pos, Ts beta, Tpos g, Trho* rho, Trho cooling_rho_limit = 1.683e-3)
+void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du, const Tu* u,
+                     Ts star_mass, const Ts* star_pos, Ts beta, Tpos g, Trho* rho, double* timestep,
+                     Trho cooling_rho_limit = 1.683e-3)
 {
+    *timestep = INFINITY;
     for (size_t i = first; i < last; i++)
     {
         if (rho[i] > cooling_rho_limit) continue;
@@ -24,22 +26,32 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
         const double dist  = std::sqrt(dist2);
         const double omega = std::sqrt(g * star_mass / (dist2 * dist));
         du[i] += -u[i] * omega / beta;
+        *timestep = 0.1 * std::min(*timestep, std::abs(u[i] / du[i]));
     }
 }
 
 template<typename Dataset, typename StarData>
-void betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarData& star)
+double betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarData& star)
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                       rawPtr(d.devData.du), rawPtr(d.devData.u), star.m, star.position.data(), star.beta, d.g, rawPtr(d.devData.rho),
-                       star.cooling_rho_limit);
+        transferToHost(d, startIndex, endIndex, {"x", "y", "z", "du", "u", "rho"});
+        double timestep = 0.;
+        betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), d.u.data(), star.m,
+                        star.position.data(), star.beta, d.g, d.rho.data(), &timestep, star.cooling_rho_limit);
+        transferToDevice(d, startIndex, endIndex, {"x", "y", "z", "du", "u", "rho"});
+        return timestep;
+
+        /*betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
+                       rawPtr(d.devData.du), rawPtr(d.devData.u), star.m, star.position.data(), star.beta, d.g,
+                       rawPtr(d.devData.rho), star.cooling_rho_limit);*/
     }
     else
     {
+        double timestep = 0.;
         betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.du.data(), d.u.data(), star.m,
-                        star.position.data(), star.beta, d.g, d.rho.data(), star.cooling_rho_limit);
+                        star.position.data(), star.beta, d.g, d.rho.data(), &timestep, star.cooling_rho_limit);
+        return timestep;
     }
 }
 } // namespace planet

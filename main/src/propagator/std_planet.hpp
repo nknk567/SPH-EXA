@@ -177,7 +177,7 @@ public:
         planet::computeCentralForce(simData.hydro, first, last, star);
         timer.step("computeCentralForce");
 
-        computeTimestep(first, last, d);
+        computeTimestep(first, last, d, t_expand);
         timer.step("Timestep");
 
         computePositions(first, last, d, domain.box());

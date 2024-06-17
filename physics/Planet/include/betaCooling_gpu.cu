@@ -44,5 +44,5 @@ void betaCoolingGPU(size_t first, size_t last, const Tpos* x, const Tpos* y, con
     checkGpuErrors(cudaDeviceSynchronize());
 }
 
-template void betaCoolingGPU(size_t, size_t, const double*, const double*, const double* z, double*, double*, double,
+template void betaCoolingGPU(size_t, size_t, const double*, const double*, const double* z, double*, const double*, double,
                              const double*, double, double, float *, float);

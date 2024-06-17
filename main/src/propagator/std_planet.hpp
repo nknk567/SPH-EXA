@@ -158,31 +158,10 @@ public:
     void step(DomainType& domain, DataType& simData) override
     {
         timer.start();
-
-        sync(domain, simData);
-        timer.step("domain::sync");
-
         auto& d = simData.hydro;
-
-        d.resize(domain.nParticlesWithHalos());
-        domain.exchangeHalos(std::tie(get<"m">(d)), get<"ax">(d), get<"ay">(d));
+        using KeyType = typename DataType::HydroData::KeyType;
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
-
-        computeForces(domain, simData);
-
-        double t_expand = planet::betaCooling(d, first, last, star);
-        timer.step("betaCooling");
-
-        planet::computeCentralForce(simData.hydro, first, last, star);
-        timer.step("computeCentralForce");
-
-        computeTimestep(first, last, d, t_expand);
-        timer.step("Timestep");
-
-        computePositions(first, last, d, domain.box());
-        updateSmoothingLength(first, last, d);
-        timer.step("UpdateQuantities");
 
         int rank = 0;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -202,8 +181,52 @@ public:
         planet::exchangeAndAccreteOnStar(star, d.minDt_m1, rank);
 
         domain.setEndIndex(last - star.n_accreted_local);
-
         timer.step("accreteParticles");
+
+
+        sync(domain, simData);
+        timer.step("domain::sync");
+
+
+        d.resize(domain.nParticlesWithHalos());
+        domain.exchangeHalos(std::tie(get<"m">(d)), get<"ax">(d), get<"ay">(d));
+         first = domain.startIndex();
+         last  = domain.endIndex();
+
+
+
+        computeForces(domain, simData);
+
+        double t_expand = planet::betaCooling(d, first, last, star);
+        timer.step("betaCooling");
+
+        planet::computeCentralForce(simData.hydro, first, last, star);
+        timer.step("computeCentralForce");
+
+        computeTimestep(first, last, d, t_expand);
+        timer.step("Timestep");
+
+        computePositions(first, last, d, domain.box());
+        updateSmoothingLength(first, last, d);
+        timer.step("UpdateQuantities");
+
+        planet::computeAndExchangeStarPosition(star, d.minDt, d.minDt_m1, rank);
+        timer.step("computeAndExchangeStarPosition");
+
+        using KeyType = typename DataType::HydroData::KeyType;
+
+        fill(get<"keys">(d), first, last, KeyType{0});
+
+        planet::computeAccretionCondition(first, last, d, star);
+
+        planet::computeNewOrder(first, last, d, star);
+        planet::applyNewOrder<ConservedFields, DependentFields>(first, last, d, star);
+
+        planet::sumAccretedMassAndMomentum<DependentFields>(first, last, d, star);
+        planet::exchangeAndAccreteOnStar(star, d.minDt_m1, rank);
+
+        domain.setEndIndex(last - star.n_accreted_local);
+
 
         if (rank == 0)
         {

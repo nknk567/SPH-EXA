@@ -137,6 +137,7 @@ int main(int argc, char** argv)
 
     propagator->sync(domain, simData);
     if (rank == 0) std::cout << "Domain synchronized, nLocalParticles " << d.x.size() << std::endl;
+    d.resize(domain.nParticlesWithHalos());
 
     viz::init_catalyst(argc, argv);
     viz::init_ascent(d, domain.startIndex());

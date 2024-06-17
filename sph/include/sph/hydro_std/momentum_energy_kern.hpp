@@ -106,11 +106,11 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         //*****
 
         //Full signal formula ***
-        //T vijsignal = std::sqrt(ci * ci + 2. * wij * wij) + std::sqrt(cj * cj + 2. * wij * wij) - wij;
+        T vijsignal = std::sqrt(ci * ci + 2. * wij * wij) + std::sqrt(cj * cj + 2. * wij * wij) - wij;
         //*****
 
         // For time-step calculations
-        T vijsignal = ci + cj - T(3) * wij;
+        //T vijsignal = ci + cj - T(3) * wij;
 
         //Limited signal ***
         //T vijsignal = ci + cj - std::min(T{0.}, T(3) * wij);

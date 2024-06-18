@@ -213,9 +213,9 @@ public:
         planet::computeAndExchangeStarPosition(star, d.minDt, d.minDt_m1, rank);
         timer.step("computeAndExchangeStarPosition");
 
-        using KeyType = typename DataType::HydroData::KeyType;
+       // using KeyType = typename DataType::HydroData::KeyType;
 
-        fill(get<"keys">(d), first, last, KeyType{0});
+        //fill(get<"keys">(d), first, last, KeyType{0});
 
 
         //(in aktueller Version noch nicht auskommentiert)

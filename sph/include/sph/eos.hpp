@@ -46,7 +46,7 @@ HOST_DEVICE_FUN auto idealGasEOS_u(T1 u, T2 rho, T3 gamma)
 
     Tc tmp = u * (gamma - Tc(1));
     Tc p   = rho * tmp;
-    Tc c   = std::sqrt(tmp);
+    Tc c   = std::sqrt(gamma * tmp);
 
     return util::tuple<Tc, Tc>{p, c};
 }

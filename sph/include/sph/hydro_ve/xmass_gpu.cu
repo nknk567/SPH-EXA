@@ -123,7 +123,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             // bool repeat = (ncSph < ng0 / 4 || (ncSph - 1) > ngmax) && i < bodyEnd;
             if (!cstone::ballotSync(repeat)) { break; }
 
-            if (repeat && ncIt <= 10)
+            if (repeat && (ncIt <= 10 || ncIt % 2 == 0))
             {
                 h_low = notEnough ? h[i] : h_low;
                 h_high = tooMany ? h[i] : h_high;
@@ -133,14 +133,14 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                 else if (tooMany)
                     h[i] *= 0.95;*/
             }
-            if (repeat && ncIt > 10)
+            if (repeat && ncIt > 10 && ncIt % 2 != 0)
             {
-                if (ncIt > 11)
+                /*if (ncIt > 11)
                 {
                     // Resort to a bisection algorithm
                     h_low  = notEnough ? h[i] : h_low;
                     h_high = tooMany ? h[i] : h_high;
-                }
+                }*/
                 h[i] = (h_high + h_low) / 2.;
             }
             ncSph =

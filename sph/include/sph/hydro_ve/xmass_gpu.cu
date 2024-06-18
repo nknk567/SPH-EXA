@@ -66,6 +66,8 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
     cstone::LocalIndex* neighborsWarp = nidx + ngmax * TravConfig::targetSize * warpIdxGrid;
 
+    double h_low{0.};
+    double h_high{5.};
     while (true)
     {
         // first thread in warp grabs next target
@@ -80,6 +82,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
         unsigned ncSph =
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
+
 
         constexpr int ncMaxIteration = 999;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
@@ -119,13 +122,26 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             bool repeat    = (notEnough || tooMany) && i < bodyEnd;
             // bool repeat = (ncSph < ng0 / 4 || (ncSph - 1) > ngmax) && i < bodyEnd;
             if (!cstone::ballotSync(repeat)) { break; }
-            if (repeat)
+
+            if (repeat && ncIt <= 10)
             {
-                h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * sqrt((double)ncIt)) / static_cast<T>(sqrt((double)ncIt) + 1);
+                h_low = notEnough ? h[i] : h_low;
+                h_high = tooMany ? h[i] : h_high;
+                h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
                 /*if (notEnough)
                     h[i] = updateH(ng0, ncSph, h[i]);
                 else if (tooMany)
                     h[i] *= 0.95;*/
+            }
+            if (repeat && ncIt > 10)
+            {
+                if (ncIt > 11)
+                {
+                    // Resort to a bisection algorithm
+                    h_low  = notEnough ? h[i] : h_low;
+                    h_high = tooMany ? h[i] : h_high;
+                }
+                h[i] = (h_high + h_low) / 2.;
             }
             ncSph =
                 1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];

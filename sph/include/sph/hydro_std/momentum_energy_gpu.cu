@@ -90,10 +90,10 @@ __global__ void cudaGradP(Tc K, Tc Kcour, unsigned ngmax, cstone::Box<Tc> box, c
                                                        vz, h, m, rho, p, c, c11, c12, c13, c22, c23, c33, wh, whd,
                                                        grad_P_x, grad_P_y, grad_P_z, du, &maxvsignal, &maxkv);
 
-        T dt_visc_i = h[i] * h[i] / maxkv * 0.1;
+        //T dt_visc_i = h[i] * h[i] / maxkv * 0.1;
 
         dt_i = stl::min(dt_i, tsKCourant(maxvsignal, h[i], c[i], Kcour));
-        dt_i = stl::min(dt_i, dt_visc_i);
+        //dt_i = stl::min(dt_i, dt_visc_i);
         //minDt = std::min(minDt, dt_visc_i);
     }
 

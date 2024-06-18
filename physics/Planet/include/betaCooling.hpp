@@ -21,7 +21,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
     size_t n_below_floor{};
     for (size_t i = first; i < last; i++)
     {
-        if (rho[i] > cooling_rho_limit) {}
+        if (rho[i] > cooling_rho_limit || u[i] <= cooling_floor) {}
         else
         {
             const double dx    = x[i] - star_pos[0];
@@ -33,7 +33,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
             du[i] += -u[i] * omega / beta;
         }
 
-        if (u[i] <= cooling_floor)
+        if (u[i] < cooling_floor)
         {
             u[i] = cooling_floor;
             du[i] = std::max(0., du[i]);

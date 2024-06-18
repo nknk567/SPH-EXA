@@ -217,7 +217,9 @@ public:
 
         fill(get<"keys">(d), first, last, KeyType{0});
 
-        planet::computeAccretionCondition(first, last, d, star);
+
+        //(in aktueller Version noch nicht auskommentiert)
+       /* planet::computeAccretionCondition(first, last, d, star);
 
         planet::computeNewOrder(first, last, d, star);
         planet::applyNewOrder<ConservedFields, DependentFields>(first, last, d, star);
@@ -225,7 +227,7 @@ public:
         planet::sumAccretedMassAndMomentum<DependentFields>(first, last, d, star);
         planet::exchangeAndAccreteOnStar(star, d.minDt_m1, rank);
 
-        domain.setEndIndex(last - star.n_accreted_local);
+        domain.setEndIndex(last - star.n_accreted_local);*/
 
 
         if (rank == 0)

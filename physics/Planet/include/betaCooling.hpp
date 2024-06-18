@@ -17,16 +17,20 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
 {
     *timestep = INFINITY;
     double cooling_floor = 9.3e-6;
+    //Changed if condition (not yet started)
     for (size_t i = first; i < last; i++)
     {
-        if (rho[i] > cooling_rho_limit) continue;
-        const double dx    = x[i] - star_pos[0];
-        const double dy    = y[i] - star_pos[1];
-        const double dz    = z[i] - star_pos[2];
-        const double dist2 = dx * dx + dy * dy + dz * dz;
-        const double dist  = std::sqrt(dist2);
-        const double omega = std::sqrt(g * star_mass / (dist2 * dist));
-        du[i] += -u[i] * omega / beta;
+        if (rho[i] > cooling_rho_limit) {}
+        else
+        {
+            const double dx    = x[i] - star_pos[0];
+            const double dy    = y[i] - star_pos[1];
+            const double dz    = z[i] - star_pos[2];
+            const double dist2 = dx * dx + dy * dy + dz * dz;
+            const double dist  = std::sqrt(dist2);
+            const double omega = std::sqrt(g * star_mass / (dist2 * dist));
+            du[i] += -u[i] * omega / beta;
+        }
 
         if (u[i] <= cooling_floor)
         {

@@ -40,7 +40,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
             du[i] = std::max(0., du[i]);
             n_below_floor++;
         }
-        if (du[i] < 0.) { *timestep = std::min(*timestep, std::abs(u[i] / du[i])); }
+        //if (du[i] < 0.) { *timestep = std::min(*timestep, std::abs(u[i] / du[i])); }
     }
     printf("n_below_floor: %zu\n", n_below_floor);
     *timestep *= 0.25;

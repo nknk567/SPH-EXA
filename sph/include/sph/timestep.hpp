@@ -102,6 +102,8 @@ void computeTimestep(size_t first, size_t last, Dataset& d, Ts... extraTimesteps
 
     T minDtLoc = std::min({minDtAcc, d.minDtCourant, d.minDtRho, d.maxDtIncrease * d.minDt, extraTimesteps...});
 
+    printf("minDtAcc: %g\nminDtCourant: %g\n minDtLoc: %g\n", minDtAcc, d.minDtCourant, minDtLoc);
+
     T minDtGlobal;
     MPI_Allreduce(&minDtLoc, &minDtGlobal, 1, MpiType<T>{}, MPI_MIN, MPI_COMM_WORLD);
 

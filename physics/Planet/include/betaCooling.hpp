@@ -18,6 +18,7 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
     *timestep = INFINITY;
     double cooling_floor = 9.3e-6;
     //Changed if condition (not yet started)
+    size_t n_below_floor{};
     for (size_t i = first; i < last; i++)
     {
         if (rho[i] > cooling_rho_limit) {}
@@ -36,10 +37,12 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
         {
             u[i] = cooling_floor;
             du[i] = std::max(0., du[i]);
+            n_below_floor++;
         }
 
         *timestep = std::min(*timestep, std::abs(u[i] / du[i]));
     }
+    printf("n_below_floor: %zu\n", n_below_floor);
     *timestep *= 0.25;
 }
 

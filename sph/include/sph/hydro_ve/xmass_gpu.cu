@@ -123,17 +123,18 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             // bool repeat = (ncSph < ng0 / 4 || (ncSph - 1) > ngmax) && i < bodyEnd;
             if (!cstone::ballotSync(repeat)) { break; }
 
-            if (repeat && (ncIt <= 10 || ncIt % 2 == 0))
+            h_low = notEnough ? h[i] : h_low;
+            h_high = tooMany ? h[i] : h_high;
+            if (repeat && (ncIt <= 30))
             {
-                h_low = notEnough ? h[i] : h_low;
-                h_high = tooMany ? h[i] : h_high;
+
                 h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
                 /*if (notEnough)
                     h[i] = updateH(ng0, ncSph, h[i]);
                 else if (tooMany)
                     h[i] *= 0.95;*/
             }
-            if (repeat && ncIt > 10 && ncIt % 2 != 0)
+            if (repeat && ncIt > 30)
             {
                 /*if (ncIt > 11)
                 {

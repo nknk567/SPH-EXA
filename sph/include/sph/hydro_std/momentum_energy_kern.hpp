@@ -136,7 +136,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
 
     // with the choice of calculating coordinate (r) and velocity (v_ij) differences as i - j,
     // we add the negative sign only here at the end instead of to termA123_ij in each iteration
-    T du_visc   = std::max(Tm1(0.), -K * Tm1(0.5) * viscous_energy);
+    T du_visc   = stl::max(Tm1(0.), -K * Tm1(0.5) * viscous_energy);
     du[i]       = -K * Tm1(0.5) * energy + du_visc;
     grad_P_x[i] = K * momentum_x;
     grad_P_y[i] = K * momentum_y;

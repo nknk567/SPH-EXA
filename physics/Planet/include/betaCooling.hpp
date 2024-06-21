@@ -16,6 +16,12 @@ void betaCoolingImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, co
 {
     for (size_t i = first; i < last; i++)
     {
+        if (u[i] < 2.5e-5)
+        {
+            u[i] = 2.5e-5;
+            du[i] = std::max(du[i], 0.);
+            continue;
+        }
         if (rho[i] > cooling_rho_limit) continue;
         const double dx    = x[i] - star_pos[0];
         const double dy    = y[i] - star_pos[1];
@@ -32,9 +38,13 @@ void betaCooling(Dataset& d, size_t startIndex, size_t endIndex, const StarData&
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                       rawPtr(d.devData.u), rawPtr(d.devData.du), star.m, star.position.data(), star.beta, d.g,
-                       rawPtr(d.devData.rho), star.cooling_rho_limit);
+        //betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
+        //               rawPtr(d.devData.u), rawPtr(d.devData.du), star.m, star.position.data(), star.beta, d.g,
+          //             rawPtr(d.devData.rho), star.cooling_rho_limit);
+        transferToHost(d, startIndex, endIndex, {"rho", "u", "du"});
+        betaCoolingImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.u.data(), d.du.data(), star.m,
+                        star.position.data(), star.beta, d.g, d.rho.data(), star.cooling_rho_limit);
+        transferToDevice(d, startIndex, endIndex, {"u", "du"});
     }
     else
     {

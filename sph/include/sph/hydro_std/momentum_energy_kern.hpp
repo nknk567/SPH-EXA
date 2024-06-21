@@ -38,7 +38,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
     T hiInv3 = hiInv * hiInv * hiInv;
 
     T maxvsignali = 0.0;
-    T momentum_x = 0.0, momentum_y = 0.0, momentum_z = 0.0, energy = 0.0;
+    T momentum_x = 0.0, momentum_y = 0.0, momentum_z = 0.0, energy = 0.0, viscous_energy = 0.0;
 
     auto c11i = c11[i];
     auto c12i = c12[i];
@@ -116,17 +116,28 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
             momentum_z += a * termA3_i + b * termA3_j;
         }
         {
-            T a = Wi * (T(2) * mj_pro_i + viscosity_ij * mi_roi);
-            T b = viscosity_ij * mj_roj_Wj;
+            /* T a = Wi * (T(2) * mj_pro_i + viscosity_ij * mi_roi);
+             T b = viscosity_ij * mj_roj_Wj;
 
-            energy += vx_ij * (a * termA1_i + b * termA1_j) + vy_ij * (a * termA2_i + b * termA2_j) +
-                      vz_ij * (a * termA3_i + b * termA3_j);
+             energy += vx_ij * (a * termA1_i + b * termA1_j) + vy_ij * (a * termA2_i + b * termA2_j) +
+                       vz_ij * (a * termA3_i + b * termA3_j);*/
+            T a = Wi * (T(2) * mj_pro_i);
+
+            energy += vx_ij * (a * termA1_i) + vy_ij * (a * termA2_i) + vz_ij * (a * termA3_i);
+
+            T a_visc = Wi * (viscosity_ij * mi_roi);
+            T b_visc = viscosity_ij * mj_roj_Wj;
+
+            viscous_energy += vx_ij * (a_visc * termA1_i + b_visc * termA1_j) +
+                              vy_ij * (a_visc * termA2_i + b_visc * termA2_j) +
+                              vz_ij * (a_visc * termA3_i + b_visc * termA3_j);
         }
     }
 
     // with the choice of calculating coordinate (r) and velocity (v_ij) differences as i - j,
     // we add the negative sign only here at the end instead of to termA123_ij in each iteration
-    du[i]       = -K * Tm1(0.5) * energy;
+    T du_visc   = std::max(Tm1(0.), -K * Tm1(0.5) * viscous_energy);
+    du[i]       = -K * Tm1(0.5) * energy + du_visc;
     grad_P_x[i] = K * momentum_x;
     grad_P_y[i] = K * momentum_y;
     grad_P_z[i] = K * momentum_z;

@@ -117,7 +117,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                 h[i] = (h_upper + h_lower) / 2.;
                 // Stop at machine precision, later ignore if not exact ncSph
             }
-
+            __syncthreads();
             ncSph =
                 1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
         }

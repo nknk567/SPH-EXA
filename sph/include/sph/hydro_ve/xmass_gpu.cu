@@ -91,7 +91,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5))
             {
                 nc_h_convergenceFailure = true;
-                //printf("failure. %u\n", i);
+                printf("failure. %u\t ncIt: %u\n", i, ncIt);
             }
 
             // bool tooMany   = (ncSph - 1) > ngmax;

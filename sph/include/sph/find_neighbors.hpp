@@ -14,10 +14,10 @@ void findNeighborsSph(const Tc* x, const Tc* y, const Tc* z, T* h, LocalIndex fi
 {
     LocalIndex numWork = lastId - firstId;
 
-    const unsigned ngmin = ng0 / 4;
+    //const unsigned ngmin = ng0 / 4;
 
     size_t        numFails     = 0;
-    constexpr int maxIteration = 100000;
+    constexpr int maxIteration = 110;
 
 #pragma omp parallel for reduction(+ : numFails)
     for (LocalIndex i = 0; i < numWork; ++i)
@@ -28,10 +28,10 @@ void findNeighborsSph(const Tc* x, const Tc* y, const Tc* z, T* h, LocalIndex fi
         T   h_upper{5.};
         T   h_lower{0.};
         int iteration = 0;
-        while ((ngmin > ncSph || (ncSph - 1) > ngmax) && iteration++ < maxIteration)
+        while (ncSph != ng0 && iteration++ < maxIteration)
         {
-            h_upper = (ncSph - 1) > ngmax ? h[i] : h_upper;
-            h_lower = ngmin > ncSph ? h[i] : h_lower;
+            h_upper = (ncSph) > ng0 ? h[i] : h_upper;
+            h_lower = ng0 > ncSph ? h[i] : h_lower;
             if (iteration < 10)
             {
                 // Dampen updateH by weighting with proposed smoothing lengths of past iterations
@@ -45,7 +45,7 @@ void findNeighborsSph(const Tc* x, const Tc* y, const Tc* z, T* h, LocalIndex fi
             ncSph = 1 + findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
         }
 
-        numFails += (iteration >= maxIteration);
+        numFails += (iteration >= maxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5));
 
         nc[i] = ncSph;
     }

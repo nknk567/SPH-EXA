@@ -68,7 +68,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
     T              h_upper{5.};
     T              h_lower{0.};
-    const unsigned ngmin = ng0 - 5;
+    //const unsigned ngmin = ng0 - 5;
 
     while (true)
     {

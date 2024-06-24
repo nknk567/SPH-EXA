@@ -90,8 +90,8 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
             // bool tooMany   = (ncSph - 1) > ngmax;
-            bool notEnough = ncSph < ng0 - 3; //! unsigned!
-            bool tooMany   = (ncSph) > ng0 + 3;
+            bool notEnough = ncSph < ng0 - 5; //! unsigned!
+            bool tooMany   = (ncSph) > ng0 + 5;
             bool repeat    = (notEnough || tooMany) && i < bodyEnd;
 
             h_upper = tooMany ? h[i] : h_upper;
@@ -112,11 +112,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
             ncSph =
                 1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
-            if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5))
-            {
-                nc_h_convergenceFailure = true;
-                printf("failure. %u\t ncIt: %u\t x: %lf, y: %lf, z: %lf\n", i, ncIt, x[i], y[i], z[i]);
-            }
+            if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5)) { nc_h_convergenceFailure = true; }
         }
 
         if (i >= bodyEnd) continue;

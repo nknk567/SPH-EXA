@@ -85,9 +85,9 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
         unsigned ncSph =
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
 
-        constexpr int ncMaxIteration = 110;
-        bool          writeon        = false;
-        T             h_orig         = h[i];
+        constexpr int ncMaxIteration = 60;
+        //bool          writeon        = false;
+       //// T             h_orig         = h[i];
         h_upper                      = 20.0;
         h_lower                      = 0.0;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
@@ -102,10 +102,10 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
             h_upper = tooMany ? h[i] : h_upper;
             h_lower = notEnough ? h[i] : h_lower;
-            if (writeon)
+            /*if (writeon)
             {
                 printf("i: %d\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
-            }
+            }*/
             if (!cstone::ballotSync(repeat)) { break; }
             if (repeat && ncIt < 10)
             {
@@ -121,7 +121,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
             if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5))
             {
-                if (!writeon)
+                /*if (!writeon)
                 {
                     ncIt    = 0;
                     h[i]    = h_orig;
@@ -130,10 +130,10 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                     writeon = true;
                 }
                 else
-                {
+                {*/
                     nc_h_convergenceFailure = true;
                     printf("failure. %u\t ncIt: %u\t x: %lf, y: %lf, z: %lf\n", i, ncIt, x[i], y[i], z[i]);
-                }
+                //}
             }
 //            ncSph =
   //              1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];

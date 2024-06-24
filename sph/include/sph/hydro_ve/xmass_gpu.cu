@@ -66,8 +66,6 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
     cstone::LocalIndex* neighborsWarp = nidx + ngmax * TravConfig::targetSize * warpIdxGrid;
 
-    T h_upper{5.};
-    T h_lower{0.};
     // const unsigned ngmin = ng0 - 5;
 
     while (true)
@@ -86,15 +84,11 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
 
         constexpr int ncMaxIteration = 60;
-        //bool          writeon        = false;
-       //// T             h_orig         = h[i];
-        h_upper                      = 20.0;
-        h_lower                      = 0.0;
+
+        T h_upper = 5.0;
+        T h_lower = 0.0;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
-            ncSph =
-                1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
-
             // bool tooMany   = (ncSph - 1) > ngmax;
             bool notEnough = ncSph < ng0; //! unsigned!
             bool tooMany   = (ncSph) > ng0;
@@ -102,10 +96,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
             h_upper = tooMany ? h[i] : h_upper;
             h_lower = notEnough ? h[i] : h_lower;
-            /*if (writeon)
-            {
-                printf("i: %d\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
-            }*/
+
             if (!cstone::ballotSync(repeat)) { break; }
             if (repeat && ncIt < 10)
             {
@@ -119,24 +110,13 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                 // Stop at machine precision, later ignore if not exact ncSph
             }
 
+            ncSph =
+                1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
             if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5))
             {
-                /*if (!writeon)
-                {
-                    ncIt    = 0;
-                    h[i]    = h_orig;
-                    h_lower = 0.;
-                    h_upper = 20.;
-                    writeon = true;
-                }
-                else
-                {*/
-                    nc_h_convergenceFailure = true;
-                    printf("failure. %u\t ncIt: %u\t x: %lf, y: %lf, z: %lf\n", i, ncIt, x[i], y[i], z[i]);
-                //}
+                nc_h_convergenceFailure = true;
+                printf("failure. %u\t ncIt: %u\t x: %lf, y: %lf, z: %lf\n", i, ncIt, x[i], y[i], z[i]);
             }
-//            ncSph =
-  //              1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
         }
 
         if (i >= bodyEnd) continue;

@@ -95,7 +95,7 @@ momentumAndEnergyJLoop(cstone::LocalIndex i, Tc K, const cstone::Box<Tc>& box, c
         auto roj = rho[j];
         auto cj  = c[j];
 
-        T           wij          = rv / dist; // needs softening?
+        T           wij          = rv / (stl::max(dist, T(1e-8))); // needs softening?
         constexpr T av_alpha     = T(1);
         T           viscosity_ij = T(0.5) * artificial_viscosity(av_alpha, av_alpha, ci, cj, wij);
 

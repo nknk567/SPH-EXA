@@ -85,14 +85,14 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
         unsigned ncSph =
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
 
-        constexpr int ncMaxIteration = 210;
+        constexpr int ncMaxIteration = 110;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
             if (ncIt == ncMaxIteration && (ncSph < ng0 - 5 || ncSph > ng0 + 5)) { nc_h_convergenceFailure = true; }
 
             // bool tooMany   = (ncSph - 1) > ngmax;
-            bool notEnough = ncSph - 1 < ng0; //! unsigned!
-            bool tooMany   = (ncSph - 1) > ng0;
+            bool notEnough = ncSph < ng0; //! unsigned!
+            bool tooMany   = (ncSph) > ng0;
             bool repeat    = (notEnough || tooMany) && i < bodyEnd;
 
             h_upper = tooMany ? h[i] : h_upper;

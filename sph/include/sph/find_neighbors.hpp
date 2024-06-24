@@ -42,6 +42,10 @@ void findNeighborsSph(const Tc* x, const Tc* y, const Tc* z, T* h, LocalIndex fi
                 // Bisect algorithm
                 h[i] = (h_upper + h_lower) / 2.;
             }
+            if (iteration > 50)
+            {
+                printf("it > 50\n");
+            }
             ncSph = 1 + findNeighbors(id, x, y, z, h, treeView, box, ngmax, neighbors + i * ngmax);
         }
 

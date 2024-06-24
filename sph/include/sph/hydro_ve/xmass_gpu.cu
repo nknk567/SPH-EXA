@@ -126,7 +126,6 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
                     h_lower = 0.;
                     h_upper = 5.;
                     writeon = true;
-                    ncSph = ncSph_orig;
                 }
                 else
                 {

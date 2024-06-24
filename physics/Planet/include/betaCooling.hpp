@@ -41,7 +41,7 @@ Tt duTimestepAndTempFloorImpl(size_t first, size_t last, std::floating_point aut
                               std::floating_point auto u_floor, std::floating_point auto du_adjust, Tt k_u)
 {
     size_t n_below_floor{};
-    size_t n_nan;
+    size_t n_nan{};
     size_t n_adjust{};
     Tt     duTimestepMin = std::numeric_limits<Tt>::infinity();
 

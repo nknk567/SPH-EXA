@@ -92,7 +92,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             {
                 nc_h_convergenceFailure = true;
 
-                printf("failure. i: %zu\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
+                printf("failure. i: %d\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
             }
 
             // bool tooMany   = (ncSph - 1) > ngmax;

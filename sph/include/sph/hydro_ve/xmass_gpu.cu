@@ -101,7 +101,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             if (repeat && ncIt < 10)
             {
                 // Dampen updateH by weighting with proposed smoothing lengths of past iterations
-                h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
+                h[i] = (updateH(ng0, ncSph, h[i])); // + h[i] * ncIt) / static_cast<T>(ncIt + 1);
             }
             else if (repeat)
             {

@@ -92,7 +92,6 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
             {
                 nc_h_convergenceFailure = true;
 
-                printf("failure. i: %d\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
             }
 
             // bool tooMany   = (ncSph - 1) > ngmax;
@@ -102,6 +101,10 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
             h_upper = tooMany ? h[i] : h_upper;
             h_lower = notEnough ? h[i] : h_lower;
+            if (i == 63836) {
+                printf("i: %d\t h: %f\t h_upper: %f\t h_lower: %f\t ncSph: %u\n", i, h[i], h_upper, h_lower, ncSph);
+
+            }
             if (!cstone::ballotSync(repeat)) { break; }
             if (repeat && ncIt < 10)
             {

@@ -88,6 +88,8 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
         constexpr int ncMaxIteration = 110;
         bool          writeon        = false;
         T             h_orig         = h[i];
+        h_upper = 20.0;
+        h_lower = 0.0;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
 

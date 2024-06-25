@@ -24,7 +24,7 @@ __global__ void betaCoolingGPUKernel(size_t first, size_t last, const Tpos* x, c
     const double dx    = x[i] - star_pos_x;
     const double dy    = y[i] - star_pos_y;
     const double dz    = z[i] - star_pos_z;
-    const double dist2 = dx * dx + dy * dy;
+    const double dist2 = dx * dx + dy * dy + dz * dz;
     const double dist  = sqrt(dist2);
     const double omega = sqrt(g * star_mass / (dist2 * dist));
     du[i] += -u[i] * omega / beta;

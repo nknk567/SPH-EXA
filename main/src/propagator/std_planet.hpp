@@ -215,6 +215,7 @@ public:
             printf("star mass: %lf\n", star.m);
             printf("additional pot. erg.: %lf\n", star.potential);
             printf("rank 0: accreted %zu, removed %zu\n", star.n_accreted_local, star.n_removed_local);
+            printf("beta: %lf\n", star.beta);
         }
     }
 

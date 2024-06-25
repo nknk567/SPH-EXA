@@ -216,6 +216,7 @@ public:
             printf("additional pot. erg.: %lf\n", star.potential);
             printf("rank 0: accreted %zu, removed %zu\n", star.n_accreted_local, star.n_removed_local);
             printf("beta: %lf\n", star.beta);
+            printf("u_floor: %lf\n", star.u_floor);
         }
     }
 

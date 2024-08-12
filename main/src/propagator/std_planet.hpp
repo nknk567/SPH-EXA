@@ -209,6 +209,9 @@ public:
             printf("star mass: %lf\n", star.m);
             printf("additional pot. erg.: %lf\n", star.potential);
             printf("rank 0: accreted %zu, removed %zu\n", star.n_accreted_local, star.n_removed_local);
+            const auto stats = mHolder_.readStats();
+            printf("stats: %llu\t%llu\t%llu\t%llu\t%llu\n", stats[0], stats[1], stats[2],
+                   stats[3], stats[4]);
         }
     }
 

@@ -104,7 +104,7 @@ public:
     DevVector<HydroType> dV11, dV12, dV13, dV22, dV23, dV33; // Velocity gradient components
     DevVector<uint8_t>   rung;                               // rung per particle of previous timestep
     DevVector<KeyType> particleID;
-DevVector<KeyType> keyScratch;
+    DevVector<KeyType> keyScratch;
     //! @brief SPH interpolation kernel lookup tables
     DevVector<HydroType> wh, whd;
 

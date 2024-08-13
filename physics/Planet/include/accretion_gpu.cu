@@ -92,8 +92,8 @@ struct debug_zero
 template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
 void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
                                   Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy, const Tv* vz,
-                                  const T2* spos, T2 star_size, T2 removal_limit_h, Tm *m_accr,
-                                  Tv *vx_accr, Tv *vy_accr, Tv *vz_accr)
+                                  const T2* spos, T2 star_size, T2 removal_limit_h, Tm &m_accr,
+                                  Tv &vx_accr, Tv &vy_accr, Tv &vz_accr)
 {
     cstone::LocalIndex numParticles = last - first;
     unsigned           numThreads   = 256;
@@ -133,12 +133,28 @@ vz_accr = pz_accr_ret;
     // printf("computeAccretionConditionGPU remove : %u\n", nrem);
 }
 
-template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const float*,
-                                           uint64_t*, const double*, const double*, const double*, const double*,
-                                           double, double, double&, double&, double&, double&);
-template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const double*,
-                                           uint64_t*, const double*, const double*, const double*, const double*,
-                                           double, double, double&, double&, double&, double&);
+template void computeAccretionConditionGPU(size_t,
+                                           size_t,
+                                           const double*, const double*, const double*,
+                                           const float*,
+                                           uint64_t*,
+                                           const double*,
+                                           const double*, const double*, const double*,
+                                           const double*,
+                                           double, double,
+                                           double&,
+                                           double&, double&, double&);
+
+template void computeAccretionConditionGPU(size_t, size_t,
+                                           const double*, const double*, const double*,
+                                           const double*,
+                                           uint64_t*,
+                                           const double*,
+                                           const double*, const double*, const double*,
+                                           const double*,
+                                           double, double,
+                                           double&,
+                                           double&, double&, double&);
 template<typename T>
 struct KeepParticle
 {

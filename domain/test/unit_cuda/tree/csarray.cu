@@ -224,8 +224,8 @@ TEST(CsArrayGpu, distributedMockUp)
     bool useCountsAsGuess = true;
     computeNodeCountsGpu(thrust::raw_pointer_cast(fixt.d_tree.data()), thrust::raw_pointer_cast(fixt.d_counts.data()),
                          nNodes(fixt.d_tree), thrust::raw_pointer_cast(fixt.d_codes.data() + firstIdx),
-                         thrust::raw_pointer_cast(fixt.d_codes.data() + lastIdx),
-                         std::numeric_limits<unsigned>::max(), useCountsAsGuess);
+                         thrust::raw_pointer_cast(fixt.d_codes.data() + lastIdx), std::numeric_limits<unsigned>::max(),
+                         useCountsAsGuess);
 
     DeviceVector<CodeType> d_counts_ref = d_counts_orig;
     thrust::fill(thrust::device, d_counts_ref.data(), d_counts_ref.data() + firstNode, 0);

@@ -20,7 +20,7 @@ using namespace sph;
 
 TEST(TimestepGpu, Divv)
 {
-    using T = double;
+    using T                                  = double;
     thrust::device_vector<LocalIndex> groups = std::vector<int>{10, 20, 40};
     GroupView                         grpView{10, 40, 2, rawPtr(groups), rawPtr(groups) + 1};
 
@@ -39,7 +39,7 @@ TEST(TimestepGpu, Divv)
 
 TEST(TimestepGpu, Acc)
 {
-    using T = double;
+    using T                                  = double;
     thrust::device_vector<LocalIndex> groups = std::vector<int>{10, 20, 40};
     GroupView                         grpView{10, 40, 2, rawPtr(groups), rawPtr(groups) + 1};
 

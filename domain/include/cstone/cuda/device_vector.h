@@ -20,7 +20,7 @@ namespace cstone
  * callable from the host. Within .cu translation units, thrust::device_vector is still used as it has the full set of
  * features.
  */
-template <class T>
+template<class T>
 class DeviceVector
 {
 public:

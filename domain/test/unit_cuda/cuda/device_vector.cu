@@ -49,7 +49,7 @@ TEST(DeviceVector, Construct)
 
 TEST(DeviceVector, PtrConstruct)
 {
-    std::vector<int> h{0,1,2,3};
+    std::vector<int> h{0, 1, 2, 3};
     DeviceVector<int> a(h.data(), h.data() + h.size());
 
     EXPECT_EQ(a.size(), h.size());
@@ -73,7 +73,7 @@ TEST(DeviceVector, Swap)
     EXPECT_EQ(bData, a.data());
 }
 
-TEST(DeviceVector,Assign)
+TEST(DeviceVector, Assign)
 {
     DeviceVector<int> a(10);
     DeviceVector<int> b(20);

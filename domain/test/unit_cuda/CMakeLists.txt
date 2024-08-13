@@ -5,10 +5,7 @@ set(UNIT_TEST_SOURCES_GPU
         domain/domaindecomp_gpu.cu
         halos/gather_halos_gpu.cu
         primitives/clz.cu
-<<<<<<< HEAD
-=======
         primitives/gather.cu
->>>>>>> particle-removal
         primitives/primitives_gpu.cu
         primitives/warpscan.cu
         focus/inject.cu

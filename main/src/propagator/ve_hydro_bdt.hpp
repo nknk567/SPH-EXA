@@ -34,6 +34,7 @@
 
 #include <variant>
 
+#include "cstone/cuda/device_vector.h"
 #include "cstone/fields/field_get.hpp"
 #include "sph/particles_data.hpp"
 #include "sph/sph.hpp"
@@ -65,7 +66,7 @@ protected:
     using MHolder_t = typename cstone::AccelSwitchType<Acc, MultipoleHolderCpu, MultipoleHolderGpu>::template type<
         MultipoleType, DomainType, typename DataType::HydroData>;
     template<class VType>
-    using AccVector = typename cstone::AccelSwitchType<Acc, std::vector, thrust::device_vector>::template type<VType>;
+    using AccVector = typename cstone::AccelSwitchType<Acc, std::vector, cstone::DeviceVector>::template type<VType>;
 
     MHolder_t mHolder_;
 
@@ -212,7 +213,9 @@ public:
 
     void sync(DomainType& domain, DataType& simData) override
     {
+        domain.setTreeConv(true);
         domain.setHaloFactor(1.0 + float(timestep_.numRungs) / 40);
+
         if (activeRung(timestep_.substep, timestep_.numRungs) == 0) { fullSync(domain, simData); }
         else { partialSync(domain, simData); }
     }

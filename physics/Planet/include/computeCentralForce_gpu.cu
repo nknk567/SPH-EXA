@@ -2,6 +2,8 @@
 // Created by Noah Kubli on 11.03.2024.
 //
 #include <cub/cub.cuh>
+#include <thrust/execution_policy.h>
+#include <thrust/reduce.h>
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/findneighbors.hpp"

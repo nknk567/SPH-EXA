@@ -12,6 +12,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include "cstone/cuda/thrust_util.cuh"
 #include "sph/sph_gpu.hpp"
 
 using namespace cstone;

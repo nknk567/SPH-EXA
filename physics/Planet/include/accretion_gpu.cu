@@ -3,6 +3,8 @@
 //
 #include <cub/cub.cuh>
 #include <thrust/device_vector.h>
+#include <thrust/partition.h>
+#include <thrust/sequence.h>
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/findneighbors.hpp"

@@ -28,8 +28,12 @@ void computeAccretionCondition(size_t first, size_t last, Dataset& d, const Star
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
         computeAccretionConditionGPU(first, last, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                                     rawPtr(d.devData.h), rawPtr(d.devData.keys), star.position.data(), star.inner_size,
-                                     star.removal_limit_h);
+                                     rawPtr(d.devData.h), rawPtr(d.devData.m),
+                                     rawPtr(d.devData.vx), rawPtr(d.devData.vy), rawPtr(d.devData.vz),
+                                     rawPtr(d.devData.keys), star.position.data(), star.inner_size,
+                                     star.removal_limit_h, &star.m_accreted_local, star.p_accreted_local[0],
+                                     star.p_accreted_local[1],
+                                     star.p_accreted_local[2]);
     }
     else
     {

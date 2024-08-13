@@ -190,7 +190,7 @@ public:
         timer.step("computeAndExchangeStarPosition");
 
         // Accretion uses the keys field to mark particles that have to be removed
-        fill(get<"keys">(d), first, last, KeyType{0});
+        //fill(get<"keys">(d), first, last, KeyType{0});
 
         planet::computeAccretionCondition(first, last, d, star);
         //planet::computeNewOrder(first, last, d, star);

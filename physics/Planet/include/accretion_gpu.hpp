@@ -4,9 +4,15 @@
 
 #pragma once
 
-template<typename T1, typename Th, typename Tremove, typename T2>
+/*template<typename T1, typename Th, typename Tremove, typename T2>
 void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
-                                  Tremove* remove, const T2* spos, T2 star_size, T2 removal_limit_h);
+                                  Tremove* remove, const T2* spos, T2 star_size, T2 removal_limit_h);*/
+
+template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
+void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
+                                  Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy, const Tv* vz,
+                                  const T2* spos, T2 star_size, T2 removal_limit_h, Tm &m_accr,
+                                  Tv &vx_accr, Tv &vy_accr, Tv &vz_accr);
 
 template<typename Tv, typename Tm, typename Tstar>
 void sumMassAndMomentumGPU(size_t sum_first, size_t sum_last, const Tv* vx, const Tv* vy, const Tv* vz, const Tm* m,

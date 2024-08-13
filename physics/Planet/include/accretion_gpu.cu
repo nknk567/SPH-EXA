@@ -76,10 +76,10 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
 
         if (threadIdx.x == 0)
         {
-            atomicSum(&dev_accr_mass, bs_accr_m);
-            atomicSum(&dev_accr_mom_x, bs_accr_px);
-            atomicSum(&dev_accr_mom_y, bs_accr_py);
-            atomicSum(&dev_accr_mom_z, bs_accr_pz);
+            atomicAdd(&dev_accr_mass, bs_accr_m);
+            atomicAdd(&dev_accr_mom_x, bs_accr_px);
+            atomicAdd(&dev_accr_mom_y, bs_accr_py);
+            atomicAdd(&dev_accr_mom_z, bs_accr_pz);
         }
     }
 }

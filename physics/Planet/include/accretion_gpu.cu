@@ -12,6 +12,7 @@
 #include "sph/util/device_math.cuh"
 
 #include "cstone/sfc/box.hpp"
+#include "cstone/tree/definitions.h"
 
 #include "accretion_gpu.hpp"
 #include "cuda_runtime.h"
@@ -31,8 +32,8 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         const double dz    = z[i] - star_z;
         const double dist2 = dx * dx + dy * dy + dz * dz;
 
-        if (dist2 < star_size2) { remove[i] = 1; } //Accrete on star
-        else if (h[i] > removal_limit_h) { remove[i] = 2; } // Remove from system
+        if (dist2 < star_size2) { remove[i] = cstone::removeKey<Tremove>::value; /*remove[i] = 1;*/ } //Accrete on star
+        else if (h[i] > removal_limit_h) { remove[i] = cstone::removeKey<Tremove>::value; /*remove[i] = 2;*/ } // Remove from system
     }
 }
 

@@ -23,7 +23,7 @@ namespace planet
 
 //! @brief Flag particles for removal. Overwrites keys.
 template<typename Dataset, typename StarData>
-void computeAccretionCondition(size_t first, size_t last, Dataset& d, const StarData& star)
+void computeAccretionCondition(size_t first, size_t last, Dataset& d, StarData& star)
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {

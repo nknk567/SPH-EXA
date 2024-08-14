@@ -42,10 +42,10 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         const double dz    = z[i] - star_z;
         const double dist2 = dx * dx + dy * dy + dz * dz;
 
-        double accreted_mass{};
-        double accreted_momentum_x{};
-        double accreted_momentum_y{};
-        double accreted_momentum_z{};
+        double   accreted_mass{};
+        double   accreted_momentum_x{};
+        double   accreted_momentum_y{};
+        double   accreted_momentum_z{};
         unsigned accreted{};
         unsigned removed{};
 
@@ -66,30 +66,30 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         } // Remove from system
 
         typedef cub::BlockReduce<double, TravConfig::numThreads> BlockReduceTm;
-        __shared__ typename BlockReduceTm::TempStorage       temp_storage_m;
-        BlockReduceTm                                        reduce_tm(temp_storage_m);
-        double                                                   bs_accr_m = reduce_tm.Reduce(accreted_mass, cub::Sum());
+        __shared__ typename BlockReduceTm::TempStorage           temp_storage_m;
+        BlockReduceTm                                            reduce_tm(temp_storage_m);
+        double bs_accr_m = reduce_tm.Reduce(accreted_mass, cub::Sum());
 
         typedef cub::BlockReduce<double, TravConfig::numThreads> BlockReduceTv;
-        __shared__ typename BlockReduceTv::TempStorage       temp_storage_px;
-        __shared__ typename BlockReduceTv::TempStorage       temp_storage_py;
-        __shared__ typename BlockReduceTv::TempStorage       temp_storage_pz;
-        BlockReduceTv                                        reduce_tvx(temp_storage_px);
-        BlockReduceTv                                        reduce_tvy(temp_storage_py);
-        BlockReduceTv                                        reduce_tvz(temp_storage_pz);
+        __shared__ typename BlockReduceTv::TempStorage           temp_storage_px;
+        __shared__ typename BlockReduceTv::TempStorage           temp_storage_py;
+        __shared__ typename BlockReduceTv::TempStorage           temp_storage_pz;
+        BlockReduceTv                                            reduce_tvx(temp_storage_px);
+        BlockReduceTv                                            reduce_tvy(temp_storage_py);
+        BlockReduceTv                                            reduce_tvz(temp_storage_pz);
 
         double bs_accr_px = reduce_tvx.Reduce(accreted_momentum_x, cub::Sum());
         double bs_accr_py = reduce_tvy.Reduce(accreted_momentum_y, cub::Sum());
         double bs_accr_pz = reduce_tvz.Reduce(accreted_momentum_z, cub::Sum());
 
         typedef cub::BlockReduce<size_t, TravConfig::numThreads> BlockReduceTint;
-        __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_rem;
-        __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_accr;
+        __shared__ typename BlockReduceTint::TempStorage         temp_storage_n_rem;
+        __shared__ typename BlockReduceTint::TempStorage         temp_storage_n_accr;
 
         BlockReduceTint reduce_n_rem(temp_storage_n_rem);
         BlockReduceTint reduce_n_accr(temp_storage_n_accr);
-        unsigned           bs_n_rem  = reduce_n_rem.Reduce(removed, cub::Sum());
-        unsigned           bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
+        unsigned        bs_n_rem  = reduce_n_rem.Reduce(removed, cub::Sum());
+        unsigned        bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
 
         __syncthreads();
 
@@ -120,7 +120,7 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     unsigned           numThreads   = 256;
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
-    double zero   = 0.;
+    double   zero   = 0.;
     unsigned zero_s = 0;
     cudaMemcpyToSymbol(dev_accr_mass, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_x, &zero, sizeof(zero));
@@ -149,11 +149,12 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     cudaMemcpyFromSymbol(&n_removed, dev_n_removed, sizeof(n_removed));
     cudaMemcpyFromSymbol(&n_accr, dev_n_accreted, sizeof(n_accr));
 
-    m_accr  = m_accr_ret;
-    vx_accr = px_accr_ret;
-    vy_accr = py_accr_ret;
-    vz_accr = pz_accr_ret;
-
+    m_accr           = m_accr_ret;
+    vx_accr          = px_accr_ret;
+    vy_accr          = py_accr_ret;
+    vz_accr          = pz_accr_ret;
+    n_removed_local  = n_removed;
+    n_accreted_local = n_accr;
     // size_t nrem = thrust::count_if(thrust::device, remove + first, remove + last, debug_zero{});
     // printf("computeAccretionConditionGPU remove : %u\n", nrem);
 }

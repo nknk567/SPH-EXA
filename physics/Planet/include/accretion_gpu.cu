@@ -14,6 +14,8 @@
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/definitions.h"
 
+#include "sph/particles_data.hpp"
+
 #include "accretion_gpu.hpp"
 #include "star_data.hpp"
 #include "cuda_runtime.h"
@@ -111,10 +113,8 @@ struct debug_zero
     __device__ bool operator()(size_t x) const { return x == 1; }
 };
 
-template<typename T1, typename Th, typename Tremove, typename StarData, typename Tm, typename Tv>
-void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
-                                  Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy, const Tv* vz,
-                                  StarData& star)
+template<typename Dataset, typename StarData>
+void computeAccretionConditionGPU(size_t first, size_t last, Dataset& d, StarData& star)
 // const T2* spos, T2 star_size, T2 removal_limit_h, T2& m_accr, T2& vx_accr,
 // T2& vy_accr, T2& vz_accr, T2Int& n_removed_local, T2Int& n_accreted_local)
 {
@@ -131,9 +131,12 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     cudaMemcpyToSymbol(dev_n_removed, &zero_s, sizeof(zero_s));
     cudaMemcpyToSymbol(dev_n_accreted, &zero_s, sizeof(zero_s));
 
-    computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz, star.position[0],
-                                                               star.position[1], star.position[2], star.inner_size * star.inner_size,
-                                                               star.removal_limit_h);
+    computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, d.x, d.y, d.z, d.h, d.keys, d.m, d.vx, d.vy, d.vz,
+                                                               star.position[0], star.position[1], star.position[2],
+                                                               star.inner_size * star.inner_size, star.removal_limit_h);
+    /*computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz,
+                                                               star.position[0], star.position[1], star.position[2],
+                                                               star.inner_size * star.inner_size, star.removal_limit_h);*/
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 
@@ -161,15 +164,16 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     // printf("computeAccretionConditionGPU remove : %u\n", nrem);
 }
 
-template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const float*,
-                                           uint64_t*, const double*, const double*, const double*, const double*,
+template void computeAccretionConditionGPU(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&,
+                                           /*, const double*, const double*, const double*, const float*,
+                                           uint64_t*, const double*, const double*, const double*, const double*,*/
                                            StarData&);
 // const double*, double, double, double&, double&, double&, double&, size_t&,
 //  size_t&);
 
-template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const double*,
+/*template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const double*,
                                            uint64_t*, const double*, const double*, const double*, const double*,
-                                           StarData&);
+                                           StarData&);*/
 // const double*, double, double, double&, double&, double&, double&, size_t&,
 // size_t&);
 template<typename T>

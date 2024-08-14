@@ -46,8 +46,8 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         double accreted_momentum_x{};
         double accreted_momentum_y{};
         double accreted_momentum_z{};
-        size_t accreted{};
-        size_t removed{};
+        unsigned accreted{};
+        unsigned removed{};
 
         if (dist2 < star_size2)
         {
@@ -65,12 +65,12 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
             removed   = 1;
         } // Remove from system
 
-        typedef cub::BlockReduce<Tm, TravConfig::numThreads> BlockReduceTm;
+        typedef cub::BlockReduce<double, TravConfig::numThreads> BlockReduceTm;
         __shared__ typename BlockReduceTm::TempStorage       temp_storage_m;
         BlockReduceTm                                        reduce_tm(temp_storage_m);
-        Tm                                                   bs_accr_m = reduce_tm.Reduce(accreted_mass, cub::Sum());
+        double                                                   bs_accr_m = reduce_tm.Reduce(accreted_mass, cub::Sum());
 
-        typedef cub::BlockReduce<Tv, TravConfig::numThreads> BlockReduceTv;
+        typedef cub::BlockReduce<double, TravConfig::numThreads> BlockReduceTv;
         __shared__ typename BlockReduceTv::TempStorage       temp_storage_px;
         __shared__ typename BlockReduceTv::TempStorage       temp_storage_py;
         __shared__ typename BlockReduceTv::TempStorage       temp_storage_pz;
@@ -78,18 +78,18 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         BlockReduceTv                                        reduce_tvy(temp_storage_py);
         BlockReduceTv                                        reduce_tvz(temp_storage_pz);
 
-        Tv bs_accr_px = reduce_tvx.Reduce(accreted_momentum_x, cub::Sum());
-        Tv bs_accr_py = reduce_tvy.Reduce(accreted_momentum_y, cub::Sum());
-        Tv bs_accr_pz = reduce_tvz.Reduce(accreted_momentum_z, cub::Sum());
+        double bs_accr_px = reduce_tvx.Reduce(accreted_momentum_x, cub::Sum());
+        double bs_accr_py = reduce_tvy.Reduce(accreted_momentum_y, cub::Sum());
+        double bs_accr_pz = reduce_tvz.Reduce(accreted_momentum_z, cub::Sum());
 
-        typedef cub::BlockReduce<T2Int, TravConfig::numThreads> BlockReduceTint;
+        typedef cub::BlockReduce<size_t, TravConfig::numThreads> BlockReduceTint;
         __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_rem;
         __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_accr;
 
         BlockReduceTint reduce_n_rem(temp_storage_n_rem);
         BlockReduceTint reduce_n_accr(temp_storage_n_accr);
-        T2Int           bs_n_rem  = reduce_n_rem.Reduce(removed, cub::Sum());
-        T2Int           bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
+        unsigned           bs_n_rem  = reduce_n_rem.Reduce(removed, cub::Sum());
+        unsigned           bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
 
         __syncthreads();
 

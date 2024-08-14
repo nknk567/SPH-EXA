@@ -67,9 +67,9 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         __shared__ typename BlockReduceTv::TempStorage         temp_storage_px;
         __shared__ typename BlockReduceTv::TempStorage         temp_storage_py;
         __shared__ typename BlockReduceTv::TempStorage         temp_storage_pz;
-        BlockReduceTv reduce_tvx(temp_storage);
-        BlockReduceTv reduce_tvy(temp_storage);
-        BlockReduceTv reduce_tvz(temp_storage);
+        BlockReduceTv reduce_tvx(temp_storage_px);
+        BlockReduceTv reduce_tvy(temp_storage_py);
+        BlockReduceTv reduce_tvz(temp_storage_pz);
 
         Tv bs_accr_px = reduce_tvx.Reduce(accreted_momentum_x, cub::Sum());
         Tv bs_accr_py = reduce_tvy.Reduce(accreted_momentum_y, cub::Sum());

@@ -15,6 +15,7 @@
 #include "cstone/tree/definitions.h"
 
 #include "accretion_gpu.hpp"
+#include "star_data.hpp"
 #include "cuda_runtime.h"
 
 static __device__ double   dev_accr_mass;
@@ -110,11 +111,12 @@ struct debug_zero
     __device__ bool operator()(size_t x) const { return x == 1; }
 };
 
-template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv, typename T2Int>
+template<typename T1, typename Th, typename Tremove, typename StarData, typename Tm, typename Tv>
 void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
                                   Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy, const Tv* vz,
-                                  const T2* spos, T2 star_size, T2 removal_limit_h, T2& m_accr, T2& vx_accr,
-                                  T2& vy_accr, T2& vz_accr, T2Int& n_removed_local, T2Int& n_accreted_local)
+                                  StarData& star)
+// const T2* spos, T2 star_size, T2 removal_limit_h, T2& m_accr, T2& vx_accr,
+// T2& vy_accr, T2& vz_accr, T2Int& n_removed_local, T2Int& n_accreted_local)
 {
     cstone::LocalIndex numParticles = last - first;
     unsigned           numThreads   = 256;
@@ -149,25 +151,27 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     cudaMemcpyFromSymbol(&n_removed, dev_n_removed, sizeof(n_removed));
     cudaMemcpyFromSymbol(&n_accr, dev_n_accreted, sizeof(n_accr));
 
-    m_accr           = m_accr_ret;
-    vx_accr          = px_accr_ret;
-    vy_accr          = py_accr_ret;
-    vz_accr          = pz_accr_ret;
-    n_removed_local  = n_removed;
-    n_accreted_local = n_accr;
+    star.m_accreted_local    = m_accr_ret;
+    star.p_accreted_local[0] = px_accr_ret;
+    star.p_accreted_local[1] = py_accr_ret;
+    star.p_accreted_local[2] = pz_accr_ret;
+    star.n_removed_local     = n_removed;
+    star.n_accreted_local    = n_accr;
     // size_t nrem = thrust::count_if(thrust::device, remove + first, remove + last, debug_zero{});
     // printf("computeAccretionConditionGPU remove : %u\n", nrem);
 }
 
 template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const float*,
                                            uint64_t*, const double*, const double*, const double*, const double*,
-                                           const double*, double, double, double&, double&, double&, double&, size_t&,
-                                           size_t&);
+                                           StarData&);
+// const double*, double, double, double&, double&, double&, double&, size_t&,
+//  size_t&);
 
 template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const double*,
                                            uint64_t*, const double*, const double*, const double*, const double*,
-                                           const double*, double, double, double&, double&, double&, double&, size_t&,
-                                           size_t&);
+                                           StarData&);
+// const double*, double, double, double&, double&, double&, double&, size_t&,
+// size_t&);
 template<typename T>
 struct KeepParticle
 {

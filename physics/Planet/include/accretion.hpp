@@ -30,11 +30,12 @@ void computeAccretionCondition(size_t first, size_t last, Dataset& d, StarData& 
         computeAccretionConditionGPU(first, last, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
                                      rawPtr(d.devData.h), rawPtr(d.devData.keys), rawPtr(d.devData.m),
                                      rawPtr(d.devData.vx), rawPtr(d.devData.vy), rawPtr(d.devData.vz),
-                                     star.position.data(), star.inner_size,
+                                     star);
+                                     /*star.position.data(), star.inner_size,
                                      star.removal_limit_h, star.m_accreted_local, star.p_accreted_local[0],
                                      star.p_accreted_local[1],
                                      star.p_accreted_local[2], star.n_removed_local,
-                                     star.n_accreted_local);
+                                     star.n_accreted_local);*/
 
     }
     else

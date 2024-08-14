@@ -131,12 +131,14 @@ void computeAccretionConditionGPU(size_t first, size_t last, Dataset& d, StarDat
     cudaMemcpyToSymbol(dev_n_removed, &zero_s, sizeof(zero_s));
     cudaMemcpyToSymbol(dev_n_accreted, &zero_s, sizeof(zero_s));
 
-    computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, d.x, d.y, d.z, d.h, d.keys, d.m, d.vx, d.vy, d.vz,
-                                                               star.position[0], star.position[1], star.position[2],
-                                                               star.inner_size * star.inner_size, star.removal_limit_h);
+    computeAccretionConditionKernel<<<numBlocks, numThreads>>>(
+        first, last, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z), rawPtr(d.devData.h),
+        rawPtr(d.devData.keys), rawPtr(d.devData.m), rawPtr(d.devData.vx), rawPtr(d.devData.vy), rawPtr(d.devData.vz),
+        star.position[0], star.position[1], star.position[2], star.inner_size * star.inner_size, star.removal_limit_h);
     /*computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz,
                                                                star.position[0], star.position[1], star.position[2],
-                                                               star.inner_size * star.inner_size, star.removal_limit_h);*/
+                                                               star.inner_size * star.inner_size,
+       star.removal_limit_h);*/
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 

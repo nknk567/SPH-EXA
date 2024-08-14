@@ -22,6 +22,8 @@ static __device__ double dev_accr_mom_x;
 static __device__ double dev_accr_mom_y;
 static __device__ double dev_accr_mom_z;
 
+using cstone::TravConfig;
+
 template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
 __global__ void computeAccretionConditionKernel(size_t first, size_t last, const T1* x, const T1* y, const T1* z,
                                                 const Th* h, Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy,

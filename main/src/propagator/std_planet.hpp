@@ -197,7 +197,7 @@ public:
         //planet::applyNewOrder<ConservedFields, DependentFields>(first, last, d);
 
         //planet::sumAccretedMassAndMomentum<DependentFields>(first, last, d, star);
-        //planet::exchangeAndAccreteOnStar(star, d.minDt_m1, Base::rank_);
+        planet::exchangeAndAccreteOnStar(star, d.minDt_m1, Base::rank_);
 
         //domain.setEndIndex(last - star.n_accreted_local - star.n_removed_local);
 

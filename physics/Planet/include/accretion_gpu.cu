@@ -83,13 +83,13 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         Tv bs_accr_pz = reduce_tvz.Reduce(accreted_momentum_z, cub::Sum());
 
         typedef cub::BlockReduce<T2Int, TravConfig::numThreads> BlockReduceTint;
-        __shared__ typename BlockReduceTint::TempStorage       temp_storage_n_rem;
-        __shared__ typename BlockReduceTint::TempStorage       temp_storage_n_accr;
+        __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_rem;
+        __shared__ typename BlockReduceTint::TempStorage        temp_storage_n_accr;
 
-        BlockReduceTint                                        reduce_n_rem(temp_storage_n_rem);
-        BlockReduceTint                                        reduce_n_accr(temp_storage_n_accr);
-        T2Int                                                   bs_n_rem = reduce_n_rem.Reduce(removed, cub::Sum());
-        T2Int                                                   bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
+        BlockReduceTint reduce_n_rem(temp_storage_n_rem);
+        BlockReduceTint reduce_n_accr(temp_storage_n_accr);
+        T2Int           bs_n_rem  = reduce_n_rem.Reduce(removed, cub::Sum());
+        T2Int           bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
 
         __syncthreads();
 
@@ -101,7 +101,6 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
             atomicAdd(&dev_accr_mom_z, bs_accr_pz);
             atomicAdd(&dev_n_removed, bs_n_rem);
             atomicAdd(&dev_n_accreted_local, bs_n_accr);
-
         }
     }
 }
@@ -152,11 +151,13 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
 
 template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const float*,
                                            uint64_t*, const double*, const double*, const double*, const double*,
-                                           const double*, double, double, double&, double&, double&, double&);
+                                           const double*, double, double, double&, double&, double&, double&, size_t&,
+                                           size_t&);
 
 template void computeAccretionConditionGPU(size_t, size_t, const double*, const double*, const double*, const double*,
                                            uint64_t*, const double*, const double*, const double*, const double*,
-                                           const double*, double, double, double&, double&, double&, double&);
+                                           const double*, double, double, double&, double&, double&, double&, size_t&,
+                                           size_t&);
 template<typename T>
 struct KeepParticle
 {

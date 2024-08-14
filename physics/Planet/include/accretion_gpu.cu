@@ -120,7 +120,7 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     unsigned           numThreads   = 256;
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
-    double zero = 0.;
+    double zero   = 0.;
     size_t zero_s = 0;
     cudaMemcpyToSymbol(dev_accr_mass, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_x, &zero, sizeof(zero));
@@ -130,8 +130,8 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     cudaMemcpyToSymbol(dev_n_accreted, &zero_s, sizeof(zero_s));
 
     computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz, spos[0],
-                                                               spos[1], spos[2], star_size * star_size, removal_limit_h,
-                                                               n_removed_local, n_accreted_local);
+                                                               spos[1], spos[2], star_size * star_size,
+                                                               removal_limit_h);
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 

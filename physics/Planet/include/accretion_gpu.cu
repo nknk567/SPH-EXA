@@ -121,7 +121,7 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
     double zero   = 0.;
-    size_t zero_s = 0;
+    unsigned zero_s = 0;
     cudaMemcpyToSymbol(dev_accr_mass, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_x, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_y, &zero, sizeof(zero));

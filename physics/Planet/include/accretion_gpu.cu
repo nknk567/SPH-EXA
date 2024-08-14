@@ -17,20 +17,20 @@
 #include "accretion_gpu.hpp"
 #include "cuda_runtime.h"
 
-static __device__ double dev_accr_mass;
-static __device__ double dev_accr_mom_x;
-static __device__ double dev_accr_mom_y;
-static __device__ double dev_accr_mom_z;
-static __device__ size_t dev_n_removed;
-static __device__ size_t dev_n_accreted_local;
+static __device__ double   dev_accr_mass;
+static __device__ double   dev_accr_mom_x;
+static __device__ double   dev_accr_mom_y;
+static __device__ double   dev_accr_mom_z;
+static __device__ unsigned dev_n_removed;
+static __device__ unsigned dev_n_accreted;
 
 using cstone::TravConfig;
 
-template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv, typename T2Int>
+template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
 __global__ void computeAccretionConditionKernel(size_t first, size_t last, const T1* x, const T1* y, const T1* z,
                                                 const Th* h, Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy,
                                                 const Tv* vz, T2 star_x, T2 star_y, T2 star_z, T2 star_size2,
-                                                T2 removal_limit_h, T2Int& n_removed_local, T2Int& n_accreted_local)
+                                                T2 removal_limit_h)
 {
     cstone::LocalIndex i = first + blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -100,7 +100,7 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
             atomicAdd(&dev_accr_mom_y, bs_accr_py);
             atomicAdd(&dev_accr_mom_z, bs_accr_pz);
             atomicAdd(&dev_n_removed, bs_n_rem);
-            atomicAdd(&dev_n_accreted_local, bs_n_accr);
+            atomicAdd(&dev_n_accreted, bs_n_accr);
         }
     }
 }
@@ -121,25 +121,34 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
     double zero = 0.;
+    size_t zero_s = 0;
     cudaMemcpyToSymbol(dev_accr_mass, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_x, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_y, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_z, &zero, sizeof(zero));
+    cudaMemcpyToSymbol(dev_n_removed, &zero_s, sizeof(zero_s));
+    cudaMemcpyToSymbol(dev_n_accreted, &zero_s, sizeof(zero_s));
+
     computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz, spos[0],
                                                                spos[1], spos[2], star_size * star_size, removal_limit_h,
                                                                n_removed_local, n_accreted_local);
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 
-    double m_accr_ret;
-    double px_accr_ret;
-    double py_accr_ret;
-    double pz_accr_ret;
+    double   m_accr_ret;
+    double   px_accr_ret;
+    double   py_accr_ret;
+    double   pz_accr_ret;
+    unsigned n_removed;
+    unsigned n_accr;
 
     cudaMemcpyFromSymbol(&m_accr_ret, dev_accr_mass, sizeof(m_accr_ret));
     cudaMemcpyFromSymbol(&px_accr_ret, dev_accr_mom_x, sizeof(px_accr_ret));
     cudaMemcpyFromSymbol(&py_accr_ret, dev_accr_mom_y, sizeof(py_accr_ret));
     cudaMemcpyFromSymbol(&pz_accr_ret, dev_accr_mom_z, sizeof(pz_accr_ret));
+    cudaMemcpyFromSymbol(&n_removed, dev_n_removed, sizeof(n_removed));
+    cudaMemcpyFromSymbol(&n_accr, dev_n_accreted, sizeof(n_accr));
+
     m_accr  = m_accr_ret;
     vx_accr = px_accr_ret;
     vy_accr = py_accr_ret;

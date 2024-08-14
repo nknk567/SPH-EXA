@@ -33,7 +33,8 @@ void computeAccretionCondition(size_t first, size_t last, Dataset& d, StarData& 
                                      star.position.data(), star.inner_size,
                                      star.removal_limit_h, star.m_accreted_local, star.p_accreted_local[0],
                                      star.p_accreted_local[1],
-                                     star.p_accreted_local[2]);
+                                     star.p_accreted_local[2], star.n_removed_local,
+                                     star.n_accreted_local);
 
     }
     else

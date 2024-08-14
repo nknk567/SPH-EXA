@@ -21,14 +21,16 @@ static __device__ double dev_accr_mass;
 static __device__ double dev_accr_mom_x;
 static __device__ double dev_accr_mom_y;
 static __device__ double dev_accr_mom_z;
+static __device__ size_t dev_n_removed;
+static __device__ size_t dev_n_accreted_local;
 
 using cstone::TravConfig;
 
-template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
+template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv, typename T2Int>
 __global__ void computeAccretionConditionKernel(size_t first, size_t last, const T1* x, const T1* y, const T1* z,
                                                 const Th* h, Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy,
                                                 const Tv* vz, T2 star_x, T2 star_y, T2 star_z, T2 star_size2,
-                                                T2 removal_limit_h)
+                                                T2 removal_limit_h, T2Int& n_removed_local, T2Int& n_accreted_local)
 {
     cstone::LocalIndex i = first + blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -41,9 +43,11 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         const double dist2 = dx * dx + dy * dy + dz * dz;
 
         double accreted_mass{};
-        double accreted_momentum_x;
-        double accreted_momentum_y;
-        double accreted_momentum_z;
+        double accreted_momentum_x{};
+        double accreted_momentum_y{};
+        double accreted_momentum_z{};
+        size_t accreted{};
+        size_t removed{};
 
         if (dist2 < star_size2)
         {
@@ -52,30 +56,40 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
             accreted_momentum_x = m[i] * vx[i];
             accreted_momentum_y = m[i] * vy[i];
             accreted_momentum_z = m[i] * vz[i];
-
+            accreted            = 1;
             /*remove[i] = 1;*/
         } // Accrete on star
         else if (h[i] > removal_limit_h)
         {
             remove[i] = cstone::removeKey<Tremove>::value; /*remove[i] = 2;*/
-        }                                                  // Remove from system
+            removed   = 1;
+        } // Remove from system
 
         typedef cub::BlockReduce<Tm, TravConfig::numThreads> BlockReduceTm;
-        __shared__ typename BlockReduceTm::TempStorage         temp_storage_m;
-        BlockReduceTm                                          reduce_tm(temp_storage_m);
+        __shared__ typename BlockReduceTm::TempStorage       temp_storage_m;
+        BlockReduceTm                                        reduce_tm(temp_storage_m);
         Tm                                                   bs_accr_m = reduce_tm.Reduce(accreted_mass, cub::Sum());
 
         typedef cub::BlockReduce<Tv, TravConfig::numThreads> BlockReduceTv;
-        __shared__ typename BlockReduceTv::TempStorage         temp_storage_px;
-        __shared__ typename BlockReduceTv::TempStorage         temp_storage_py;
-        __shared__ typename BlockReduceTv::TempStorage         temp_storage_pz;
-        BlockReduceTv reduce_tvx(temp_storage_px);
-        BlockReduceTv reduce_tvy(temp_storage_py);
-        BlockReduceTv reduce_tvz(temp_storage_pz);
+        __shared__ typename BlockReduceTv::TempStorage       temp_storage_px;
+        __shared__ typename BlockReduceTv::TempStorage       temp_storage_py;
+        __shared__ typename BlockReduceTv::TempStorage       temp_storage_pz;
+        BlockReduceTv                                        reduce_tvx(temp_storage_px);
+        BlockReduceTv                                        reduce_tvy(temp_storage_py);
+        BlockReduceTv                                        reduce_tvz(temp_storage_pz);
 
         Tv bs_accr_px = reduce_tvx.Reduce(accreted_momentum_x, cub::Sum());
         Tv bs_accr_py = reduce_tvy.Reduce(accreted_momentum_y, cub::Sum());
         Tv bs_accr_pz = reduce_tvz.Reduce(accreted_momentum_z, cub::Sum());
+
+        typedef cub::BlockReduce<T2Int, TravConfig::numThreads> BlockReduceTint;
+        __shared__ typename BlockReduceTint::TempStorage       temp_storage_n_rem;
+        __shared__ typename BlockReduceTint::TempStorage       temp_storage_n_accr;
+
+        BlockReduceTint                                        reduce_n_rem(temp_storage_n_rem);
+        BlockReduceTint                                        reduce_n_accr(temp_storage_n_accr);
+        T2Int                                                   bs_n_rem = reduce_n_rem.Reduce(removed, cub::Sum());
+        T2Int                                                   bs_n_accr = reduce_n_accr.Reduce(accreted, cub::Sum());
 
         __syncthreads();
 
@@ -85,6 +99,9 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
             atomicAdd(&dev_accr_mom_x, bs_accr_px);
             atomicAdd(&dev_accr_mom_y, bs_accr_py);
             atomicAdd(&dev_accr_mom_z, bs_accr_pz);
+            atomicAdd(&dev_n_removed, bs_n_rem);
+            atomicAdd(&dev_n_accreted_local, bs_n_accr);
+
         }
     }
 }
@@ -94,11 +111,11 @@ struct debug_zero
     __device__ bool operator()(size_t x) const { return x == 1; }
 };
 
-template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv>
+template<typename T1, typename Th, typename Tremove, typename T2, typename Tm, typename Tv, typename T2Int>
 void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const T1* y, const T1* z, const Th* h,
                                   Tremove* remove, const Tm* m, const Tv* vx, const Tv* vy, const Tv* vz,
                                   const T2* spos, T2 star_size, T2 removal_limit_h, T2& m_accr, T2& vx_accr,
-                                  T2& vy_accr, T2& vz_accr)
+                                  T2& vy_accr, T2& vz_accr, T2Int& n_removed_local, T2Int& n_accreted_local)
 {
     cstone::LocalIndex numParticles = last - first;
     unsigned           numThreads   = 256;
@@ -110,8 +127,8 @@ void computeAccretionConditionGPU(size_t first, size_t last, const T1* x, const 
     cudaMemcpyToSymbol(dev_accr_mom_y, &zero, sizeof(zero));
     cudaMemcpyToSymbol(dev_accr_mom_z, &zero, sizeof(zero));
     computeAccretionConditionKernel<<<numBlocks, numThreads>>>(first, last, x, y, z, h, remove, m, vx, vy, vz, spos[0],
-                                                               spos[1], spos[2], star_size * star_size,
-                                                               removal_limit_h);
+                                                               spos[1], spos[2], star_size * star_size, removal_limit_h,
+                                                               n_removed_local, n_accreted_local);
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 

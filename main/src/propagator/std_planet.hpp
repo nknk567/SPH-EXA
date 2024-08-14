@@ -203,7 +203,7 @@ public:
 
         timer.step("accreteParticles");
 
-        if (Base::rank_ == 0)
+        /*if (Base::rank_ == 0)
         {
             printf("star position: %lf\t%lf\t%lf\n", star.position[0], star.position[1], star.position[2]);
             printf("star mass: %lf\n", star.m);
@@ -212,7 +212,7 @@ public:
             const auto stats = mHolder_.readStats();
             printf("stats: %llu\t%llu\t%llu\t%llu\t%llu\n", stats[0], stats[1], stats[2],
                    stats[3], stats[4]);
-        }
+        }*/
     }
 
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,

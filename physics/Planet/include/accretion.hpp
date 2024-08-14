@@ -137,8 +137,13 @@ void exchangeAndAccreteOnStar(StarData& star, double minDt_m1, int rank)
         }
 
         star.m = m_star_new;
+
+        printf("accreted mass: %g\tstar mass: %g\n", m_accreted_global, star.m);
+        printf("accreted momentum x: %g\tstar momentum x: %g\n", p_accreted_global[0], p_star[0]);
+        printf("accreted momentum y: %g\tstar momentum y: %g\n", p_accreted_global[1], p_star[1]);
+        printf("accreted momentum z: %g\tstar momentum z: %g\n", p_accreted_global[2], p_star[2]);
     }
-    if (rank == 0) { printf("accreted mass: %g\tstar mass: %lf\n", m_accreted_global, star.m); }
+
     if (rank == 0) { printf("accreted mass local: %g\n", star.m_accreted_local); }
 
     MPI_Bcast(star.position_m1.data(), 3, MpiType<double>{}, 0, MPI_COMM_WORLD);

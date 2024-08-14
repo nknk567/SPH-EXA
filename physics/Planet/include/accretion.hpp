@@ -31,7 +31,7 @@ void computeAccretionCondition(size_t first, size_t last, Dataset& d, const Star
                                      rawPtr(d.devData.h), rawPtr(d.devData.keys), rawPtr(d.devData.m),
                                      rawPtr(d.devData.vx), rawPtr(d.devData.vy), rawPtr(d.devData.vz),
                                      star.position.data(), star.inner_size,
-                                     star.removal_limit_h, &star.m_accreted_local, star.p_accreted_local[0],
+                                     star.removal_limit_h, star.m_accreted_local, star.p_accreted_local[0],
                                      star.p_accreted_local[1],
                                      star.p_accreted_local[2]);
 

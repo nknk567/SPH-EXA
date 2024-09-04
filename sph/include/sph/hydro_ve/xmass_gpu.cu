@@ -110,15 +110,19 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, con
                 // Bisection
                 h[i] = (h_upper + h_lower) / 2.;
             }*/
-            ncSph =
-                1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
-
+            ncSph = 1 + traverseNeighborsHeap(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, d2Warp, ng0,
+                                              globalPool)[0];
+            if (i < bodyEnd && repeat)
+            {
+                h[i] = sqrt(*(d2Warp + laneIdx)) * 0.5;
+                printf("i: %u\tnew h: %lf\t ncSph: %u\n", i, h[i], ncSph);
+            }
             // ncSph =
             //    1 + traverseNeighborsHeap(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, d2Warp, ngmax,
             //    globalPool)[0];
         }
 
-        bool tooMany = (ncSph - 1) > ngmax;
+        /*bool tooMany = (ncSph - 1) > ngmax;
         if (cstone::ballotSync(tooMany))
         {
             ncSph = 1 + traverseNeighborsHeap(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, d2Warp, ng0,
@@ -128,7 +132,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, con
                 h[i] = sqrt(*(d2Warp + laneIdx)) * 0.5;
                 printf("Heap: %u\tncSph: %u\th[i]: %lf\n", i, ncSph, h[i]);
             }
-        }
+        }*/
 
         if (i >= bodyEnd) continue;
 

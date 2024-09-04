@@ -78,6 +78,7 @@ __device__ void pop(unsigned* nidx, double* d2, unsigned nc_i)
         unsigned new_index = i;
         if (left < nc_i && d2[stride * left] > d2[stride * i]) { new_index = left; }
         if (right < nc_i && d2[stride * right] > d2[stride * new_index]) { new_index = right; }
+        // if (i == new_index) break; //balloc-sync
         if (!cstone::ballotSync(i != new_index)) { break; }
         swap_values(nidx[stride * new_index], nidx[stride * i]);
         swap_values(d2[stride * new_index], d2[stride * i]);

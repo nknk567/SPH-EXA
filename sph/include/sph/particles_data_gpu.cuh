@@ -107,7 +107,7 @@ public:
     DevVector<HydroType> wh, whd;
 
     DevVector<cstone::LocalIndex> traversalStack;
-
+    DevVector<double>             d2Stack;
     //! @brief non-stateful variables for statistics
     size_t stackUsedNc, stackUsedGravity;
 

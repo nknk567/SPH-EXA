@@ -1,33 +1,6 @@
-/*
- * MIT License
- *
- * Copyright (c) 2021 CSCS, ETH Zurich
- *               2021 University of Basel
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-/*! @file
- * @brief Neighbor search on GPU with breadth-first warp-aware octree traversal
- *
- * @author Sebastian Keller <sebastian.f.keller@gmail.com>
- */
+//
+// Created by Noah Kubli on 28.08.2024.
+//
 
 #pragma once
 
@@ -38,44 +11,14 @@
 #include "cstone/primitives/warpscan.cuh"
 #include "cstone/sfc/box.hpp"
 #include "cstone/findneighbors.hpp"
+
+#include "cstone/traversal/find_neighbors.cuh"
+
 #include "cstone/tree/definitions.h"
 #include "cstone/tree/octree.hpp"
 
 namespace cstone
 {
-
-struct TravConfig
-{
-    //! @brief size of global workspace memory per warp, must be a power of 2
-    static constexpr unsigned memPerWarp = 256 * GpuConfig::warpSize;
-    static_assert((memPerWarp & (memPerWarp - 1)) == 0);
-
-    //! @brief number of threads per block for the traversal kernel
-    static constexpr unsigned numThreads = 128;
-
-    static constexpr unsigned numWarpsPerSm = 40;
-    //! @brief maximum number of simultaneously active blocks
-    inline static unsigned maxNumActiveBlocks =
-        GpuConfig::smCount * (TravConfig::numWarpsPerSm / (TravConfig::numThreads / GpuConfig::warpSize));
-
-    //! @brief number of particles per target, i.e. per warp
-    static constexpr unsigned targetSize = GpuConfig::warpSize;
-
-    //! @brief number of warps per target, used all over the place, hence the short name
-    static constexpr unsigned nwt = targetSize / GpuConfig::warpSize;
-
-    //! @brief number of blocks to launch, no longer adapts to grids that are too small to saturate all SMs
-    static unsigned numBlocks() { return TravConfig::maxNumActiveBlocks; }
-
-    //! @brief compute storage needed for traversal stack
-    static unsigned poolSize()
-    {
-        unsigned numWarpsPerBlock = TravConfig::numThreads / GpuConfig::warpSize;
-        return TravConfig::memPerWarp * numWarpsPerBlock * maxNumActiveBlocks;
-    }
-};
-
-__device__ __forceinline__ int ringAddr(const int i) { return i & (TravConfig::memPerWarp - 1); }
 
 /*! @brief count neighbors within a cutoff
  *
@@ -91,15 +34,70 @@ __device__ __forceinline__ int ringAddr(const int i) { return i & (TravConfig::m
  *
  * Number of computed particle-particle pairs per call is GpuConfig::warpSize^2 * TravConfig::nwt
  */
+
+__device__ unsigned left_child(unsigned i) { return 2 * i + 1; }
+__device__ unsigned right_child(unsigned i) { return 2 * i + 2; }
+__device__ unsigned parent(unsigned i) { return (i - 1) / 2; }
+
+template<typename T>
+__device__ void swap_values(T& a, T& b)
+{
+    T temp{a};
+    a = b;
+    b = temp;
+}
+
+template<unsigned stride>
+__device__ void push(unsigned* nidx, double* d2, unsigned nc_i)
+{
+    if (nc_i <= 1) return;
+
+    unsigned i = nc_i - 1;
+    while (i > 0 && d2[stride * parent(i)] < d2[stride * i])
+    {
+        swap_values(nidx[stride * parent(i)], nidx[stride * i]);
+        swap_values(d2[stride * parent(i)], d2[stride * i]);
+        i = parent(i);
+    }
+}
+
+template<unsigned stride>
+__device__ void pop(unsigned* nidx, double* d2, unsigned nc_i)
+{
+    if (nc_i <= 1) return;
+
+    swap_values(nidx[stride * (nc_i - 1)], nidx[stride * 0]);
+    swap_values(d2[stride * (nc_i - 1)], d2[stride * 0]);
+    nc_i--;
+
+    unsigned i     = 0;
+    unsigned left  = left_child(i);
+    unsigned right = right_child(i);
+    while (true)
+    {
+        unsigned new_index = i;
+        if (left < nc_i && d2[stride * left] > d2[stride * i]) { new_index = left; }
+        if (right < nc_i && d2[stride * right] > d2[stride * new_index]) { new_index = right; }
+        if (!cstone::ballotSync(i != new_index)) { break; }
+        swap_values(nidx[stride * new_index], nidx[stride * i]);
+        swap_values(d2[stride * new_index], d2[stride * i]);
+
+        left  = left_child(new_index);
+        right = right_child(new_index);
+        i     = new_index;
+    }
+}
+
 template<bool UsePbc, class Tc>
-__device__ void countNeighbors(Vec3<Tc> sourceBody,
-                               int numLanesValid,
-                               const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i,
-                               const Box<Tc>& box,
-                               cstone::LocalIndex sourceBodyIdx,
-                               unsigned ngmax,
-                               unsigned nc_i[TravConfig::nwt],
-                               unsigned* nidx_i)
+__device__ void countNeighborsHeap(Vec3<Tc> sourceBody,
+                                   int numLanesValid,
+                                   const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i,
+                                   const Box<Tc>& box,
+                                   cstone::LocalIndex sourceBodyIdx,
+                                   unsigned ngmax,
+                                   unsigned nc_i[TravConfig::nwt],
+                                   unsigned* nidx_i,
+                                   double* d2_i)
 {
     unsigned laneIdx = threadIdx.x & (GpuConfig::warpSize - 1);
 
@@ -114,66 +112,27 @@ __device__ void countNeighbors(Vec3<Tc> sourceBody,
             Tc d2 = distanceSq<UsePbc>(pos_j[0], pos_j[1], pos_j[2], pos_i[k][0], pos_i[k][1], pos_i[k][2], box);
             if (d2 < pos_i[k][3] && d2 > Tc(0.0))
             {
+                unsigned first_k = laneIdx + k * GpuConfig::warpSize;
                 if (nc_i[k] < ngmax)
                 {
-                    nidx_i[nc_i[k] * TravConfig::targetSize + laneIdx + k * GpuConfig::warpSize] = idx_j;
+                    nidx_i[nc_i[k] * TravConfig::targetSize + first_k] = idx_j;
+                    d2_i[nc_i[k] * TravConfig::targetSize + first_k]   = d2;
+
+                    push<TravConfig::targetSize>(nidx_i + first_k, d2_i + first_k, nc_i[k]);
+                    nc_i[k]++;
                 }
-                nc_i[k]++;
+                else if (d2 < d2_i[(0) * TravConfig::targetSize + first_k])
+                {
+                    pop<TravConfig::targetSize>(nidx_i + first_k, d2_i + first_k, nc_i[k]);
+
+                    nidx_i[(nc_i[k] - 1) * TravConfig::targetSize + first_k] = idx_j;
+                    d2_i[(nc_i[k] - 1) * TravConfig::targetSize + first_k]   = d2;
+
+                    push<TravConfig::targetSize>(nidx_i + first_k, d2_i + first_k, nc_i[k]);
+                }
             }
         }
     }
-}
-
-template<bool UsePbc, class T, std::enable_if_t<UsePbc, int> = 0>
-__device__ __forceinline__ bool cellOverlap(const Vec3<T>& curSrcCenter,
-                                            const Vec3<T>& curSrcSize,
-                                            const Vec3<T>& targetCenter,
-                                            const Vec3<T>& targetSize,
-                                            const Box<T>& box)
-{
-    return norm2(minDistance(curSrcCenter, curSrcSize, targetCenter, targetSize, box)) == T(0.0);
-}
-
-template<bool UsePbc, class T, std::enable_if_t<!UsePbc, int> = 0>
-__device__ __forceinline__ bool cellOverlap(const Vec3<T>& curSrcCenter,
-                                            const Vec3<T>& curSrcSize,
-                                            const Vec3<T>& targetCenter,
-                                            const Vec3<T>& targetSize,
-                                            const Box<T>& /*box*/)
-{
-    return norm2(minDistance(curSrcCenter, curSrcSize, targetCenter, targetSize)) == T(0.0);
-}
-
-template<class Tc>
-__device__ __forceinline__ bool tightOverlap(int laneIdx,
-                                             bool isClose,
-                                             const Vec3<Tc>& srcCenter,
-                                             const Vec3<Tc>& srcSize,
-                                             const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i,
-                                             const cstone::Box<Tc>& box)
-{
-    GpuConfig::ThreadMask closeLanes = ballotSync(isClose);
-
-    bool isTightClose = isClose;
-    for (unsigned lane = 0; lane < GpuConfig::warpSize; ++lane)
-    {
-        // skip if this lane does not have a close source
-        if (!((GpuConfig::ThreadMask(1) << lane) & closeLanes)) { continue; }
-
-        // broadcast srcCenter/size of this lane
-        Vec3<Tc> center{shflSync(srcCenter[0], lane), shflSync(srcCenter[1], lane), shflSync(srcCenter[2], lane)};
-        Vec3<Tc> size{shflSync(srcSize[0], lane), shflSync(srcSize[1], lane), shflSync(srcSize[2], lane)};
-
-        // does any of the individual target particles overlap with center/size ?
-        bool overlapsWithLaneParticle = false;
-        for (unsigned k = 0; k < TravConfig::nwt; ++k)
-        {
-            overlapsWithLaneParticle |= norm2(minDistance(makeVec3(pos_i[k]), center, size, box)) < pos_i[k][3];
-        }
-        GpuConfig::ThreadMask anyOverlaps = ballotSync(overlapsWithLaneParticle);
-        if (lane == laneIdx) { isTightClose = anyOverlaps; }
-    }
-    return isTightClose;
 }
 
 /*! @brief traverse one warp with up to TravConfig::targetSize target bodies down the tree
@@ -198,21 +157,22 @@ __device__ __forceinline__ bool tightOverlap(int laneIdx,
  * can be routed through the read-only/texture cache.
  */
 template<bool UsePbc, class Tc, class Th, class KeyType>
-__device__ uint2 traverseWarp(unsigned* nc_i,
-                              unsigned* nidx_i,
-                              unsigned ngmax,
-                              const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i,
-                              const Vec3<Tc> targetCenter,
-                              const Vec3<Tc> targetSize,
-                              const Tc* __restrict__ x,
-                              const Tc* __restrict__ y,
-                              const Tc* __restrict__ z,
-                              const Th* __restrict__ /*h*/,
-                              const OctreeNsView<Tc, KeyType>& tree,
-                              int initNodeIdx,
-                              const Box<Tc>& box,
-                              volatile int* tempQueue,
-                              int* cellQueue)
+__device__ uint2 traverseWarpHeap(unsigned* nc_i,
+                                  unsigned* nidx_i,
+                                  double* d2_i,
+                                  unsigned ngmax,
+                                  const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i,
+                                  const Vec3<Tc> targetCenter,
+                                  const Vec3<Tc> targetSize,
+                                  const Tc* __restrict__ x,
+                                  const Tc* __restrict__ y,
+                                  const Tc* __restrict__ z,
+                                  const Th* __restrict__ /*h*/,
+                                  const OctreeNsView<Tc, KeyType>& tree,
+                                  int initNodeIdx,
+                                  const Box<Tc>& box,
+                                  volatile int* tempQueue,
+                                  int* cellQueue)
 {
     const TreeNodeIndex* __restrict__ childOffsets   = tree.childOffsets;
     const TreeNodeIndex* __restrict__ internalToLeaf = tree.internalToLeaf;
@@ -294,7 +254,8 @@ __device__ uint2 traverseWarp(unsigned* nc_i,
             {
                 // Load source body coordinates
                 const Vec3<Tc> sourceBody = {x[bodyIdx], y[bodyIdx], z[bodyIdx]};
-                countNeighbors<UsePbc>(sourceBody, GpuConfig::warpSize, pos_i, box, bodyIdx, ngmax, nc_i, nidx_i);
+                countNeighborsHeap<UsePbc>(sourceBody, GpuConfig::warpSize, pos_i, box, bodyIdx, ngmax, nc_i, nidx_i,
+                                           d2_i);
                 numBodiesWarp -= GpuConfig::warpSize;
                 numBodiesLane -= GpuConfig::warpSize;
                 p2pCounter += GpuConfig::warpSize;
@@ -310,7 +271,8 @@ __device__ uint2 traverseWarp(unsigned* nc_i,
                 {
                     // Load source body coordinates
                     const Vec3<Tc> sourceBody = {x[bodyQueue], y[bodyQueue], z[bodyQueue]};
-                    countNeighbors<UsePbc>(sourceBody, GpuConfig::warpSize, pos_i, box, bodyQueue, ngmax, nc_i, nidx_i);
+                    countNeighborsHeap<UsePbc>(sourceBody, GpuConfig::warpSize, pos_i, box, bodyQueue, ngmax, nc_i,
+                                               nidx_i, d2_i);
                     bdyFillLevel -= GpuConfig::warpSize;
                     // bodyQueue is now empty; put body indices that spilled into the queue
                     bodyQueue = shflDownSync(bodyIdx, numBodiesWarp - bdyFillLevel);
@@ -335,83 +297,11 @@ __device__ uint2 traverseWarp(unsigned* nc_i,
         // Load position of source bodies, with padding for invalid lanes
         const Vec3<Tc> sourceBody =
             laneHasBody ? Vec3<Tc>{x[bodyQueue], y[bodyQueue], z[bodyQueue]} : Vec3<Tc>{Tc(0), Tc(0), Tc(0)};
-        countNeighbors<UsePbc>(sourceBody, bdyFillLevel, pos_i, box, bodyQueue, ngmax, nc_i, nidx_i);
+        countNeighborsHeap<UsePbc>(sourceBody, bdyFillLevel, pos_i, box, bodyQueue, ngmax, nc_i, nidx_i, d2_i);
         p2pCounter += bdyFillLevel;
     }
 
     return {p2pCounter, maxStack};
-}
-
-//! @brief neighbor search traversal statistics: sumP2P, maxP2P, maxStack
-struct NcStats
-{
-    using type = unsigned long long;
-    enum IndexNames
-    {
-        sumP2P,
-        maxP2P,
-        maxStack,
-        numStats
-    };
-};
-static __device__ NcStats::type ncStats[NcStats::numStats];
-
-static __device__ unsigned targetCounterGlob;
-
-static __global__ void resetTraversalCounters()
-{
-    for (int i = 0; i < NcStats::numStats; ++i)
-    {
-        ncStats[i] = 0;
-    }
-
-    targetCounterGlob = 0;
-}
-
-template<class Tc, class Th, class Index>
-__device__ __forceinline__ util::array<Vec4<Tc>, TravConfig::nwt> loadTarget(Index bodyBegin,
-                                                                             Index bodyEnd,
-                                                                             unsigned lane,
-                                                                             const Tc* __restrict__ x,
-                                                                             const Tc* __restrict__ y,
-                                                                             const Tc* __restrict__ z,
-                                                                             const Th* __restrict__ h)
-{
-    util::array<Vec4<Tc>, TravConfig::nwt> pos_i;
-#pragma unroll
-    for (int i = 0; i < TravConfig::nwt; i++)
-    {
-        Index bodyIdx = imin(bodyBegin + i * GpuConfig::warpSize + lane, bodyEnd - 1);
-        pos_i[i]      = {x[bodyIdx], y[bodyIdx], z[bodyIdx], Tc(2) * h[bodyIdx]};
-    }
-    return pos_i;
-}
-
-//! @brief determine the bounding box around all particles-2h spheres in the warp
-template<class Tc>
-__device__ __forceinline__ thrust::tuple<Vec3<Tc>, Vec3<Tc>>
-warpBbox(const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i)
-{
-    Tc r0 = pos_i[0][3];
-    Vec3<Tc> Xmin{pos_i[0][0] - r0, pos_i[0][1] - r0, pos_i[0][2] - r0};
-    Vec3<Tc> Xmax{pos_i[0][0] + r0, pos_i[0][1] + r0, pos_i[0][2] + r0};
-#pragma unroll
-    for (int i = 1; i < TravConfig::nwt; i++)
-    {
-        Tc ri = pos_i[i][3];
-        Vec3<Tc> iboxMin{pos_i[i][0] - ri, pos_i[i][1] - ri, pos_i[i][2] - ri};
-        Vec3<Tc> iboxMax{pos_i[i][0] + ri, pos_i[i][1] + ri, pos_i[i][2] + ri};
-        Xmin = min(Xmin, iboxMin);
-        Xmax = max(Xmax, iboxMax);
-    }
-
-    Xmin = {warpMin(Xmin[0]), warpMin(Xmin[1]), warpMin(Xmin[2])};
-    Xmax = {warpMax(Xmax[0]), warpMax(Xmax[1]), warpMax(Xmax[2])};
-
-    Vec3<Tc> targetCenter = (Xmax + Xmin) * Tc(0.5);
-    Vec3<Tc> targetSize   = (Xmax - Xmin) * Tc(0.5);
-
-    return thrust::make_tuple(targetCenter, targetSize);
 }
 
 /*! @brief Find neighbors of a group of given particles, does not count self reference: min return value is 0
@@ -433,17 +323,18 @@ warpBbox(const util::array<Vec4<Tc>, TravConfig::nwt>& pos_i)
  * Note: Number of handled particles (bodyEnd - bodyBegin) should be GpuConfig::warpSize * TravConfig::nwt or smaller
  */
 template<class Tc, class Th, class KeyType>
-__device__ util::array<unsigned, TravConfig::nwt> traverseNeighbors(cstone::LocalIndex bodyBegin,
-                                                                    cstone::LocalIndex bodyEnd,
-                                                                    const Tc* __restrict__ x,
-                                                                    const Tc* __restrict__ y,
-                                                                    const Tc* __restrict__ z,
-                                                                    const Th* __restrict__ h,
-                                                                    const OctreeNsView<Tc, KeyType>& tree,
-                                                                    const Box<Tc>& box,
-                                                                    cstone::LocalIndex* warpNidx,
-                                                                    unsigned ngmax,
-                                                                    TreeNodeIndex* globalPool)
+__device__ util::array<unsigned, TravConfig::nwt> traverseNeighborsHeap(cstone::LocalIndex bodyBegin,
+                                                                        cstone::LocalIndex bodyEnd,
+                                                                        const Tc* __restrict__ x,
+                                                                        const Tc* __restrict__ y,
+                                                                        const Tc* __restrict__ z,
+                                                                        const Th* __restrict__ h,
+                                                                        const OctreeNsView<Tc, KeyType>& tree,
+                                                                        const Box<Tc>& box,
+                                                                        cstone::LocalIndex* warpNidx,
+                                                                        double* warpd2,
+                                                                        unsigned ngmax,
+                                                                        TreeNodeIndex* globalPool)
 {
     const unsigned laneIdx = threadIdx.x & (GpuConfig::warpSize - 1);
     const unsigned warpIdx = threadIdx.x >> GpuConfig::warpSizeLog2;
@@ -482,13 +373,13 @@ __device__ util::array<unsigned, TravConfig::nwt> traverseNeighbors(cstone::Loca
     uint2 warpStats;
     if (usePbc)
     {
-        warpStats = traverseWarp<true>(nc_i.data(), warpNidx, ngmax, pos_i, targetCenter, targetSize, x, y, z, h, tree,
-                                       initNode, box, tempQueue, cellQueue);
+        warpStats = traverseWarpHeap<true>(nc_i.data(), warpNidx, warpd2, ngmax, pos_i, targetCenter, targetSize, x, y,
+                                           z, h, tree, initNode, box, tempQueue, cellQueue);
     }
     else
     {
-        warpStats = traverseWarp<false>(nc_i.data(), warpNidx, ngmax, pos_i, targetCenter, targetSize, x, y, z, h, tree,
-                                        initNode, box, tempQueue, cellQueue);
+        warpStats = traverseWarpHeap<false>(nc_i.data(), warpNidx, warpd2, ngmax, pos_i, targetCenter, targetSize, x, y,
+                                            z, h, tree, initNode, box, tempQueue, cellQueue);
     }
     unsigned numP2P   = warpStats.x;
     unsigned maxStack = warpStats.y;
@@ -503,42 +394,6 @@ __device__ util::array<unsigned, TravConfig::nwt> traverseNeighbors(cstone::Loca
     }
 
     return nc_i;
-}
-
-//! @brief combine temp space for tree traversal and neighbor search into a single allocation
-template<class DeviceVector>
-std::tuple<TreeNodeIndex*, LocalIndex*> allocateNcStacks(DeviceVector& stack, unsigned ngmax)
-{
-    unsigned poolSize = TravConfig::poolSize();
-    unsigned nidxSize = ngmax * TravConfig::numBlocks() * TravConfig::numThreads;
-
-    static_assert(sizeof(LocalIndex) == sizeof(typename DeviceVector::value_type));
-    reallocateDestructive(stack, poolSize + nidxSize, 1.01);
-
-    auto* traversalPool = reinterpret_cast<TreeNodeIndex*>(rawPtr(stack));
-    auto* nidxPool      = reinterpret_cast<LocalIndex*>(rawPtr(stack)) + poolSize;
-
-    return {traversalPool, nidxPool};
-}
-template<class DeviceVector, class D2Vector>
-std::tuple<TreeNodeIndex*, LocalIndex*, double*>
-allocateNcStacksD2(DeviceVector& stack, D2Vector& stack_d2, unsigned ngmax)
-{
-    unsigned poolSize = TravConfig::poolSize();
-    unsigned nidxSize = ngmax * TravConfig::numBlocks() * TravConfig::numThreads;
-    unsigned d2Size = ngmax * TravConfig::numBlocks() * TravConfig::numThreads;
-
-    static_assert(sizeof(LocalIndex) == sizeof(typename DeviceVector::value_type));
-    reallocateDestructive(stack, poolSize + nidxSize, 1.01);
-
-    auto* traversalPool = reinterpret_cast<TreeNodeIndex*>(rawPtr(stack));
-    auto* nidxPool      = reinterpret_cast<LocalIndex*>(rawPtr(stack)) + poolSize;
-
-    static_assert(sizeof(double) == sizeof(typename D2Vector::value_type));
-    reallocateDestructive(stack_d2, d2Size, 1.01);
-    auto* d2Pool = reinterpret_cast<double*>(rawPtr(stack_d2));
-
-    return {traversalPool, nidxPool, d2Pool};
 }
 
 } // namespace cstone

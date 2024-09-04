@@ -33,6 +33,7 @@
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/traversal/find_neighbors.cuh"
+#include "cstone/traversal/neighbour_sanitizer.cuh"
 
 #include "sph/sph_gpu.hpp"
 #include "sph/particles_data.hpp"
@@ -53,17 +54,18 @@ namespace cuda
 __device__ bool nc_h_convergenceFailure = false;
 
 template<class Tc, class Tm, class T, class KeyType>
-__global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, const cstone::Box<Tc> box, const LocalIndex* grpStart,
-                         const LocalIndex* grpEnd, LocalIndex numGroups, const cstone::OctreeNsView<Tc, KeyType> tree,
-                         unsigned* nc, const Tc* x, const Tc* y, const Tc* z, T* h, const Tm* m, const T* wh,
-                         const T* whd, T* xm, LocalIndex* nidx, TreeNodeIndex* globalPool)
+__global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, const cstone::Box<Tc> box,
+                         const LocalIndex* grpStart, const LocalIndex* grpEnd, LocalIndex numGroups,
+                         const cstone::OctreeNsView<Tc, KeyType> tree, unsigned* nc, const Tc* x, const Tc* y,
+                         const Tc* z, T* h, const Tm* m, const T* wh, const T* whd, T* xm, LocalIndex* nidx, double* d2,
+                         TreeNodeIndex* globalPool)
 {
     unsigned laneIdx     = threadIdx.x & (GpuConfig::warpSize - 1);
     unsigned targetIdx   = 0;
     unsigned warpIdxGrid = (blockDim.x * blockIdx.x + threadIdx.x) >> GpuConfig::warpSizeLog2;
 
     LocalIndex* neighborsWarp = nidx + ngmax * TravConfig::targetSize * warpIdxGrid;
-
+    double*     d2Warp        = d2 + ngmax * TravConfig::targetSize * warpIdxGrid;
 
     while (true)
     {
@@ -80,32 +82,52 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, con
         unsigned ncSph =
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
 
-        T h_upper(box.maxExtent());
-        T h_lower{0.};
+        // T h_upper(box.maxExtent());
+        // T h_lower{0.};
         constexpr int ncMaxIteration = 1000;
+        // Iterate until no h is too small
+
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
             if (ncIt == ncMaxIteration) { nc_h_convergenceFailure = true; }
 
-            bool tooMany   = (ncSph - 1) > ngmax;
+            // bool tooMany   = (ncSph - 1) > ngmax;
             bool notEnough = ncSph < ngmin;
-            bool repeat    = (notEnough || tooMany) && i < bodyEnd;
+            bool repeat    = (notEnough /* || tooMany*/) && i < bodyEnd;
 
-            h_upper = tooMany ? h[i] : h_upper;
-            h_lower = notEnough ? h[i] : h_lower;
+            // h_upper = tooMany ? h[i] : h_upper;
+            // h_lower = notEnough ? h[i] : h_lower;
             if (!cstone::ballotSync(repeat)) { break; }
-            if (repeat && ncIt < 10)
+            if (repeat /* && ncIt < 10*/)
             {
                 // Dampen updateH by weighting with proposed smoothing lengths of past iterations
-                h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
+                // h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
+                printf("updateH: %u\th: %lf\tncSph: %u\n", i, h[i], ncSph);
+                h[i] = updateH(ng0, ncSph, h[i]);
             }
-            else if (repeat)
+            /*else if (repeat)
             {
                 // Bisection
                 h[i] = (h_upper + h_lower) / 2.;
-            }
+            }*/
             ncSph =
                 1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
+
+            // ncSph =
+            //    1 + traverseNeighborsHeap(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, d2Warp, ngmax,
+            //    globalPool)[0];
+        }
+
+        bool tooMany = (ncSph - 1) > ngmax;
+        if (cstone::ballotSync(tooMany))
+        {
+            ncSph = 1 + traverseNeighborsHeap(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, d2Warp, ng0,
+                                              globalPool)[0];
+            if (i < bodyEnd)
+            {
+                h[i] = sqrt(*(d2Warp + laneIdx)) * 0.5;
+                printf("Heap: %u\tncSph: %u\th[i]: %lf\n", i, ncSph, h[i]);
+            }
         }
 
         if (i >= bodyEnd) continue;
@@ -120,13 +142,16 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, unsigned ngmin, con
 template<class Dataset>
 void computeXMass(const GroupView& grp, Dataset& d, const cstone::Box<typename Dataset::RealType>& box)
 {
-    auto [traversalPool, nidxPool] = cstone::allocateNcStacks(d.devData.traversalStack, d.ngmax);
+    // auto [traversalPool, nidxPool] = cstone::allocateNcStacks(d.devData.traversalStack, d.ngmax);
+    auto [traversalPool, nidxPool, d2Pool] =
+        cstone::allocateNcStacksD2(d.devData.traversalStack, d.devData.d2Stack, d.ngmax);
     cstone::resetTraversalCounters<<<1, 1>>>();
 
     xmassGpu<<<TravConfig::numBlocks(), TravConfig::numThreads>>>(
-        d.K, d.ng0, d.ngmax, d.ngmin, box, grp.groupStart, grp.groupEnd, grp.numGroups, d.treeView, rawPtr(d.devData.nc),
-        rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z), rawPtr(d.devData.h), rawPtr(d.devData.m),
-        rawPtr(d.devData.wh), rawPtr(d.devData.whd), rawPtr(d.devData.xm), nidxPool, traversalPool);
+        d.K, d.ng0, d.ngmax, d.ngmin, box, grp.groupStart, grp.groupEnd, grp.numGroups, d.treeView,
+        rawPtr(d.devData.nc), rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z), rawPtr(d.devData.h),
+        rawPtr(d.devData.m), rawPtr(d.devData.wh), rawPtr(d.devData.whd), rawPtr(d.devData.xm), nidxPool, d2Pool,
+        traversalPool);
 
     checkGpuErrors(cudaDeviceSynchronize());
 

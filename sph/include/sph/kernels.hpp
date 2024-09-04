@@ -28,7 +28,9 @@ HOST_DEVICE_FUN T updateH(unsigned ng0, unsigned nc, T h)
 {
     constexpr T c0  = 1023.0;
     constexpr T exp = 1.0 / 10.0;
-    return h * T(0.5) * std::pow(T(1) + c0 * ng0 / T(nc), exp);
+    const T factor = T(0.5) * std::pow(T(1) + c0 * ng0 / T(nc), exp);
+   // const T factor_capped = std::min(1.1, std::max(0.9, factor));
+    return h * factor;
 }
 
 //! @brief sinc(PI/2 * v)

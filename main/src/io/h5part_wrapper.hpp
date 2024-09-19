@@ -38,6 +38,7 @@
 #include "cstone/util/tuple_util.hpp"
 
 #include "H5Part.h"
+#include <mpi.h>
 
 namespace sphexa
 {

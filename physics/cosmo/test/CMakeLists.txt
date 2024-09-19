@@ -6,7 +6,6 @@ target_compile_options(${testname} PRIVATE -Wall -Wextra)
 target_compile_definitions(${testname} PUBLIC SPH_EXA_HAVE_H5PART)
 
 
-
 target_include_directories(${testname} PRIVATE ${CSTONE_DIR} ${PROJECT_SOURCE_DIR}/include)
 
 target_link_libraries(${testname} PRIVATE GTest::gtest_main)

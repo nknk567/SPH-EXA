@@ -132,13 +132,13 @@ public:
         T a2 = a * a;
         T a3 = a * a2;
         T a4 = a * a3;
-        return (H0 / a2) * sqrt(OmegaRadiation + OmegaMatter * a + OmegaCurvature * a2 + OmegaLambda * a4);
+        return (H0 / a2) * std::sqrt(OmegaRadiation + OmegaMatter * a + OmegaCurvature * a2 + OmegaLambda * a4);
     }
 
     T time(const T a) const
     {
         auto f = [this](const T x) { return 2. / (3. * x * hubble_H(pow(x, 2. / 3.))); };
-        return integrate_romberg<T>(f, 0.0, pow(a, 1.5), 1e-2 * relativeError);
+        return integrate_romberg<T>(f, 0.0, std::pow(a, 1.5), 1e-2 * relativeError);
     }
 
     T scale_factor_a(T t) const

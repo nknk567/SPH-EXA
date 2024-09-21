@@ -148,10 +148,13 @@ int main(int argc, char** argv)
     for (bool keepRunning = true; keepRunning; d.iteration++)
     {
         propagator->computeForces(domain, simData);
+        propagator->integrateToFullStep(domain, simData);
         box = domain.box();
 
         if (propagator->isSynced())
         {
+            //Compute energy from x - x_m1 instead of vx, ...
+            //If observables need the exact value of v,
             observables->computeAndWrite(simData, domain.startIndex(), domain.endIndex(), box);
         }
 

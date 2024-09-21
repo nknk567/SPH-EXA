@@ -39,6 +39,7 @@
 #include "std_hydro.hpp"
 #include "ve_hydro.hpp"
 #include "ve_hydro_bdt.hpp"
+#include "cosmo.hpp"
 #ifdef SPH_EXA_HAVE_GRACKLE
 #include "std_hydro_grackle.hpp"
 #endif
@@ -62,6 +63,8 @@ propagatorFactory(const std::string& choice, bool avClean, std::ostream& output,
         else { return std::make_unique<HydroVeBdtProp<false, DomainType, ParticleDataType>>(output, rank, s); }
     }
     if (choice == "std") { return std::make_unique<HydroProp<DomainType, ParticleDataType>>(output, rank); }
+    if (choice == "cosmological") { return std::make_unique<CosmoProp<DomainType, ParticleDataType>>(output, rank); }
+
 #ifdef SPH_EXA_HAVE_GRACKLE
     if (choice == "std-cooling")
     {

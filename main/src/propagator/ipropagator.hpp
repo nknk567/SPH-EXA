@@ -67,6 +67,10 @@ public:
     //! @brief synchronize domain and compute forces
     virtual void computeForces(DomainType& domain, ParticleDataType& d) = 0;
 
+    //! @brief Integrate the system such that all variables are time-synchronized
+    //! This is needed for Leapfrog as this operation has to be done after a new call to computeForces()
+    virtual void integrateToFullStep(DomainType& domain, ParticleDataType& d) {}
+
     //! @brief integrate and/or drift particles in time
     virtual void integrate(DomainType& domain, ParticleDataType& d) = 0;
 

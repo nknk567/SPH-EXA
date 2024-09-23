@@ -70,11 +70,11 @@ class CosmoProp final : public Propagator<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"vx", "vy", "vz", "vhx", "vhy", "vhz", "du_m1", "u">;
+    using ConservedFields = FieldList<"vx", "vy", "vz", "vhx", "vhy", "vhz", "u">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields =
-        FieldList<"rho", "c", "p", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33", "nc">;
+        FieldList<"rho", "c", "p", "ax", "ay", "az", "agx", "agy", "agz", "c11", "c12", "c13", "du", "nc">;
     bool halfStepKickNeeded;
 
 public:
@@ -182,54 +182,86 @@ public:
     //    }
     //
 
-    void gravity_kick(DomainType& domain, DataType& simData, const double dt)
-    {
-        // Drift is the same for Gravity and SPH
-        // Instead of vx use x_m1 * mindt
-        auto& d = simData.hydro;
+    //    template<util::StructuralString vx, util::StructuralString vy, util::StructuralString vz,
+    //    util::StructuralString ax,
+    //             util::StructuralString ay, util::StructuralString az>
+    //    void kick(const size_t first, const size_t last, DataType& simData, const double dt_corrected)
+    //    {
+    //        auto& d = simData.hydro;
+    //
+    // #pragma omp parallel for schedule(static)
+    //        for (size_t i = first; i < last; i++)
+    //        {
+    //            cstone::Vec3<T> V{get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]};
+    //            //            util::tie(d.vx_m1[i], d.vy_m1[i], d.vz_m1[i]) = util::tie(d.vx[i], d.vy[i], d.vz[i]);
+    //
+    //            const cstone::Vec3<T> A{get<ax>(d)[i], get<ay>(d)[i], get<az>(d)[i]};
+    //
+    //            V += A * dt_corrected;
+    //            util::tie(get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]) = util::tie(V[0], V[1], V[2]);
+    //        }
+    //    }
 
-        const size_t first           = domain.startIndex();
-        const size_t last            = domain.endIndex();
-        const auto   dt_cosmological = dt;
+    template<util::StructuralString vx, util::StructuralString vy, util::StructuralString vz, util::StructuralString ax,
+             util::StructuralString ay, util::StructuralString az>
+    void kick(FieldList<vx, vy, vz, ax, ay, az>, const size_t first, const size_t last, DataType& simData,
+              const double dt_corrected)
+    {
+        auto& d = simData.hydro;
 
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; i++)
         {
-            cstone::Vec3<T> V{d.vx[i], d.vy[i], d.vz[i]};
+            cstone::Vec3<T> V{get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]};
             //            util::tie(d.vx_m1[i], d.vy_m1[i], d.vz_m1[i]) = util::tie(d.vx[i], d.vy[i], d.vz[i]);
 
-            const cstone::Vec3<T> A{d.agx[i], d.agy[i], d.agz[i]};
+            const cstone::Vec3<T> A{get<ax>(d)[i], get<ay>(d)[i], get<az>(d)[i]};
 
-            V += A * dt_cosmological;
-            util::tie(d.vx[i], d.vy[i], d.vz[i]) = util::tie(V[0], V[1], V[2]);
+            V += A * dt_corrected;
+            util::tie(get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]) = util::tie(V[0], V[1], V[2]);
         }
+    }
+    template<typename FL_Kick>
+    void kick(const size_t first, const size_t last, DataType& simData, const double dt_corrected)
+    {
+        kick(FL_Kick{}, first, last, simData, dt_corrected);
+    }
+
+    void gravity_kick(DomainType& domain, DataType& simData, const double dt)
+    {
+        const size_t first           = domain.startIndex();
+        const size_t last            = domain.endIndex();
+        const auto   dt_cosmological = dt;
+        using GravityKickFields      = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
+        kick<GravityKickFields>(first, last, simData, dt_cosmological);
     }
 
     void hydro_force_kick(DomainType& domain, DataType& simData, const double dt)
     {
-        // Drift is the same for Gravity and SPH
-        auto& d = simData.hydro;
-
         const size_t first           = domain.startIndex();
         const size_t last            = domain.endIndex();
         const auto   dt_cosmological = dt;
+        using HydroKickFields        = FieldList<"vx", "vy", "vz", "ax", "ay", "az">;
+        kick<HydroKickFields>(first, last, simData, dt_cosmological);
+    }
 
-#pragma omp parallel for schedule(static)
-        for (size_t i = first; i < last; i++)
-        {
-            cstone::Vec3<T>       V{d.vx[i], d.vy[i], d.vz[i]};
-            const cstone::Vec3<T> A{d.ax[i], d.ay[i], d.az[i]};
+    void predict_velocities(DomainType& domain, DataType& simData, const double dt)
+    {
+        const size_t first           = domain.startIndex();
+        const size_t last            = domain.endIndex();
+        const auto   dt_cosmological = dt;
+        using GravityHalfKickFields      = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
+        using HydroHalfKickFields      = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
 
-            V += A * dt_cosmological;
-            util::tie(d.vx[i], d.vy[i], d.vz[i]) = util::tie(V[0], V[1], V[2]);
-        }
+        kick<GravityHalfKickFields>(first, last, simData, dt_cosmological);
+        kick<HydroHalfKickFields>(first, last, simData, dt_cosmological);
     }
 
     // Adapt for groups
     void kick(DomainType& domain, DataType& simData, const double dt)
     {
         gravity_kick(domain, simData, dt);
-        hydro_force_kick(domain, simData.hydro, dt);
+        hydro_force_kick(domain, simData, dt);
     }
 
     // Adapt for groups
@@ -258,54 +290,6 @@ public:
         }
     }
 
-    void step(DomainType& domain, DataType& simData)
-    {
-        timer.start();
-        sync(domain, simData);
-        timer.step("domain::sync");
-
-        auto& d = simData.hydro;
-        d.resize(domain.nParticlesWithHalos());
-        size_t first = domain.startIndex();
-        size_t last  = domain.endIndex();
-
-        transferToHost(d, first, first + 1, {"m"});
-        fill(get<"m">(d), 0, first, d.m[first]);
-        fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
-
-        if (halfStepKickNeeded)
-        {
-            //            computeAccelerations(first, last, d);
-            timer.step("Accelerations");
-            halfStepKickNeeded = false;
-
-            d.minDtCourant = INFINITY;
-            computeTimestep(first, last, d);
-            timer.step("Timestep");
-        }
-
-        //        Kick(domain, d.minDt / 2);
-        timer.step("Kick");
-
-        //        Drift(domain, d.minDt);
-        timer.step("Drift");
-
-        //        computeAccelerations(first, last, d);
-        timer.step("Accelerations");
-
-        d.minDtCourant = INFINITY;
-        computeTimestep(first, last, d);
-        timer.step("Timestep");
-
-        //        Kick(domain, d.minDt / 2);
-        timer.step("Kick");
-
-        timer.step("Leapfrog-Integration");
-
-        // computePositions(first, last, d, domain.box());
-        // timer.step("UpdateQuantities");
-    }
-
     void computeForces(DomainType& domain, DataType& simData) override
     {
         timer.start();
@@ -317,6 +301,9 @@ public:
         d.resize(domain.nParticlesWithHalos());
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
+
+        release(d, "agx", "agy", "agz");
+        acquire(d, "c22", "c23", "c33");
 
         transferToHost(d, first, first + 1, {"m"});
         fill(get<"m">(d), 0, first, d.m[first]);
@@ -343,20 +330,30 @@ public:
 
         computeMomentumEnergySTD(groups_.view(), d, domain.box());
         timer.step("MomentumEnergyIAD");
-//Release c11-c13; Acquire agx..agz
-        //        if (d.g != 0.0)
-        //        {
-        //            auto groups = mHolder_.computeSpatialGroups(d, domain);
-        //            mHolder_.upsweep(d, domain);
-        //            timer.step("Upsweep");
-        //            //Add the gravity accelerations to another field
-        //            mHolder_.traverse(groups, d, domain);
-        //            timer.step("Gravity");
-        //        }
+
+        release(d, "c22", "c23", "c33");
+        acquire(d, "agx", "agy", "agz");
+
+        fill(get<"agx">(d), 0., first, last);
+        fill(get<"agy">(d), 0., first, last);
+        fill(get<"agz">(d), 0., first, last);
+
+        // Release c11-c13; Acquire agx..agz
+        if (d.g != 0.0)
+        {
+            auto groups = mHolder_.computeSpatialGroups(d, domain);
+            mHolder_.upsweep(d, domain);
+            timer.step("Upsweep");
+            //            //Add the gravity accelerations to another field
+            mHolder_.traverse(groups, d, domain);
+            timer.step("Gravity");
+        }
     }
+    //Don't call this the first time. (After reading from file).
+    // Call this before writing to a file or before calling integrate().
     void integrateToFullStep(DomainType& domain, DataType& simData) override
     {
-        kick(domain, simData, simData.hydro.minDt / 2.);
+        kick(domain, simData, simData.hydro.minDt / 2.); //Kicks vhx, vhy, vhz
     }
     void integrate(DomainType& domain, DataType& simData) override
     {
@@ -367,14 +364,63 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
 
-        drift(domain, simData, simData.hydro.minDt);
-        kick(domain, simData, simData.hydro.minDt / 2.);
-        // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur mit x - x_m1
+        //evtl volles dt integrieren (Fallunterscheidung)
+        kick(domain, simData, simData.hydro.minDt / 2.); //Kicks the vhx, vhy, vhz
+        drift(domain, simData, simData.hydro.minDt); //Uses vhx, vhy, vhz
+        // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur in vhx, vhy, vhz
+        //reads vhx, vhy, vhz
         predict_velocities(domain, simData, simData.hydro.minDt / 2.);
 
         updateSmoothingLength(groups_.view(), d);
         timer.step("UpdateQuantities");
     }
+    //    void step(DomainType& domain, DataType& simData)
+    //    {
+    //        timer.start();
+    //        sync(domain, simData);
+    //        timer.step("domain::sync");
+    //
+    //        auto& d = simData.hydro;
+    //        d.resize(domain.nParticlesWithHalos());
+    //        size_t first = domain.startIndex();
+    //        size_t last  = domain.endIndex();
+    //
+    //        transferToHost(d, first, first + 1, {"m"});
+    //        fill(get<"m">(d), 0, first, d.m[first]);
+    //        fill(get<"m">(d), last, domain.nParticlesWithHalos(), d.m[first]);
+    //
+    //        if (halfStepKickNeeded)
+    //        {
+    //            //            computeAccelerations(first, last, d);
+    //            timer.step("Accelerations");
+    //            halfStepKickNeeded = false;
+    //
+    //            d.minDtCourant = INFINITY;
+    //            computeTimestep(first, last, d);
+    //            timer.step("Timestep");
+    //        }
+    //
+    //        //        Kick(domain, d.minDt / 2);
+    //        timer.step("Kick");
+    //
+    //        //        Drift(domain, d.minDt);
+    //        timer.step("Drift");
+    //
+    //        //        computeAccelerations(first, last, d);
+    //        timer.step("Accelerations");
+    //
+    //        d.minDtCourant = INFINITY;
+    //        computeTimestep(first, last, d);
+    //        timer.step("Timestep");
+    //
+    //        //        Kick(domain, d.minDt / 2);
+    //        timer.step("Kick");
+    //
+    //        timer.step("Leapfrog-Integration");
+    //
+    //        // computePositions(first, last, d, domain.box());
+    //        // timer.step("UpdateQuantities");
+    //    }
 };
 
 } // namespace sphexa

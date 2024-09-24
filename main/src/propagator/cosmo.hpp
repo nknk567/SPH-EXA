@@ -133,74 +133,6 @@ public:
             //                      << stats[3] << std::endl;
         }
     }
-    //
-    //    void computeAccelerations(size_t first, size_t last, Dataset& d)
-    //    {
-    //        fill(get<"ax">(d), first, last, HydroType(0));
-    //        fill(get<"ay">(d), first, last, HydroType(0));
-    //        fill(get<"az">(d), first, last, HydroType(0));
-    //
-    //        computeGravity(domain, simData);
-    //
-    //        /* zero other hydro accelerations and compute those */
-    //        /* ... */
-    //    }
-    //
-    //    void GravKick(DomainType& domain, double t, double dt)
-    //    {
-    //        auto dt_cosmo = dt;
-    //
-    // #pragma omp parallel for schedule(static)
-    //        for (size_t i = startIndex; i < endIndex; i++)
-    //        {
-    //            cstone::Vec3<T> V{d.vx[i], d.vy[i], d.vz[i]};
-    //            cstone::Vec3<T> A{d.ax[i], d.ay[i], d.az[i]};
-    //
-    //            V += A * dt_cosmo;
-    //
-    //            util::tie(d.vx[i], d.vy[i], d.vz[i]) = util::tie(V[0], V[1], V[2]);
-    //        }
-    //    }
-
-    //    void GravDrift(DomainType& domain, double t, double dt)
-    //    {
-    //        auto dt_cosmo = dt;
-    //
-    // #pragma omp parallel for schedule(static)
-    //        for (size_t i = startIndex; i < endIndex; i++)
-    //        {
-    //            cstone::Vec3<T> X{d.x[i], d.y[i], d.z[i]};
-    //            cstone::Vec3<T> V{d.vx[i], d.vy[i], d.vz[i]};
-    //
-    //            util::tie(d.x_m1[i], d.y_m1[i], d.z_m1[i]) = util::tie(d.x[i], d.y[i], d.z[i]);
-    //
-    //            X += V * dt_cosmo;
-    //            X = cstone::putInBox(X, domain.box()); /* Maybe we do this after all drifts? */
-    //
-    //            util::tie(d.x[i], d.y[i], d.z[i]) = util::tie(X[0], X[1], X[2]);
-    //        }
-    //    }
-    //
-
-    //    template<util::StructuralString vx, util::StructuralString vy, util::StructuralString vz,
-    //    util::StructuralString ax,
-    //             util::StructuralString ay, util::StructuralString az>
-    //    void kick(const size_t first, const size_t last, DataType& simData, const double dt_corrected)
-    //    {
-    //        auto& d = simData.hydro;
-    //
-    // #pragma omp parallel for schedule(static)
-    //        for (size_t i = first; i < last; i++)
-    //        {
-    //            cstone::Vec3<T> V{get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]};
-    //            //            util::tie(d.vx_m1[i], d.vy_m1[i], d.vz_m1[i]) = util::tie(d.vx[i], d.vy[i], d.vz[i]);
-    //
-    //            const cstone::Vec3<T> A{get<ax>(d)[i], get<ay>(d)[i], get<az>(d)[i]};
-    //
-    //            V += A * dt_corrected;
-    //            util::tie(get<vx>(d)[i], get<vy>(d)[i], get<vz>(d)[i]) = util::tie(V[0], V[1], V[2]);
-    //        }
-    //    }
 
     template<util::StructuralString vx, util::StructuralString vy, util::StructuralString vz, util::StructuralString ax,
              util::StructuralString ay, util::StructuralString az>
@@ -250,8 +182,8 @@ public:
         const size_t first           = domain.startIndex();
         const size_t last            = domain.endIndex();
         const auto   dt_cosmological = dt;
-        using GravityHalfKickFields      = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
-        using HydroHalfKickFields      = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
+        using GravityHalfKickFields  = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
+        using HydroHalfKickFields    = FieldList<"vx", "vy", "vz", "agx", "agy", "agz">;
 
         kick<GravityHalfKickFields>(first, last, simData, dt_cosmological);
         kick<HydroHalfKickFields>(first, last, simData, dt_cosmological);
@@ -262,6 +194,7 @@ public:
     {
         gravity_kick(domain, simData, dt);
         hydro_force_kick(domain, simData, dt);
+        //       internal_energy_kick(domain, dimData, dt);
     }
 
     // Adapt for groups
@@ -349,11 +282,11 @@ public:
             timer.step("Gravity");
         }
     }
-    //Don't call this the first time. (After reading from file).
-    // Call this before writing to a file or before calling integrate().
+    // Don't call this the first time. (After reading from file).
+    //  Call this before writing to a file or before calling integrate().
     void integrateToFullStep(DomainType& domain, DataType& simData) override
     {
-        kick(domain, simData, simData.hydro.minDt / 2.); //Kicks vhx, vhy, vhz
+        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks vhx, vhy, vhz
     }
     void integrate(DomainType& domain, DataType& simData) override
     {
@@ -364,11 +297,11 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
 
-        //evtl volles dt integrieren (Fallunterscheidung)
-        kick(domain, simData, simData.hydro.minDt / 2.); //Kicks the vhx, vhy, vhz
-        drift(domain, simData, simData.hydro.minDt); //Uses vhx, vhy, vhz
+        // evtl volles dt integrieren (Fallunterscheidung)
+        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks the vhx, vhy, vhz
+        drift(domain, simData, simData.hydro.minDt);     // Uses vhx, vhy, vhz
         // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur in vhx, vhy, vhz
-        //reads vhx, vhy, vhz
+        // reads vhx, vhy, vhz
         predict_velocities(domain, simData, simData.hydro.minDt / 2.);
 
         updateSmoothingLength(groups_.view(), d);

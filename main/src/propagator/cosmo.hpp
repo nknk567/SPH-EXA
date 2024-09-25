@@ -282,31 +282,55 @@ public:
             timer.step("Gravity");
         }
     }
-    // Don't call this the first time. (After reading from file).
-    //  Call this before writing to a file or before calling integrate().
-    void integrateToFullStep(DomainType& domain, DataType& simData) override
-    {
-        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks vhx, vhy, vhz
-    }
+
     void integrate(DomainType& domain, DataType& simData) override
     {
-        auto&  d     = simData.hydro;
+        const double dt = simData.hydro.minDt;
+
+        kick(domain, simData, dt / 2.);
+        drift(domain, simData, dt);
+        predict_velocities(domain, simData, dt / 2.);
+
+        computeForces(domain, simData);
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
-        computeTimestep(first, last, d);
+        computeTimestep(first, last,
+                        simData.hydro); // Assume it depends only on x, y, z (through forces; true for dark matter)
         timer.step("Timestep");
 
-        // evtl volles dt integrieren (Fallunterscheidung)
-        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks the vhx, vhy, vhz
-        drift(domain, simData, simData.hydro.minDt);     // Uses vhx, vhy, vhz
-        // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur in vhx, vhy, vhz
-        // reads vhx, vhy, vhz
-        predict_velocities(domain, simData, simData.hydro.minDt / 2.);
+        //Drift back the required time
+        //drift(domain, simData, simData.hydro.minDt - dt);
+        //kick(domain, simData, simData.hydro.minDt / 2.);
+        kick(domain, simData, dt / 2.);
 
-        updateSmoothingLength(groups_.view(), d);
-        timer.step("UpdateQuantities");
     }
+
+    // Don't call this the first time. (After reading from file).
+    //  Call this before writing to a file or before calling integrate().
+    //    void integrateToFullStep(DomainType& domain, DataType& simData) override
+    //    {
+    //        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks vhx, vhy, vhz
+    //    }
+    //    void integrate(DomainType& domain, DataType& simData) override
+    //    {
+    //        auto&  d     = simData.hydro;
+    //        size_t first = domain.startIndex();
+    //        size_t last  = domain.endIndex();
+    //
+    //        computeTimestep(first, last, d);
+    //        timer.step("Timestep");
+    //
+    //        // evtl volles dt integrieren (Fallunterscheidung)
+    //        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks the vhx, vhy, vhz
+    //        drift(domain, simData, simData.hydro.minDt);     // Uses vhx, vhy, vhz
+    //        // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur in vhx, vhy, vhz
+    //        // reads vhx, vhy, vhz
+    //        predict_velocities(domain, simData, simData.hydro.minDt / 2.);
+    //
+    //        updateSmoothingLength(groups_.view(), d);
+    //        timer.step("UpdateQuantities");
+    //    }
     //    void step(DomainType& domain, DataType& simData)
     //    {
     //        timer.start();

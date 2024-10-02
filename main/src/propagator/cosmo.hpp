@@ -114,25 +114,25 @@ public:
                         get<ConservedFields>(d), get<DependentFields>(d));
     }
 
-    void computeGravity(DomainType& domain, DataType& simData)
-    {
-        auto& d = simData.hydro;
-
-        mHolder_.upsweep(d, domain);
-        timer.step("Upsweep");
-        mHolder_.traverse(d, domain);
-        timer.step("Gravity");
-
-        auto stats = mHolder_.readStats();
-
-        if (domain.startIndex() == 0 && cstone::HaveGpu<typename DataType::AcceleratorType>{})
-        {
-            //            size_t n = last - first;
-            //            std::cout << "numP2P " << stats[0] / n << " maxP2P " << stats[1] << " numM2P " << stats[2] / n
-            //            << " maxM2P "
-            //                      << stats[3] << std::endl;
-        }
-    }
+//    void computeGravity(DomainType& domain, DataType& simData)
+//    {
+//        auto& d = simData.hydro;
+//
+//        mHolder_.upsweep(d, domain);
+//        timer.step("Upsweep");
+//        mHolder_.traverse(d, domain);
+//        timer.step("Gravity");
+//
+//        auto stats = mHolder_.readStats();
+//
+//        if (domain.startIndex() == 0 && cstone::HaveGpu<typename DataType::AcceleratorType>{})
+//        {
+//            //            size_t n = last - first;
+//            //            std::cout << "numP2P " << stats[0] / n << " maxP2P " << stats[1] << " numM2P " << stats[2] / n
+//            //            << " maxM2P "
+//            //                      << stats[3] << std::endl;
+//        }
+//    }
 
     template<util::StructuralString vx, util::StructuralString vy, util::StructuralString vz, util::StructuralString ax,
              util::StructuralString ay, util::StructuralString az>
@@ -190,12 +190,12 @@ public:
     }
 
     // Adapt for groups
-    void kick(DomainType& domain, DataType& simData, const double dt)
-    {
-        gravity_kick(domain, simData, dt);
-        hydro_force_kick(domain, simData, dt);
-        //       internal_energy_kick(domain, dimData, dt);
-    }
+//    void kick(DomainType& domain, DataType& simData, const double dt)
+//    {
+//        gravity_kick(domain, simData, dt);
+//        hydro_force_kick(domain, simData, dt);
+//        //       internal_energy_kick(domain, dimData, dt);
+//    }
 
     // Adapt for groups
     void drift(DomainType& domain, DataType& simData, const double dt)
@@ -283,15 +283,10 @@ public:
         }
     }
 
+    //! @brief Implements the first two parts of the kick-drift-kick scheme.
     void integrate(DomainType& domain, DataType& simData) override
     {
-        const double dt = simData.hydro.minDt;
-
-        kick(domain, simData, dt / 2.);
-        drift(domain, simData, dt);
-        predict_velocities(domain, simData, dt / 2.);
-
-        computeForces(domain, simData);
+        if (simData.hydro.leapfrog_synced) { simData.hydro.leapfrog_synced = false; }
         size_t first = domain.startIndex();
         size_t last  = domain.endIndex();
 
@@ -299,38 +294,26 @@ public:
                         simData.hydro); // Assume it depends only on x, y, z (through forces; true for dark matter)
         timer.step("Timestep");
 
-        //Drift back the required time
-        //drift(domain, simData, simData.hydro.minDt - dt);
-        //kick(domain, simData, simData.hydro.minDt / 2.);
-        kick(domain, simData, dt / 2.);
-
+        gravity_kick(domain, simData, simData.hydro.minDt / 2.);
+        hydro_force_kick(domain, simData, simData.hydro.minDt / 2.);
+        drift(domain, simData, simData.hydro.minDt);
+        predict_velocities(domain, simData, simData.hydro.minDt);
     }
 
-    // Don't call this the first time. (After reading from file).
-    //  Call this before writing to a file or before calling integrate().
-    //    void integrateToFullStep(DomainType& domain, DataType& simData) override
-    //    {
-    //        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks vhx, vhy, vhz
-    //    }
-    //    void integrate(DomainType& domain, DataType& simData) override
-    //    {
-    //        auto&  d     = simData.hydro;
-    //        size_t first = domain.startIndex();
-    //        size_t last  = domain.endIndex();
-    //
-    //        computeTimestep(first, last, d);
-    //        timer.step("Timestep");
-    //
-    //        // evtl volles dt integrieren (Fallunterscheidung)
-    //        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks the vhx, vhy, vhz
-    //        drift(domain, simData, simData.hydro.minDt);     // Uses vhx, vhy, vhz
-    //        // Speichere die pred. velocities in vx, vy, vz. Den Kick aber nur in vhx, vhy, vhz
-    //        // reads vhx, vhy, vhz
-    //        predict_velocities(domain, simData, simData.hydro.minDt / 2.);
-    //
-    //        updateSmoothingLength(groups_.view(), d);
-    //        timer.step("UpdateQuantities");
-    //    }
+    //! @brief Implements the final kick in the kick-drift-kick scheme which requires
+    //! the new accelerations.
+    //! Outputs should be written after this step as then the quantities are synchronized.
+    //! If one starts from an input file which does not contain both types of velocities
+    //! one can set them equal (vx = vhx, ...) and omit this step for the first iteration.
+    void integrateToFullStep(DomainType& domain, DataType& simData) override
+    {
+        if (simData.hydro.leapfrog_synced) { return; }
+//        kick(domain, simData, simData.hydro.minDt / 2.); // Kicks vhx, vhy, vhz
+        gravity_kick(domain, simData, simData.hydro.minDt / 2.);
+        hydro_force_kick(domain, simData, simData.hydro.minDt / 2.);
+    }
+
+
     //    void step(DomainType& domain, DataType& simData)
     //    {
     //        timer.start();

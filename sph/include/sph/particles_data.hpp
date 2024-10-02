@@ -198,6 +198,11 @@ public:
     //! @brief non-stateful variables for statistics
     uint64_t totalNeighbors{0};
 
+    //! @brief Indicator for the Leapfrog integration algorithm.
+    //! If set, the first half-step kick is omitted.
+    //! The file reader should set this to true, if a file without the half-step velocities is provided.
+    bool leapfrog_synced = false;
+
     /*! @brief Particle fields
      *
      * The length of these arrays equals the local number of particles including halos

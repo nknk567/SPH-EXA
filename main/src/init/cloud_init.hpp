@@ -33,6 +33,7 @@
 
 #include <map>
 
+#include "cstone/domain/domain.hpp"
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/continuum.hpp"
 #include "cstone/util/constexpr_string.hpp"
@@ -99,8 +100,7 @@ void initCloudFields(Dataset& d, ChemData& chem, const std::map<std::string, dou
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.0);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.0);
 
-    //std::fill(d.soft.begin(), d.soft.end(), 0.05);
-
+    // std::fill(d.soft.begin(), d.soft.end(), 0.05);
 
     const T u_guess{0.2};
     std::fill(d.u.begin(), d.u.end(), u_guess);
@@ -143,7 +143,7 @@ void contractRhoProfileCloud(Vector& x, Vector& y, Vector& z)
             return 1. / (4. / 3. - r * r * r / 3.);
     };
 
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x.size(); i++)
     {
         const auto radius0 = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
@@ -169,9 +169,9 @@ public:
         : glassBlock(std::move(initBlock))
     {
         Dataset d;
-        settings_ = buildSettings(d, evrardCoolingConstants(), settingsFile, reader);
+        settings_ = buildSettings(d, cloudConstants(), settingsFile, reader);
         resetConstants(settings_);
-        //Base::updateSettings(cloudConstants());
+        // Base::updateSettings(cloudConstants());
     }
     void resetConstants(InitSettings newSettings) { settings_ = std::move(newSettings); }
 
@@ -229,14 +229,25 @@ public:
         auto&        chem  = simData.chem;
         const size_t first = domain.startIndex();
         const size_t last  = domain.endIndex();
-        using ChemData = typename Dataset::ChemData;
-        using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
+        using ChemData     = typename Dataset::ChemData;
 
+        using CoolingFields = typename cooling::Cooler<T>::CoolingFields;
+        cooling_data.computePressures(d.rho.data(), d.u.data(), cstone::getPointers(get<CoolingFields>(chem), 0),
+                                      d.p.data(), first, last);
+    };
+
+    template<typename Domain, typename Cooler>
+    void calculatePressureIdealMonatomic(Dataset& simData, Domain& domain, Cooler& cooling_data) const
+    {
+        using T            = typename Dataset::RealType;
+        auto&        d     = simData.hydro;
+        const size_t first = domain.startIndex();
+        const size_t last  = domain.endIndex();
+        constexpr T  gamma = 5. / 3.;
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; ++i)
         {
-            T pressure = cooling_data.pressure(d.rho[i], d.u[i], cstone::getPointers(get<CoolingFields>(chem), i));
-            d.p[i] = pressure;
+            d.p[i] = (gamma - 1.) * gamma * d.u[i] * d.rho[i];
         }
     };
 
@@ -249,8 +260,9 @@ public:
         auto&        chem  = simData.chem;
         const size_t first = domain.startIndex();
         const size_t last  = domain.endIndex();
-        using ChemData = typename Dataset::ChemData;
-        using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
+        using ChemData     = typename Dataset::ChemData;
+        //        using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
+        using CoolingFields = typename cooling::Cooler<T>::CoolingFields;
 
         T max_diff = 0.;
 
@@ -262,9 +274,10 @@ public:
             {
                 old[j] = chem.fields[j][i];
             }
-            T u = d.u[i];
+            T u   = d.u[i];
             T rho = d.rho[i];
-            cooling_data.cool_particle(timestep, rho, u, cstone::getPointers(get<CoolingFields>(chem), i));
+            cooling_data.cool_particles(timestep, d.rho.data(), d.u.data(),
+                                        cstone::getPointers(get<CoolingFields>(chem), 0), d.du.data(), i, i + 1);
             for (size_t j = 0; j < chem.fields.size(); j++)
             {
                 const T diff = std::abs(chem.fields[j][i] - old[j]) / timestep;
@@ -280,7 +293,7 @@ public:
         auto& d       = simData.hydro;
         using KeyType = typename Dataset::KeyType;
         using T       = typename Dataset::RealType;
-        //using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
+        // using CoolingFields = typename util::MakeFieldList<ChemData>::Fields;
         using util::FieldList;
         using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "u">;
 
@@ -304,7 +317,7 @@ public:
         std::cout << "numParticlesGlobal: " << numParticlesGlobal << std::endl;
         auto settings_init                               = settings_;
         settings_init["cooling::with_radiative_cooling"] = 0;
-        settings_init["cooling::primordial_chemistry"] = 1;
+        settings_init["cooling::primordial_chemistry"]   = 1;
         settings_init["cooling::max_iterations"]         = 10000 * 10000;
         BuiltinWriter attributeSetter(settings_init);
         d.loadOrStoreAttributes(&attributeSetter);
@@ -341,31 +354,49 @@ public:
         const size_t first = domain.startIndex();
         const size_t last  = domain.endIndex();
 
+        sph::GroupData<cstone::CpuTag> groups;
+
         sph::findNeighborsSfc(first, last, d, domain.box());
-        sph::computeDensity(first, last, d, domain.box()); // halo exchange rho!!
+        sph::computeGroups(first, last, d, domain.box(), groups);
+
+        sph::computeDensity(groups.view(), d, domain.box()); // halo exchange rho!!
+
         cooling_data.init(0);
 
-        size_t n_it     = 0;
-        T      timestep = 1.;
-        T      time     = 0.;
-        while (true)
+        const bool use_grackle = false;
+        if (use_grackle)
         {
-            calculatePressure(simData, domain, cooling_data);
-            bool good = (adjustInternalEnergy(simData));
-            auto diff = calculateChemistry(simData, domain, cooling_data, timestep);
-            n_it++;
-            time += timestep;
-            std::cout << "equilibrated " << n_it << std::endl;
-            std::cout << "timestep " << timestep << std::endl;
-            std::cout << "diff " << diff << std::endl;
-            std::cout << "time " << time << std::endl;
-            if (good && diff < 0.039/*1e-4*/) break;
-            // if (diff * timestep < 1e-3) timestep *= 1.5;
+            size_t n_it     = 0;
+            T      timestep = 1.;
+            T      time     = 0.;
+            while (true)
+            {
+                calculatePressure(simData, domain, cooling_data);
+                bool good = (adjustInternalEnergy(simData));
+                auto diff = calculateChemistry(simData, domain, cooling_data, timestep);
+                n_it++;
+                time += timestep;
+                std::cout << "equilibrated " << n_it << std::endl;
+                std::cout << "timestep " << timestep << std::endl;
+                std::cout << "diff " << diff << std::endl;
+                std::cout << "time " << time << std::endl;
+                if (good && diff < 0.039 /*1e-4*/) break;
+                // if (diff * timestep < 1e-3) timestep *= 1.5;
+            }
+        }
+        else
+        {
+            // Else
+            calculatePressureIdealMonatomic(simData, domain, cooling_data); // oder einfach standard eos verwenden
+            bool good = adjustInternalEnergy(simData);
+            calculatePressureIdealMonatomic(simData, domain, cooling_data);
+            good = (adjustInternalEnergy(simData));
+            if (!good) throw std::runtime_error("not good");
         }
     }
 
-    cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart,
-                                                 Dataset& simData, IFileReader* reader) const override
+    cstone::Box<typename Dataset::RealType> init(int rank, int numRanks, size_t cbrtNumPart, Dataset& simData,
+                                                 IFileReader* reader) const override
     {
         auto& d       = simData.hydro;
         using KeyType = typename Dataset::KeyType;
@@ -390,7 +421,7 @@ public:
 
         contractRhoProfileCloud(d.x, d.y, d.z);
         syncCoords<KeyType>(rank, numRanks, numParticlesGlobal, d.x, d.y, d.z, globalBox);
-
+printf("r: %lf\n", r);
         initPressure(simData, rank, numRanks, globalBox, numParticlesGlobal);
 
         return globalBox;
@@ -398,7 +429,5 @@ public:
 
     const std::map<std::string, double>& constants() const override { return settings_; }
 };
-
-
 
 } // namespace sphexa

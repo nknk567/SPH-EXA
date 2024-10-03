@@ -104,16 +104,7 @@ public:
         // sort keys and keep track of ordering for later use
         reorderFunctor.setMapFromCodes(keyView.begin(), keyView.end());
 
-        gsl::span<const KeyType> oldLeaves = tree_.treeLeaves();
-        std::vector<KeyType> oldBoundaries(assignment_.numRanks() + 1);
-        for (size_t rank = 0; rank < oldBoundaries.size() - 1; ++rank)
-        {
-            oldBoundaries[rank] = oldLeaves[assignment_.firstNodeIdx(rank)];
-        }
-        oldBoundaries.back() = nodeRange<KeyType>(0);
-
         updateOctreeGlobal(keyView.begin(), keyView.end(), bucketSize_, tree_, nodeCounts_);
-
         if (firstCall_)
         {
             firstCall_ = false;
@@ -121,12 +112,11 @@ public:
                 ;
         }
 
-        auto newAssignment = singleRangeSfcSplit(nodeCounts_, numRanks_);
-        limitBoundaryShifts<KeyType>(oldBoundaries, tree_.treeLeaves(), nodeCounts_, newAssignment);
+        auto newAssignment = makeSfcAssignment(numRanks_, nodeCounts_, tree_.treeLeaves().data());
+        limitBoundaryShifts<KeyType>(assignment_, newAssignment, tree_.treeLeaves(), nodeCounts_);
         assignment_ = std::move(newAssignment);
 
-        exchanges_ =
-            createSendRanges<KeyType>(assignment_, tree_.treeLeaves(), {particleKeys + bufDesc.start, numParticles});
+        exchanges_ = createSendRanges<KeyType>(assignment_, {particleKeys + bufDesc.start, numParticles});
 
         return domain_exchange::exchangeBufferSize(bufDesc, numPresent(), numAssigned());
     }
@@ -153,7 +143,7 @@ public:
     template<class Reorderer, class Vector, class... Arrays>
     auto distribute(BufferDescription bufDesc,
                     Reorderer& reorderFunctor,
-                    Vector& /*scratch1*/,
+                    Vector& s1,
                     Vector& /*scratch2*/,
                     KeyType* keys,
                     T* x,
@@ -169,9 +159,16 @@ public:
         LocalIndex envelopeSize = newEnd - newStart;
         gsl::span<KeyType> keyView(keys + newStart, envelopeSize);
 
-        computeSfcKeys(x + newStart, y + newStart, z + newStart, sfcKindPointer(keyView.begin()), envelopeSize, box_);
+        auto recvStart = domain_exchange::receiveStart(bufDesc, numPresent(), numAssigned());
+        auto numRecv   = numAssigned() - numPresent();
+
+        computeSfcKeys(x + recvStart, y + recvStart, z + recvStart, sfcKindPointer(keys + recvStart), numRecv, box_);
+        std::make_signed_t<LocalIndex> shifts = -numRecv;
+        if (newEnd > bufDesc.end) { shifts = numRecv; }
+        reorderFunctor.extendMap(shifts, s1);
+
         // sort keys and keep track of the ordering
-        reorderFunctor.setMapFromCodes(keyView.begin(), keyView.end());
+        reorderFunctor.updateMap(keyView.begin(), keyView.end());
 
         return std::make_tuple(newStart, keyView.subspan(numSendDown(), numAssigned()));
     }
@@ -196,7 +193,7 @@ public:
     //! @brief the global coordinate bounding box
     const Box<T>& box() const { return box_; }
     //! @brief return the space filling curve rank assignment of the last call to @a assign()
-    const SpaceCurveAssignment& assignment() const { return assignment_; }
+    const SfcAssignment<KeyType>& assignment() const { return assignment_; }
 
     //! @brief number of local particles to be sent to lower ranks
     LocalIndex numSendDown() const { return exchanges_[myRank_]; }
@@ -211,7 +208,7 @@ private:
     //! @brief global coordinate bounding box
     Box<T> box_;
 
-    SpaceCurveAssignment assignment_;
+    SfcAssignment<KeyType> assignment_;
     SendRanges exchanges_;
     mutable ExchangeLog recvLog_;
 

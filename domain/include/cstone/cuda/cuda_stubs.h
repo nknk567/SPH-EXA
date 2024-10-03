@@ -46,24 +46,15 @@ const T* rawPtr(const std::vector<T, Alloc>& p)
 }
 
 template<class T>
-void memcpyH2D(const T* src, size_t n, T* dest);
+void memcpyH2D(const T* src, std::size_t n, T* dest);
 
 template<class T>
-void memcpyD2H(const T* src, size_t n, T* dest);
+void memcpyD2H(const T* src, std::size_t n, T* dest);
 
 template<class T>
-void memcpyD2D(const T* src, size_t n, T* dest);
+void memcpyD2D(const T* src, std::size_t n, T* dest);
 
-namespace thrust
-{
-
-template<class T>
-class device_allocator;
-
-template<class T, class Alloc>
-class device_vector;
-
-} // namespace thrust
+void syncGpu();
 
 /*! @brief detection trait to determine whether a template parameter is an instance of thrust::device_vector
  *
@@ -73,11 +64,5 @@ class device_vector;
  */
 template<class Vector>
 struct IsDeviceVector : public std::false_type
-{
-};
-
-//! @brief detection of thrust device vectors
-template<class T, class Alloc>
-struct IsDeviceVector<thrust::device_vector<T, Alloc>> : public std::true_type
 {
 };

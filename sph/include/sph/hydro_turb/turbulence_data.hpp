@@ -35,6 +35,7 @@
 #include <random>
 #include <vector>
 
+#include "cstone/cuda/device_vector.h"
 #include "cstone/cuda/cuda_utils.hpp"
 #include "cstone/tree/accel_switch.hpp"
 
@@ -48,7 +49,7 @@ class TurbulenceData
 {
     // resulting type is a thrust::device_vector if the Accelerator is a GPU, otherwise a std::vector
     using DeviceVector =
-        typename cstone::AccelSwitchType<Accelerator, std::vector, thrust::device_vector>::template type<T>;
+        typename cstone::AccelSwitchType<Accelerator, std::vector, cstone::DeviceVector>::template type<T>;
 
 public:
     using RealType = T;
@@ -158,7 +159,7 @@ private:
         double anglesExp   = constants.at("anglesExp");
 
         double twopi   = 2.0 * M_PI;
-        double energy  = 5.0e-3 * std::pow(velocity, 3) / Lbox;
+        double energy  = constants.at("stEnergyPrefac") * std::pow(velocity, 3) / Lbox;
         double stirMin = (1.0 - eps) * twopi / Lbox;
         double stirMax = (3.0 + eps) * twopi / Lbox;
 

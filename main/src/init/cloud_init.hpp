@@ -247,7 +247,7 @@ public:
 #pragma omp parallel for schedule(static)
         for (size_t i = first; i < last; ++i)
         {
-            d.p[i] = (gamma - 1.) * gamma * d.u[i] * d.rho[i];
+            d.p[i] = (gamma - 1.) * d.u[i] * d.rho[i];
         }
     };
 

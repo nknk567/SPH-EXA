@@ -40,6 +40,7 @@
 #include "sph/sph.hpp"
 //  #include "sph/eos.hpp"
 #include "sph/particles_data.hpp"
+#include "sph/groups.hpp"
 #include "isim_init.hpp"
 #include "early_sync.hpp"
 #include "grid.hpp"
@@ -269,7 +270,7 @@ public:
 #pragma omp parallel for schedule(static) reduction(max : max_diff)
         for (size_t i = first; i < last; ++i)
         {
-            std::array<T, chem.numFields> old;
+            std::array<T, std::decay_t<decltype(chem)>::numFields> old;
             for (size_t j = 0; j < chem.fields.size(); j++)
             {
                 old[j] = chem.fields[j][i];

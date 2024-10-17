@@ -201,7 +201,8 @@ public:
     //! @brief Indicator for the Leapfrog integration algorithm.
     //! If set, the first half-step kick is omitted.
     //! The file reader should set this to true, if a file without the half-step velocities is provided.
-    bool leapfrog_synced = false;
+    //! Or to false, if the half-step velocities are provided.
+    bool leapfrog_synced = true;
 
     /*! @brief Particle fields
      *

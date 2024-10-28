@@ -38,13 +38,9 @@
 namespace cosmo
 {
 
-template<typename T, int rel_prec = -7, int abs_prec = -7>
-class LambdaCDM : public Cosmology<T> // : public cstone::FieldStates<CosmologyData<T>>
+template<typename T>
+struct LambdaCDMParameters
 {
-public:
-    T relativeError = std::pow(10, rel_prec);
-    T absoluteError = std::pow(10, abs_prec);
-
     //! @brief Hubble Constant today [km/Mpc/s]
     T H0{0.0};
     //! @brief Matter Density
@@ -54,52 +50,94 @@ public:
     //! @brief Cosmology Constant (vacuum density)
     T OmegaLambda{0.0};
 
-    struct Parameters
+    //        T H0, OmegaMatter, OmegaRadiation, OmegaLambda;
+    inline constexpr static std::array names{"H0", "OmegaMatter", "OmegaRadiation", "OmegaLambda"};
+    // Assert T is in FieldVariant
+    auto dataTuple()
     {
-        T H0, OmegaMatter, OmegaRadiation, OmegaLambda;
-    };
+        auto ret = std::tie(H0, OmegaMatter, OmegaRadiation, OmegaLambda);
+
+        static_assert(std::tuple_size_v<decltype(ret)> == names.size());
+        return ret;
+    }
+};
+
+static constexpr LambdaCDMParameters<double> Planck2018 = {
+    .H0             = 67.66,
+    .OmegaMatter    = 0.3111,
+    .OmegaRadiation = 0.0,
+    .OmegaLambda    = 0.6889,
+};
+
+template<typename T, int rel_prec = -7, int abs_prec = -7>
+class LambdaCDM : public Cosmology<T>
+{
+public:
+    T relativeError = std::pow(10, rel_prec);
+    T absoluteError = std::pow(10, abs_prec);
+
+private:
+    using FieldVariant = Cosmology<T>::FieldVariant;
+    using Parameters   = LambdaCDMParameters<T>;
+
+    Parameters parameters = Planck2018;
+
+    std::vector<FieldVariant> getParameters() override
+    {
+        return std::apply([](auto&... a) { return std::vector<FieldVariant>{&a...}; }, parameters.dataTuple());
+    }
+
+    std::vector<const char*> getParameterNames() override
+    {
+        auto a =
+            std::apply([](auto&... a) { return std::array<const char*, sizeof...(a)>{(&a[0])...}; }, Parameters::names);
+        return std::vector(a.begin(), a.end());
+    }
+
+    static constexpr int cosmology_type = 0;
+    int                  getCosmologyType() override { return cosmology_type; }
+
+public:
+    // maybe
+    // void sanityCheckParameters()
 
     //
     //! @brief Values from 2018 Planck final data release, TT,TE,EE+lowE+lensing+BAO
     //
-    static constexpr Parameters Planck2018 = {
-        .H0             = 67.66,
-        .OmegaMatter    = 0.3111,
-        .OmegaRadiation = 0.0,
-        .OmegaLambda    = 0.6889,
-    };
 
-    LambdaCDM() = default;
+    //    LambdaCDM() = default;
 
-    LambdaCDM(struct Parameters p)
-        : LambdaCDM(p.H0, p.OmegaMatter, p.OmegaRadiation, p.OmegaLambda)
-    {
-    }
-
-    LambdaCDM(T H0, T OmegaMatter, T OmegaRadiation, T OmegaLambda)
-        : H0(H0)
-        , OmegaMatter(OmegaMatter)
-        , OmegaRadiation(OmegaRadiation)
-        , OmegaLambda(OmegaLambda)
-    {
-        if (H0 <= 0) throw std::domain_error("Hubble0 parameter must be strictly positive.");
-
-        if (OmegaMatter < 0) throw std::domain_error("OmegaMatter parameter must be positive.");
-
-        if (OmegaRadiation < 0) throw std::domain_error("OmegaRadiation parameter must be positive.");
-
-        if (OmegaLambda < 0) throw std::domain_error("OmegaLambda parameter must be positive.");
-
-        if (OmegaRadiation == 0 && OmegaLambda == 0)
-            throw std::domain_error(
-                "In LambdaCDM at least one of OmegaRadiation or OmegaLambda must be positive. Otherwise use CDM.");
-
-        if (OmegaMatter == 0)
-        {
-            if (OmegaRadiation == 0)
-                throw std::domain_error("OmegaRadiation parameter must be strictly positive when OmegaMatter is zero.");
-        }
-    }
+    //    LambdaCDM(struct Parameters p)
+    //        : LambdaCDM(p.H0, p.OmegaMatter, p.OmegaRadiation, p.OmegaLambda)
+    //    {
+    //    }
+    //
+    //    LambdaCDM(T H0, T OmegaMatter, T OmegaRadiation, T OmegaLambda)
+    //        : H0(H0)
+    //        , OmegaMatter(OmegaMatter)
+    //        , OmegaRadiation(OmegaRadiation)
+    //        , OmegaLambda(OmegaLambda)
+    //    {
+    //        if (H0 <= 0) throw std::domain_error("Hubble0 parameter must be strictly positive.");
+    //
+    //        if (OmegaMatter < 0) throw std::domain_error("OmegaMatter parameter must be positive.");
+    //
+    //        if (OmegaRadiation < 0) throw std::domain_error("OmegaRadiation parameter must be positive.");
+    //
+    //        if (OmegaLambda < 0) throw std::domain_error("OmegaLambda parameter must be positive.");
+    //
+    //        if (OmegaRadiation == 0 && OmegaLambda == 0)
+    //            throw std::domain_error(
+    //                "In LambdaCDM at least one of OmegaRadiation or OmegaLambda must be positive. Otherwise use
+    //                CDM.");
+    //
+    //        if (OmegaMatter == 0)
+    //        {
+    //            if (OmegaRadiation == 0)
+    //                throw std::domain_error("OmegaRadiation parameter must be strictly positive when OmegaMatter is
+    //                zero.");
+    //        }
+    //    }
 
     //  template<class Archive>
     //  void loadOrStoreAttributes(Archive* ar)
@@ -126,13 +164,14 @@ public:
 
     T hubble_H(const T a) const
     {
-        T Omega0         = OmegaMatter + OmegaRadiation + OmegaLambda;
+        T Omega0         = parameters.OmegaMatter + parameters.OmegaRadiation + parameters.OmegaLambda;
         T OmegaCurvature = T(1) - Omega0;
 
         T a2 = a * a;
         T a3 = a * a2;
         T a4 = a * a3;
-        return (H0 / a2) * std::sqrt(OmegaRadiation + OmegaMatter * a + OmegaCurvature * a2 + OmegaLambda * a4);
+        return (parameters.H0 / a2) * std::sqrt(parameters.OmegaRadiation + parameters.OmegaMatter * a +
+                                                OmegaCurvature * a2 + parameters.OmegaLambda * a4);
     }
 
     T time(const T a) const
@@ -146,7 +185,7 @@ public:
         auto f  = [this, t](const T a) { return time(a) - t; };
         auto df = [this](const T a) { return 1.0 / (a * hubble_H(a)); };
 
-        return find_zero_newton(f, df, t * H0, 0.0, 1.0e38, relativeError, absoluteError);
+        return find_zero_newton(f, df, t * parameters.H0, 0.0, 1.0e38, relativeError, absoluteError);
     }
 
     T driftTimeCorrection(T t, T dt) override
@@ -157,11 +196,11 @@ public:
 
     T kickTimeCorrection(T t, T dt) override
     {
-        auto    integrand_transformed = [this](const T x) { return -T(1.0) / hubble_H(T(1.0) / x); };
+        auto integrand_transformed = [this](const T x) { return -T(1.0) / hubble_H(T(1.0) / x); };
 
-        auto    trans_f               = [](T x) { return T(1.0) / x; };
-        const T lower                 = trans_f(scale_factor_a(t));
-        const T upper                 = trans_f(scale_factor_a(t + dt));
+        auto    trans_f = [](T x) { return T(1.0) / x; };
+        const T lower   = trans_f(scale_factor_a(t));
+        const T upper   = trans_f(scale_factor_a(t + dt));
 
         return integrate_romberg<T>(integrand_transformed, lower, upper, relativeError);
     }

@@ -38,11 +38,50 @@ template<typename T>
 class Cosmology // : public cstone::FieldStates<CosmologyData<T>>
 {
 public:
-    virtual T driftTimeCorrection(T t, T dt) = 0;
-    virtual T kickTimeCorrection(T t, T dt) = 0;
-    virtual T kickTimeCorrectionSPH(T t, T dt, T gamma) const = 0;
-    virtual ~Cosmology() = default;
+    virtual T   driftTimeCorrection(T t, T dt)                  = 0;
+    virtual T   kickTimeCorrection(T t, T dt)                   = 0;
+    virtual T   kickTimeCorrectionSPH(T t, T dt, T gamma) const = 0;
+    virtual int getCosmologyType()                              = 0;
+    virtual ~Cosmology()                                        = default;
+
+    template<typename Archive>
+    void loadOrStoreAttributes(Archive* ar)
+    {
+        //! @brief load or store an attribute, skips non-existing attributes on load.
+        auto optionalIO = [ar](const std::string& attribute, auto* location, size_t attrSize)
+        {
+            try
+            {
+                ar->stepAttribute("cosmology::" + attribute, location, attrSize);
+            }
+            catch (std::out_of_range&)
+            {
+                if (ar->rank() == 0)
+                {
+                    std::cout << "Attribute cosmology::" << attribute
+                              << " not set in file or initializer, setting to default value " << *location << std::endl;
+                }
+            }
+        };
+
+        // This is a readonly attribute here, it is set in the factory method.
+        int cosmology_type = getCosmologyType();
+        optionalIO("cosmology_type", &cosmology_type, 1);
+
+        auto parameterNames = getParameterNames();
+        auto parameters     = getParameters();
+        for (size_t i = 0; i < parameterNames.size(); i++)
+        {
+            std::visit([&](auto* location) { optionalIO(std::string(parameterNames[i]), location, 1); }, parameters[i]);
+        }
+    }
+
+protected:
+    using FieldVariant = std::variant<double*, float*>;
+
+private:
+    virtual std::vector<const char*>  getParameterNames();
+    virtual std::vector<FieldVariant> getParameters();
 };
 
 } // namespace cosmo
-

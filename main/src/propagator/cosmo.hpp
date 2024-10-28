@@ -75,19 +75,40 @@ class CosmoProp final : public Propagator<DomainType, DataType>
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
+    // We store the predicted velocities (of the next full-step) in vx, vy, vz.
+    // These velocities are the ones that are used in the SPH calculations.
+    // The actual velocities used for the Leapfrog integration are stored in vhx, vhy, vhz.
     using ConservedFields = FieldList<"vx", "vy", "vz", "vhx", "vhy", "vhz", "u">;
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
+    // It is necessary to store the gravitational accelerations separated from the SPH accelerations.
+    // The required space can however be used for storing the remaining c22, c23, c33 terms.
     using DependentFields =
         FieldList<"rho", "c", "p", "ax", "ay", "az", "agx", "agy", "agz", "c11", "c12", "c13", "du", "nc">;
-    bool halfStepKickNeeded;
+    //    bool halfStepKickNeeded;
 
 public:
     CosmoProp(std::ostream& output, size_t rank)
         : Base(output, rank)
-        , halfStepKickNeeded(true)
-        , cosmology_ptr{cosmo::cosmologyFactory(67.66, 0.3111, 0., 0.6889)}
+        //        , halfStepKickNeeded(true)
+        , cosmology_ptr{nullptr}
     {
+    }
+
+    void load(const std::string& initCond, IFileReader* reader) override
+    {
+        std::string path = removeModifiers(initCond);
+        if (std::filesystem::exists(path))
+        {
+            int snapshotIndex = numberAfterSign(initCond, ":");
+            cosmology_ptr     = cosmo::cosmologyFactory<double>(path, snapshotIndex, reader);
+            cosmology_ptr->loadOrStoreAttributes(reader);
+        }
+        else
+        {
+            //            cosmology_ptr = cosmo::cosmologyFactory<double>(initCond, settings);
+            cosmology_ptr = nullptr;
+        }
     }
 
     std::vector<std::string> conservedFields() const override
@@ -119,6 +140,7 @@ public:
         domain.syncGrav(get<"keys">(d), get<"x">(d), get<"y">(d), get<"z">(d), get<"h">(d), get<"m">(d),
                         get<ConservedFields>(d), get<DependentFields>(d));
     }
+
     // Switch in this function-> CPU / GPU
     template<typename T_field_t, typename T_d_field_t>
     void euler_forward(T_field_t& x, const T_d_field_t& x_dot, const size_t first, const size_t last,
@@ -165,7 +187,7 @@ public:
         const size_t first           = domain.startIndex();
         const size_t last            = domain.endIndex();
         auto&        d               = simData.hydro;
-        const auto   dt_cosmological = cosmology_ptr->kickTimeCorrectionSPH(d.ttot, dt, 5. / 3.);
+        const auto   dt_cosmological = cosmology_ptr->kickTimeCorrectionSPH(d.ttot, dt, simData.hydro.gamma);
 
         euler_forward(get<"vhx">(d), get<"ax">(d), first, last, dt_cosmological);
         euler_forward(get<"vhy">(d), get<"ay">(d), first, last, dt_cosmological);
@@ -188,7 +210,7 @@ public:
         const size_t last         = domain.endIndex();
         auto&        d            = simData.hydro;
         const auto   dt_corr_grav = cosmology_ptr->kickTimeCorrection(d.ttot, dt);
-        const auto   dt_corr_sph  = cosmology_ptr->kickTimeCorrectionSPH(d.ttot, dt, 5. / 3.);
+        const auto   dt_corr_sph  = cosmology_ptr->kickTimeCorrectionSPH(d.ttot, dt, simData.hydro.gamma);
 
         euler_forward(get<"vx">(d), get<"agx">(d), first, last, dt_corr_grav);
         euler_forward(get<"vy">(d), get<"agy">(d), first, last, dt_corr_grav);
@@ -209,20 +231,6 @@ public:
         const auto   dt_cosmological = cosmology_ptr->driftTimeCorrection(d.ttot, dt);
         euler_forward(get<"x">(d), get<"y">(d), get<"z">(d), get<"vx">(d), get<"vy">(d), get<"vz">(d), first, last,
                       dt_cosmological, domain.box());
-        // #pragma omp parallel for schedule(static)
-        //         for (size_t i = first; i < last; i++)
-        //         {
-        //             cstone::Vec3<T> X{d.x[i], d.y[i], d.z[i]};
-        //             cstone::Vec3<T> V{d.vx[i], d.vy[i], d.vz[i]};
-        //
-        //             util::tie(d.x_m1[i], d.y_m1[i], d.z_m1[i]) = util::tie(d.x[i], d.y[i], d.z[i]);
-        //
-        //             X += V * dt_cosmo;
-        //             X = cstone::putInBox(X, domain.box()); /* Maybe we do this after all drifts? */
-        //
-        //             util::tie(d.x[i], d.y[i], d.z[i]) = util::tie(X[0], X[1], X[2]);
-        //             // Integrate U using drift
-        //         }
     }
 
     void computeForces(DomainType& domain, DataType& simData) override
@@ -269,7 +277,6 @@ public:
         fill(get<"agy">(d), 0., first, last);
         fill(get<"agz">(d), 0., first, last);
 
-        // Release c11-c13; Acquire agx..agz
         if (d.g != 0.0)
         {
             auto groups = mHolder_.computeSpatialGroups(d, domain);
@@ -308,6 +315,7 @@ public:
         if (simData.hydro.leapfrog_synced) { return; }
         gravity_kick(domain, simData, simData.hydro.minDt / 2.);
         hydro_force_kick(domain, simData, simData.hydro.minDt / 2.);
+        internal_energy_kick(domain, simData, simData.hydro.minDt / 2.);
     }
 };
 

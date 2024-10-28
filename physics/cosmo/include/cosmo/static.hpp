@@ -37,7 +37,7 @@ namespace cosmo
 {
 
 template<typename T>
-class StaticUniverse : public Cosmology<T>// : public cstone::FieldStates<CosmologyData<T>>
+class StaticUniverse : public Cosmology<T>
 {
 public:
     StaticUniverse() = default;

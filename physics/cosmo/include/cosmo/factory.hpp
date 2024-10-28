@@ -31,51 +31,86 @@
 
 #pragma once
 
+#include <string>
+#include <memory>
+
 #include "static.hpp"
 #include "cdm.hpp"
 #include "lcdm.hpp"
+#include "init/settings.hpp"
 
 namespace cosmo
 {
 
+// template<typename T>
+// std::unique_ptr<Cosmology<T>> cosmologyFactory(const char *fname [[maybe_unused]])
+//{
+//     throw std::runtime_error("filename argument to cosmology factory not yet supported.");
+// }
+
+// Call the factory function in the load() function of the propagator.
+// If builtin tests are needed, modify load() such that it also takes the corresponding InitSettings.
+
 template<typename T>
-std::unique_ptr<Cosmology<T>> cosmologyFactory(const char *fname [[maybe_unused]])
+std::unique_ptr<Cosmology<T>> cosmologyFactory(int cosmology_type)
 {
-    throw std::runtime_error("filename argument to cosmology factory not yet supported.");
+    if (cosmology_type == 0)
+        return std::make_unique<LambdaCDM<T>>();
+    else
+        return nullptr;
+}
+
+
+template<typename T>
+std::unique_ptr<Cosmology<T>> cosmologyFactory(const std::string& path, int snapshotIndex, sphexa::IFileReader* reader)
+{
+    int cosmology_type;
+    reader->setStep(path, snapshotIndex, sphexa::FileMode::independent);
+    reader->stepAttribute("cosmology::cosmology_type", &cosmology_type, 1);
+    reader->closeStep();
+
+    return cosmologyFactory<T>(cosmology_type);
 }
 
 template<typename T>
-std::unique_ptr<Cosmology<T>> cosmologyFactory(const std::string& fname)
+std::unique_ptr<Cosmology<T>> cosmologyFactory(const std::string& initCond, const sphexa::InitSettings& settings)
 {
-    return cosmologyFactory<T>(fname.c_str());
+    int cosmology_type = (int)settings.at("cosmology::cosmology_type");
+    return cosmologyFactory<T>(cosmology_type);
 }
 
-template<typename T>
-std::unique_ptr<Cosmology<T>> cosmologyFactory(T H0=0, T OmegaMatter=0, T OmegaRadiation=0, T OmegaLambda=0)
-{
-    if (H0 == 0 && OmegaMatter == 0 && OmegaRadiation == 0 && OmegaLambda == 0)
-        return std::make_unique<StaticUniverse<T>>();
-
-    if (H0 <= 0)
-        throw std::domain_error("Hubble0 parameter must be strictly positive when other cosmological parameters are non-zero.");
-
-    if (OmegaLambda == 0 && OmegaRadiation == 0)
-        return std::make_unique<CDM<T>>(H0, OmegaMatter);
-
-    return std::make_unique<LambdaCDM<T>>(H0, OmegaMatter, OmegaRadiation, OmegaLambda);
-}
-
-template<typename T>
-std::unique_ptr<Cosmology<T>> cosmologyFactory(const struct CDM<T>::Parameters& p)
-{
-    return cosmologyFactory(p.H0, p.OmegaMatter);
-}
-
-template<typename T>
-std::unique_ptr<Cosmology<T>> cosmologyFactory(const struct LambdaCDM<T>::Parameters& p)
-{
-    return cosmologyFactory(p.H0, p.OmegaMatter, p.OmegaRadiation, p.OmegaLambda);
-}
+// template<typename T>
+// std::unique_ptr<Cosmology<T>> cosmologyFactory(const std::string& fname)
+//{
+//     return cosmologyFactory<T>(fname.c_str());
+// }
+//
+// template<typename T>
+// std::unique_ptr<Cosmology<T>> cosmologyFactory(T H0=0, T OmegaMatter=0, T OmegaRadiation=0, T OmegaLambda=0)
+//{
+//     if (H0 == 0 && OmegaMatter == 0 && OmegaRadiation == 0 && OmegaLambda == 0)
+//         return std::make_unique<StaticUniverse<T>>();
+//
+//     if (H0 <= 0)
+//         throw std::domain_error("Hubble0 parameter must be strictly positive when other cosmological parameters are
+//         non-zero.");
+//
+//     if (OmegaLambda == 0 && OmegaRadiation == 0)
+//         return std::make_unique<CDM<T>>(H0, OmegaMatter);
+//
+//     return std::make_unique<LambdaCDM<T>>(H0, OmegaMatter, OmegaRadiation, OmegaLambda);
+// }
+//
+// template<typename T>
+// std::unique_ptr<Cosmology<T>> cosmologyFactory(const struct CDM<T>::Parameters& p)
+//{
+//     return cosmologyFactory(p.H0, p.OmegaMatter);
+// }
+//
+// template<typename T>
+// std::unique_ptr<Cosmology<T>> cosmologyFactory(const struct LambdaCDM<T>::Parameters& p)
+//{
+//     return cosmologyFactory(p.H0, p.OmegaMatter, p.OmegaRadiation, p.OmegaLambda);
+// }
 
 } // namespace cosmo
-

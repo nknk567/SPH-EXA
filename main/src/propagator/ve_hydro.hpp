@@ -246,8 +246,9 @@ public:
         };
 
         // first output pass: write everything allocated at the end of computeForces()
+        release(d, "u");
         output();
-
+        acquire(d, "u");
         // second output pass: write temporary quantities produced by the EOS
         release(d, "c11", "c12", "c13");
         acquire(d, "rho", "p", "gradh");

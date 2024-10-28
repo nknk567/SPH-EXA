@@ -92,10 +92,10 @@ protected:
      *
      * x, y, z, h and m are automatically considered conserved and must not be specified in this list
      */
-    using ConservedFields = FieldList<"temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "rung">;
+    using ConservedFields = FieldList<"c", "temp", "vx", "vy", "vz", "x_m1", "y_m1", "z_m1", "du_m1", "alpha", "rung">;
 
     //! @brief list of dependent fields, these may be used as scratch space during domain sync
-    using DependentFields_ = FieldList<"ax", "ay", "az", "prho", "c", "du", "c11", "c12", "c13", "c22", "c23", "c33",
+    using DependentFields_ = FieldList<"ax", "ay", "az", "prho", "du", "c11", "c12", "c13", "c22", "c23", "c33",
                                        "xm", "kx", "nc", "divv", "gradh">;
 
     //! @brief velocity gradient fields will only be allocated when avClean is true
@@ -249,7 +249,7 @@ public:
         computeVeDefGradh(activeRungs_, d, domain.box());
         timer.step("Normalization & Gradh");
 
-        computeEOS(first, last, d);
+        computeIsothermalEOS(first, last, d);
         timer.step("EquationOfState");
 
         domain.exchangeHalos(get<"vx", "vy", "vz", "prho", "c", "kx">(d), get<"keys">(d), haloRecvScratch);

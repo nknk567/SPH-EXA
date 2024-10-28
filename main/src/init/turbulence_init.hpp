@@ -60,9 +60,10 @@ InitSettings TurbulenceConstants()
             {"mTotal", 1.0},
             {"powerLawExp", 5. / 3},
             {"anglesExp", 2.0},
-            {"gamma", 1.001},
+            {"gamma", 1.0},
             {"mui", 0.62},
-            {"u0", 1000.},
+            {"u0", 1.5},
+            {"soundSpeed", 1.0},
             {"Kcour", 0.4},
             {"gravConstant", 0.0},
             {"ng0", 100},
@@ -94,6 +95,7 @@ void initTurbulenceHydroFields(Dataset& d, const std::map<std::string, double>& 
     std::fill(d.x_m1.begin(), d.x_m1.end(), 0.);
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.);
+    std::fill(d.c.begin(), d.c.end(), constants.at("soundSpeed"));
 }
 
 template<class Dataset>

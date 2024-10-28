@@ -39,6 +39,20 @@ HOST_DEVICE_FUN auto idealGasEOS(T1 temp, T2 rho, T3 mui, T1 gamma)
     return util::tuple<Tc, Tc>{p, c};
 }
 
+/*! @brief Isothermal equation of state
+ *
+ * @param c     speed of sound
+ * @param rho   baryonic density
+ * @param gamma adiabatic index (usually 1 in isothermal case)
+ *
+ */
+template<class T1, class T2>
+HOST_DEVICE_FUN auto isothermalEOS(T1 c, T1 rho, T2 gamma)
+{
+    T1 p = rho * c * c / T2(gamma);
+    return p;
+}
+
 /*! @brief Polytropic EOS for a 1.4 M_sun and 12.8 km neutron star
  *
  * @param rho  baryonic density

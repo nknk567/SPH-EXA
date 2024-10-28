@@ -103,6 +103,7 @@ public:
     DevVector<unsigned>  nc;                                 // number of neighbors of each particle
     DevVector<HydroType> dV11, dV12, dV13, dV22, dV23, dV33; // Velocity gradient components
     DevVector<uint8_t>   rung;                               // rung per particle of previous timestep
+    DevVector<uint64_t>  id;                                 // unique particle id
 
     //! @brief SPH interpolation kernel lookup tables
     DevVector<HydroType> wh, whd;
@@ -119,7 +120,7 @@ public:
         "x",     "y",        "z",     "x_m1", "y_m1", "z_m1",      "vx",   "vy",   "vz",   "rho",  "u",     "p",
         "prho",  "tdpdTrho", "h",     "m",    "c",    "potential", "ax",   "ay",   "az",   "du",   "du_m1", "c11",
         "c12",   "c13",      "c22",   "c23",  "c33",  "mue",       "mui",  "temp", "cv",   "xm",   "kx",    "divv",
-        "curlv", "alpha",    "gradh", "keys", "nc",   "dV11",      "dV12", "dV13", "dV22", "dV23", "dV33",  "rung"};
+        "curlv", "alpha",    "gradh", "keys", "nc",   "dV11",      "dV12", "dV13", "dV22", "dV23", "dV33",  "rung", "id"};
 
     /*! @brief return a tuple of field references
      *
@@ -129,7 +130,7 @@ public:
     {
         auto ret = std::tie(x, y, z, x_m1, y_m1, z_m1, vx, vy, vz, rho, u, p, prho, tdpdTrho, h, m, c, potential, ax,
                             ay, az, du, du_m1, c11, c12, c13, c22, c23, c33, mue, mui, temp, cv, xm, kx, divv, curlv,
-                            alpha, gradh, keys, nc, dV11, dV12, dV13, dV22, dV23, dV33, rung);
+                            alpha, gradh, keys, nc, dV11, dV12, dV13, dV22, dV23, dV33, rung, id);
 
         static_assert(std::tuple_size_v<decltype(ret)> == fieldNames.size());
         return ret;

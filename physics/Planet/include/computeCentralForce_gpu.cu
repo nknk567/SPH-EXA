@@ -7,6 +7,7 @@
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/findneighbors.hpp"
+#include "cstone/primitives/math.hpp"
 #include "cstone/traversal/find_neighbors.cuh"
 #include "sph/util/device_math.cuh"
 
@@ -18,7 +19,7 @@
 template<size_t numThreads, typename Tpos, typename Ta, typename Tm, typename Ts>
 __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z,
                                              Ta* ax, Ta* ay, Ta* az, const Tm* m, Ts star_pos_x, Ts star_pos_y,
-                                             Ts star_pos_z, Ts sm, Tpos g, Ts* star_force_block_x,
+                                             Ts star_pos_z, Ts sm, Tpos g, Ts inner_size2, Ts* star_force_block_x,
                                              Ts* star_force_block_y, Ts* star_force_block_z, Ts* star_potential_block)
 {
     __shared__ Ts star_force_thread_x[numThreads];
@@ -40,7 +41,7 @@ __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tp
         const double dx    = x[i] - star_pos_x;
         const double dy    = y[i] - star_pos_y;
         const double dz    = z[i] - star_pos_z;
-        const double dist2 = dx * dx + dy * dy + dz * dz;
+        const double dist2 = stl::max(inner_size2, dx * dx + dy * dy + dz * dz);
         const double dist  = sqrt(dist2);
         const double dist3 = dist2 * dist;
 
@@ -84,7 +85,7 @@ __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tp
 template<typename Tpos, typename Ta, typename Tm, typename Ts>
 void computeCentralForceGPU(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Ta* ax, Ta* ay,
                             Ta* az, const Tm* m, const Ts* star_pos, Ts star_mass, Ts* star_force_local,
-                            Ts* star_pot_local, Tpos g)
+                            Ts* star_pot_local, Tpos g, Ts inner_size)
 {
     cstone::LocalIndex numParticles = last - first;
     constexpr unsigned numThreads   = 256;
@@ -104,11 +105,11 @@ void computeCentralForceGPU(size_t first, size_t last, const Tpos* x, const Tpos
     Ts* star_pot_block;
     cudaMalloc(&star_pot_block, sizeof(Ts) * numBlocks);
 
-    //printf("numParticles: %u\t last: %u\t first: %u\t numBlocks: %u\t numThreads:%u\n", numParticles, last, first,
-    //       numBlocks, numThreads);
+    // printf("numParticles: %u\t last: %u\t first: %u\t numBlocks: %u\t numThreads:%u\n", numParticles, last, first,
+    //        numBlocks, numThreads);
     computeCentralForceGPUKernel<numThreads><<<numBlocks, numThreads>>>(
-        first, last, x, y, z, ax, ay, az, m, star_pos[0], star_pos[1], star_pos[2], star_mass, g, star_force_block_x,
-        star_force_block_y, star_force_block_z, star_pot_block);
+        first, last, x, y, z, ax, ay, az, m, star_pos[0], star_pos[1], star_pos[2], star_mass, g,
+        inner_size * inner_size, star_force_block_x, star_force_block_y, star_force_block_z, star_pot_block);
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 
@@ -129,6 +130,6 @@ void computeCentralForceGPU(size_t first, size_t last, const Tpos* x, const Tpos
 }
 
 template void computeCentralForceGPU(size_t, size_t, const double*, const double*, const double*, float*, float*,
-                                     float*, const float*, const double*, double, double*, double*, double);
+                                     float*, const float*, const double*, double, double*, double*, double, double);
 template void computeCentralForceGPU(size_t, size_t, const double*, const double*, const double*, double*, double*,
-                                     double*, const double*, const double*, double, double*, double*, double);
+                                     double*, const double*, const double*, double, double*, double*, double, double);

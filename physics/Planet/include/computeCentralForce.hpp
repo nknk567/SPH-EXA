@@ -24,12 +24,13 @@ namespace planet
 template<typename Tpos, typename Ta, typename Tm, typename Ts>
 void computeCentralForceImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Ta* ax, Ta* ay,
                              Ta* az, const Tm* m, const Ts* star_pos, Ts star_mass, Ts* star_force_local,
-                             Ts* star_pot_local, Tpos g)
+                             Ts* star_pot_local, Tpos g, Ts inner_size)
 {
-    star_force_local[0] = 0.;
-    star_force_local[1] = 0.;
-    star_force_local[2] = 0.;
-    *star_pot_local     = 0.;
+    star_force_local[0]      = 0.;
+    star_force_local[1]      = 0.;
+    star_force_local[2]      = 0.;
+    *star_pot_local          = 0.;
+    const double inner_size2 = inner_size * inner_size;
 
 #pragma omp parallel for reduction(+ : star_force_local[ : 3]) reduction(+ : star_pot_local[ : 1])
     for (size_t i = first; i < last; i++)
@@ -37,7 +38,7 @@ void computeCentralForceImpl(size_t first, size_t last, const Tpos* x, const Tpo
         const double dx    = x[i] - star_pos[0];
         const double dy    = y[i] - star_pos[1];
         const double dz    = z[i] - star_pos[2];
-        const double dist2 = dx * dx + dy * dy + dz * dz;
+        const double dist2 = std::max(inner_size2, dx * dx + dy * dy + dz * dz);
         const double dist  = std::sqrt(dist2);
         const double dist3 = dist2 * dist;
 
@@ -63,13 +64,14 @@ void computeCentralForce(Dataset& d, size_t startIndex, size_t endIndex, StarDat
     {
         computeCentralForceGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
                                rawPtr(d.devData.ax), rawPtr(d.devData.ay), rawPtr(d.devData.az), rawPtr(d.devData.m),
-                               star.position.data(), star.m, star.force_local.data(), &star.potential_local, d.g);
+                               star.position.data(), star.m, star.force_local.data(), &star.potential_local, d.g,
+                               star.inner_size);
     }
     else
     {
         computeCentralForceImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.ax.data(), d.ay.data(),
                                 d.az.data(), d.m.data(), star.position.data(), star.m, star.force_local.data(),
-                                &star.potential_local, d.g);
+                                &star.potential_local, d.g, star.inner_size);
     }
 }
 

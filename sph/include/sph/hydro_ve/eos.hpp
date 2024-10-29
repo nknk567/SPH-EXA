@@ -79,7 +79,7 @@ void computeEOS_Impl(size_t startIndex, size_t endIndex, Dataset& d)
 template<typename Dataset>
 void computeIsothermalEOS_Impl(size_t startIndex, size_t endIndex, Dataset& d)
 {
-//    const auto* temp  = d.temp.data();
+    //    const auto* temp  = d.temp.data();
     const auto* m     = d.m.data();
     const auto* kx    = d.kx.data();
     const auto* xm    = d.xm.data();
@@ -94,9 +94,9 @@ void computeIsothermalEOS_Impl(size_t startIndex, size_t endIndex, Dataset& d)
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
-        auto rho      = kx[i] * m[i] / xm[i];
-        auto pi = isothermalEOS(c[i], rho, d.gamma);
-        prho[i]       = pi / (kx[i] * m[i] * m[i] * gradh[i]);
+        auto rho = kx[i] * m[i] / xm[i];
+        auto pi  = isothermalEOS(c[i], rho, d.gamma);
+        prho[i]  = pi / (kx[i] * m[i] * m[i] * gradh[i]);
         if (storeRho) { d.rho[i] = rho; }
         if (storeP) { d.p[i] = pi; }
     }

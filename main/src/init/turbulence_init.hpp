@@ -49,7 +49,7 @@ InitSettings TurbulenceConstants()
 {
     return {{"solWeight", 0.5},
             {"stMaxModes", 100000},
-            {"Lbox", 1.0},
+            {"Lbox", 0.056},
             {"stEnergyPrefac", 7.8e-3},
             {"stMachVelocity", 4.0e0},
             {"minDt", 1e-4},

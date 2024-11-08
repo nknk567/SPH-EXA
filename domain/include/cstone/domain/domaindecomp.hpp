@@ -50,7 +50,12 @@ template<class IndexType>
 void uniformBins(const std::vector<IndexType>& counts, gsl::span<TreeNodeIndex> bins, gsl::span<LocalIndex> binCounts)
 {
     std::vector<uint64_t> countScan(counts.size() + 1);
-    std::exclusive_scan(counts.begin(), counts.end() + 1, countScan.begin(), uint64_t(0));
+    //    std::exclusive_scan(counts.begin(), counts.end() + 1, countScan.begin(), uint64_t(0));
+    std::exclusive_scan(counts.begin(), counts.end(), countScan.begin(), uint64_t(0));
+    if (counts.size() > 1)
+    {
+        countScan[countScan.size() - 1] = countScan[countScan.size() - 2] + counts[countScan.size() - 2];
+    }
 
     int numBins   = bins.size() - 1;
     auto binCount = double(countScan.back()) / numBins;

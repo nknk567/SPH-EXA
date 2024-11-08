@@ -64,6 +64,7 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
 
     LocalIndex* neighborsWarp = nidx + ngmax * TravConfig::targetSize * warpIdxGrid;
 
+
     while (true)
     {
         // first thread in warp grabs next target
@@ -79,16 +80,33 @@ __global__ void xmassGpu(Tc K, unsigned ng0, unsigned ngmax, const cstone::Box<T
         unsigned ncSph =
             1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
 
-        constexpr int ncMaxIteration = 9;
+        T h_upper(box.maxExtent());
+        T h_lower{0.};
+        constexpr int ncMaxIteration = 1000;
+        const int ngmin = ng0 / 4;
         for (int ncIt = 0; ncIt <= ncMaxIteration; ++ncIt)
         {
-            bool repeat = (ncSph < ng0 / 4 || (ncSph - 1) > ngmax) && i < bodyEnd;
+            if (ncIt == ncMaxIteration) { nc_h_convergenceFailure = true; }
+
+            bool tooMany   = (ncSph - 1) > ngmax;
+            bool notEnough = ncSph < ngmin;
+            bool repeat    = (notEnough || tooMany) && i < bodyEnd;
+
+            h_upper = tooMany ? h[i] : h_upper;
+            h_lower = notEnough ? h[i] : h_lower;
             if (!cstone::ballotSync(repeat)) { break; }
-            if (repeat) { h[i] = updateH(ng0, ncSph, h[i]); }
+            if (repeat && ncIt < 10)
+            {
+                // Dampen updateH by weighting with proposed smoothing lengths of past iterations
+                h[i] = (updateH(ng0, ncSph, h[i]) + h[i] * ncIt) / static_cast<T>(ncIt + 1);
+            }
+            else if (repeat)
+            {
+                // Bisection
+                h[i] = (h_upper + h_lower) / 2.;
+            }
             ncSph =
                 1 + traverseNeighbors(bodyBegin, bodyEnd, x, y, z, h, tree, box, neighborsWarp, ngmax, globalPool)[0];
-
-            if (ncIt == ncMaxIteration) { nc_h_convergenceFailure = true; }
         }
 
         if (i >= bodyEnd) continue;
@@ -110,6 +128,7 @@ void computeXMass(const GroupView& grp, Dataset& d, const cstone::Box<typename D
         d.K, d.ng0, d.ngmax, box, grp.groupStart, grp.groupEnd, grp.numGroups, d.treeView, rawPtr(d.devData.nc),
         rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z), rawPtr(d.devData.h), rawPtr(d.devData.m),
         rawPtr(d.devData.wh), rawPtr(d.devData.whd), rawPtr(d.devData.xm), nidxPool, traversalPool);
+
     checkGpuErrors(cudaDeviceSynchronize());
 
     NcStats::type stats[NcStats::numStats];

@@ -215,7 +215,7 @@ public:
     }
 
     template <typename MType>
-    GroupView getGravGroupView(MType &mHolder_, DomainType& domain, DataType& simData)
+    GroupView getGravGroupView(MType &mHolder_, const DomainType& domain, const DataType& simData)
     {
         bool      isNewHierarchy = activeRung(timestep_.substep, timestep_.numRungs) == 0;
         GroupView gravGroup      = isNewHierarchy ? mHolder_.computeSpatialGroups(simData.hydro, domain) : activeRungs_;

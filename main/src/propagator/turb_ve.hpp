@@ -202,9 +202,6 @@ public:
 
         if (d.g != 0.0)
         {
-            //            bool      isNewHierarchy = timestepHelper.activeRung(timestepHelper.timestep_.substep,
-            //            timestepHelper.timestep_.numRungs) == 0; GroupView gravGroup      = isNewHierarchy ?
-            //            mHolder_.computeSpatialGroups(d, domain) : timestepHelper.activeRungs_;
             GroupView gravGroup = timestepHelper.getGravGroupView(mHolder_, domain, simData);
 
             mHolder_.upsweep(d, domain);

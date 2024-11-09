@@ -220,6 +220,65 @@ public:
     {
         timestepHelper.integrate(domain, simData, timer, Base::rank_);
     }
+    void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
+                    const cstone::Box<T>& box) override
+    {
+        auto& d = simData.hydro;
+        d.resize(d.accSize());
+        auto fieldPointers = d.data();
+        auto indicesDone   = d.outputFieldIndices;
+        auto namesDone     = d.outputFieldNames;
+
+        auto output = [&]()
+        {
+            for (int i = int(indicesDone.size()) - 1; i >= 0; --i)
+            {
+                int fidx = indicesDone[i];
+                if (d.isAllocated(fidx))
+                {
+                    int column = std::find(d.outputFieldIndices.begin(), d.outputFieldIndices.end(), fidx) -
+                                 d.outputFieldIndices.begin();
+                    transferToHost(d, first, last, {d.fieldNames[fidx]});
+                    std::visit([writer, c = column, key = namesDone[i]](auto field)
+                               { writer->writeField(key, field->data(), c); },
+                               fieldPointers[fidx]);
+                    indicesDone.erase(indicesDone.begin() + i);
+                    namesDone.erase(namesDone.begin() + i);
+                }
+            }
+        };
+
+        // first output pass: write everything allocated at the end of the step
+        output();
+
+        // second output pass: write temporary quantities produced by the EOS
+        release(d, "ay", "az");
+        acquire(d, "rho", "p");
+        computeIsothermalEOS(first, last, d);
+        output();
+        release(d, "rho", "p");
+
+        // third output pass: recover temporary curlv and divv quantities
+        acquire(d, "curlv");
+        if (!indicesDone.empty()) { computeIadDivvCurlv(timestepHelper.groups_.view(), d, box); }
+        output();
+        release(d, "curlv");
+        acquire(d, "ay", "az");
+
+        // restore destroyed accelerations
+        computeMomentumEnergy<avClean>(timestepHelper.groups_.view(), nullptr, d, box);
+
+        if (!indicesDone.empty() && Base::rank_ == 0)
+        {
+            std::cout << "WARNING: the following fields are not in use and therefore not output: ";
+            for (int fidx = 0; fidx < indicesDone.size() - 1; ++fidx)
+            {
+                std::cout << d.fieldNames[fidx] << ",";
+            }
+            std::cout << d.fieldNames[indicesDone.back()] << std::endl;
+        }
+        timer.step("FileOutput");
+    }
 };
 
 template<bool avClean, class DomainType, class DataType>

@@ -8,8 +8,7 @@
 
 namespace planet
 {
-template<typename T1, typename T2, typename T3, typename Trho, typename Tp, typename Tc>
-extern void computePolytropicEOS_HydroStdGPU(size_t firstParticle, size_t lastParticle, T1 Kpoly, T2 exp_poly, T3 gamma,
-                                          const Trho* rho, Tp* p, Tc* c);
-
+template<typename Dataset, typename StarData>
+extern void computePolytropicEOS_HydroStdGPU(size_t firstParticle, size_t lastParticle, Dataset& d,
+                                             const StarData& star);
 } // namespace planet

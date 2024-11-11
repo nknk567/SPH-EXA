@@ -61,10 +61,9 @@ void computePolytropicEOS_HydroStd(size_t startIndex, size_t endIndex, Dataset& 
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        computePolytropicEOS_HydroStdGPU(startIndex, endIndex, star.Kpoly, star.exp_poly, d.gamma,
-                                            rawPtr(d.devData.rho), rawPtr(d.devData.p), rawPtr(d.devData.c));
+        computePolytropicEOS_HydroStdGPU(startIndex, endIndex, d, star);
     }
     else { computePolytropic_HydroStdImpl(startIndex, endIndex, d, star); }
 }
 
-} // namespace sph
+} // namespace planet

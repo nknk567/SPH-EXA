@@ -89,9 +89,7 @@ void betaCooling(size_t startIndex, size_t endIndex, Dataset& d, const StarData&
     {
         if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
         {
-            betaCoolingGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                           rawPtr(d.devData.u), rawPtr(d.devData.du), star.m, star.position.data(), star.beta, d.g,
-                           rawPtr(d.devData.rho), star.u_floor, star.cooling_rho_limit);
+            betaCoolingGPU(startIndex, endIndex, d, star);
         }
         else { betaCoolingImpl(startIndex, endIndex, d, star); }
     }
@@ -101,7 +99,8 @@ template<typename Dataset, typename StarData>
 void duTimestep(size_t startIndex, size_t endIndex, Dataset& d, StarData& star)
 {
     if (star.u_floor == 0. && star.u_max == std::numeric_limits<decltype(star.u_max)>::infinity() &&
-        star.du_adjust == std::numeric_limits<decltype(star.du_adjust)>::infinity())
+        star.du_adjust == std::numeric_limits<decltype(star.du_adjust)>::infinity()
+        && star.K_u == std::numeric_limits<decltype(star.K_u)>::infinity())
     {
         return;
     }

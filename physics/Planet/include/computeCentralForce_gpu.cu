@@ -122,7 +122,7 @@ void computeCentralForceGPU(size_t first, size_t last, Dataset& d, StarData& sta
         thrust::reduce(thrust::device, star_force_block_y, star_force_block_y + numBlocks, 0., thrust::plus<Tf>{});
     force[2] =
         thrust::reduce(thrust::device, star_force_block_z, star_force_block_z + numBlocks, 0., thrust::plus<Tf>{});
-    *potential = thrust::reduce(thrust::device, star_pot_block, star_pot_block + numBlocks, 0., thrust::plus<Tp>{});
+    potential = thrust::reduce(thrust::device, star_pot_block, star_pot_block + numBlocks, 0., thrust::plus<Tp>{});
 
     cudaFree(star_force_block_x);
     cudaFree(star_force_block_y);

@@ -16,6 +16,11 @@
 #include <thrust/reduce.h>
 #include <thrust/tuple.h>
 
+#include <cmath>
+
+namespace planet
+{
+
 template<typename Tpos, typename Tu, typename Ts, typename Tdu, typename Trho, typename Trho2>
 __global__ void betaCoolingGPUKernel(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Tdu* du,
                                      const Tu* u, Ts star_mass, Ts star_pos_x, Ts star_pos_y, Ts star_pos_z, Ts beta,
@@ -52,21 +57,17 @@ void betaCoolingGPU(size_t first, size_t last, Dataset& d, StarData& star)
 
 template void betaCoolingGPU(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&, const StarData&);
 
-template<class T, class T2>
-struct NormSquare3D
+template<typename Tu, typename Tdu>
+struct AbsDivide
 {
-    HOST_DEVICE_FUN T operator()(const thrust::tuple<T, T2>& X) { return stl::abs(get<0>(X) / get<1>(X)); }
+    HOST_DEVICE_FUN double operator()(const thrust::tuple<Tu, Tdu>& X)
+    {
+        return double{fabs(thrust::get<0>(X) / thrust::get<1>(X))};
+    }
 };
 
-// template<typename Tu, typename Tdu, typename Tt>
-// struct AbsDivide
-//{
-//     HOST_DEVICE_FUN Tt operator()(const thrust::tuple<Tu, Tdu>& u_du) { return stl::abs(get<0>(u_du) / get<1>(u_du));
-//     }
-// };
-
 template<typename Dataset, typename StarData>
-void duTimestep(size_t first, size_t last, const Dataset& d, const StarData& star)
+double duTimestepGPU(size_t first, size_t last, const Dataset& d, const StarData& star)
 {
     cstone::LocalIndex numParticles = last - first;
 
@@ -75,15 +76,16 @@ void duTimestep(size_t first, size_t last, const Dataset& d, const StarData& sta
 
     using Tu  = std::decay_t<decltype(*u)>;
     using Tdu = std::decay_t<decltype(*du)>;
-    using Tt  = std::common_type_t<Tu, Tdu>;
 
     auto begin = thrust::make_zip_iterator(u, du);
     auto end   = thrust::make_zip_iterator(u + numParticles, du + numParticles);
 
-    T init = INFINITY;
+    double init = INFINITY;
 
     return star.K_u *
-           thrust::transform_reduce(thrust::device, it1, it2, NormSquare3d<Tu, Tdu>{}, init, thrust::maximum<Tt>{});
+           thrust::transform_reduce(thrust::device, begin, end, AbsDivide<Tu, Tdu>{}, init, thrust::maximum<double>{});
 }
 
-template void duTimestep(size_t, size_t, const sphexa::ParticlesData<cstone::GpuTag>&, const StarData&);
+template double duTimestepGPU(size_t, size_t, const sphexa::ParticlesData<cstone::GpuTag>&, const StarData&);
+
+} // namespace planet

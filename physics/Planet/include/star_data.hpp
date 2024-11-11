@@ -51,7 +51,7 @@ struct StarData
 
     //! @brief Use a polytropic equation of state
     //! P = Kpoly * rho ^ exp_poly
-    int use_polytropic_eos{0};
+    int use_polytropic_eos{1};
     //! @brief The next two parameters are used if the polytropic equation of state is activated.
     //! @brief polytropic constant
     double Kpoly{1.9998578841e-3};

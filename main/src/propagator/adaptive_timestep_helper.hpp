@@ -162,7 +162,7 @@ public:
     }
 
     template<typename ConservedFields, typename DependentFields>
-    void syncAdaptiveDt(DomainType& domain, DataType& simData)
+    void syncAdaptiveDt(DomainType& domain, DataType& simData, ConservedFields, DependentFields)
     {
         domain.setTreeConv(true);
         domain.setHaloFactor(1.0 + float(timestep_.numRungs) / 40);

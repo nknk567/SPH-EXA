@@ -140,7 +140,7 @@ public:
 
     void sync(DomainType& domain, DataType& simData) override
     {
-        timestepHelper.template syncAdaptiveDt<ConservedFields, DependentFields>(domain, simData);
+        timestepHelper.syncAdaptiveDt(domain, simData, ConservedFields{}, DependentFields{});
     }
 
     void computeForces(DomainType& domain, DataType& simData) override
@@ -220,6 +220,7 @@ public:
     {
         timestepHelper.integrate(domain, simData, timer, Base::rank_);
     }
+
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,
                     const cstone::Box<T>& box) override
     {

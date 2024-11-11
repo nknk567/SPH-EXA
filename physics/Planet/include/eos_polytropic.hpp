@@ -33,63 +33,38 @@
 #pragma once
 
 #include "cstone/cuda/cuda_utils.hpp"
-#include "sph/sph_gpu.hpp"
+#include "eos_polytropic_gpu.hpp"
+#include "eos_polytropic_loop.hpp"
 #include "sph/particles_data_stubs.hpp"
 #include "sph/eos.hpp"
 
-namespace sph
+namespace planet
 {
 
-/*! @brief Ideal gas EOS interface w/o temperature for SPH where rho is stored
- *
- * @tparam Dataset
- * @param startIndex  index of first locally owned particle
- * @param endIndex    index of last locally owned particle
- * @param d           the dataset with the particle buffers
- *
- * In this simple version of state equation, we calculate all depended quantities
- * also for halos, not just assigned particles in [startIndex:endIndex], so that
- * we could potentially avoid halo exchange of p and c in return for exchanging halos of u.
- */
-template<typename Dataset>
-void computeEOS_HydroStdImpl(size_t startIndex, size_t endIndex, Dataset& d)
+template<typename Dataset, typename StarData>
+void computePolytropic_HydroStdImpl(size_t startIndex, size_t endIndex, Dataset& d, const StarData& star)
 {
-    const auto* u    = d.u.data();
-    const auto* temp = d.temp.data();
-    const auto* rho  = d.rho.data();
+    const auto* rho = d.rho.data();
 
     auto* p = d.p.data();
     auto* c = d.c.data();
 
-    if (d.u.size() == 0)
-    {
 #pragma omp parallel for schedule(static)
-        for (size_t i = startIndex; i < endIndex; ++i)
-        {
-            std::tie(p[i], c[i]) = idealGasEOSTemp(temp[i], rho[i], d.muiConst, d.gamma);
-        }
-    }
-    else
+    for (size_t i = startIndex; i < endIndex; ++i)
     {
-#pragma omp parallel for schedule(static)
-        for (size_t i = startIndex; i < endIndex; ++i)
-        {
-            std::tie(p[i], c[i]) = idealGasEOS_u(u[i], rho[i], d.gamma);
-        }
+        std::tie(p[i], c[i]) = polytropicEOS(star.Kpoly, star.exp_poly, d.gamma, rho[i]);
     }
 }
 
-template<class Dataset>
-void computeEOS_HydroStd(size_t startIndex, size_t endIndex, Dataset& d)
+template<class Dataset, typename StarData>
+void computePolytropicEOS_HydroStd(size_t startIndex, size_t endIndex, Dataset& d, const StarData& star)
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        cuda::computeEOS_HydroStd(startIndex, endIndex, d.muiConst, d.gamma, rawPtr(d.devData.temp),
-                                  rawPtr(d.devData.u), rawPtr(d.devData.m), rawPtr(d.devData.rho), rawPtr(d.devData.p),
-                                  rawPtr(d.devData.c));
+        cuda::computePolytropicEOS_HydroStd(startIndex, endIndex, star.Kpoly, star.exp_poly, d.gamma,
+                                            rawPtr(d.devData.rho), rawPtr(d.devData.p), rawPtr(d.devData.c));
     }
-    else { computeEOS_HydroStdImpl(startIndex, endIndex, d); }
+    else { computePolytropic_HydroStdImpl(startIndex, endIndex, d, star); }
 }
-
 
 } // namespace sph

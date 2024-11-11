@@ -12,10 +12,14 @@
 #include "sph/util/device_math.cuh"
 
 #include "cstone/sfc/box.hpp"
+#include "sph/particles_data.hpp"
+#include "star_data.hpp"
 
 #include "computeCentralForce_gpu.hpp"
 #include "cuda_runtime.h"
 
+namespace planet
+{
 template<size_t numThreads, typename Tpos, typename Ta, typename Tm, typename Ts>
 __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z,
                                              Ta* ax, Ta* ay, Ta* az, const Tm* m, Ts star_pos_x, Ts star_pos_y,
@@ -82,45 +86,43 @@ __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tp
     }
 }
 
-template<typename Tpos, typename Ta, typename Tm, typename Ts>
-void computeCentralForceGPU(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Ta* ax, Ta* ay,
-                            Ta* az, const Tm* m, const Ts* star_pos, Ts star_mass, Ts* star_force_local,
-                            Ts* star_pot_local, Tpos g, Ts inner_size)
+template<typename Dataset, typename StarData>
+void computeCentralForceGPU(size_t first, size_t last, Dataset& d, StarData& star)
 {
     cstone::LocalIndex numParticles = last - first;
     constexpr unsigned numThreads   = 256;
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
-    star_force_local[0] = 0.;
-    star_force_local[1] = 0.;
-    star_force_local[2] = 0.;
-    *star_pot_local     = 0.;
+    using Tf    = decltype(star.force_local)::value_type;
+    Tf force[3] = {};
 
-    Ts* star_force_block_x;
-    cudaMalloc(&star_force_block_x, sizeof(Ts) * numBlocks);
-    Ts* star_force_block_y;
-    cudaMalloc(&star_force_block_y, sizeof(Ts) * numBlocks);
-    Ts* star_force_block_z;
-    cudaMalloc(&star_force_block_z, sizeof(Ts) * numBlocks);
-    Ts* star_pot_block;
-    cudaMalloc(&star_pot_block, sizeof(Ts) * numBlocks);
+    using Tp = std::decay_t<decltype(star.potential_local)>;
+    Tp potential{0.};
 
-    // printf("numParticles: %u\t last: %u\t first: %u\t numBlocks: %u\t numThreads:%u\n", numParticles, last, first,
-    //        numBlocks, numThreads);
+    Tf* star_force_block_x;
+    cudaMalloc(&star_force_block_x, sizeof(Tf) * numBlocks);
+    Tf* star_force_block_y;
+    cudaMalloc(&star_force_block_y, sizeof(Tf) * numBlocks);
+    Tf* star_force_block_z;
+    cudaMalloc(&star_force_block_z, sizeof(Tf) * numBlocks);
+    Tp* star_pot_block;
+    cudaMalloc(&star_pot_block, sizeof(Tp) * numBlocks);
+
     computeCentralForceGPUKernel<numThreads><<<numBlocks, numThreads>>>(
-        first, last, x, y, z, ax, ay, az, m, star_pos[0], star_pos[1], star_pos[2], star_mass, g,
-        inner_size * inner_size, star_force_block_x, star_force_block_y, star_force_block_z, star_pot_block);
+        first, last, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z), rawPtr(d.devData.ax),
+        rawPtr(d.devData.ay), rawPtr(d.devData.az), rawPtr(d.devData.m), star.position[0], star.position[1],
+        star.position[2], star.m, d.g, star.inner_size * star.inner_size, star_force_block_x, star_force_block_y,
+        star_force_block_z, star_pot_block);
     checkGpuErrors(cudaGetLastError());
     checkGpuErrors(cudaDeviceSynchronize());
 
-    star_force_local[0] =
-        thrust::reduce(thrust::device, star_force_block_x, star_force_block_x + numBlocks, 0., thrust::plus<Ts>{});
-    star_force_local[1] =
-        thrust::reduce(thrust::device, star_force_block_y, star_force_block_y + numBlocks, 0., thrust::plus<Ts>{});
-    star_force_local[2] =
-        thrust::reduce(thrust::device, star_force_block_z, star_force_block_z + numBlocks, 0., thrust::plus<Ts>{});
-    *star_pot_local =
-        thrust::reduce(thrust::device, star_pot_block, star_pot_block + numBlocks, 0., thrust::plus<Ts>{});
+    force[0] =
+        thrust::reduce(thrust::device, star_force_block_x, star_force_block_x + numBlocks, 0., thrust::plus<Tf>{});
+    force[1] =
+        thrust::reduce(thrust::device, star_force_block_y, star_force_block_y + numBlocks, 0., thrust::plus<Tf>{});
+    force[2] =
+        thrust::reduce(thrust::device, star_force_block_z, star_force_block_z + numBlocks, 0., thrust::plus<Tf>{});
+    *potential = thrust::reduce(thrust::device, star_pot_block, star_pot_block + numBlocks, 0., thrust::plus<Tp>{});
 
     cudaFree(star_force_block_x);
     cudaFree(star_force_block_y);
@@ -129,7 +131,5 @@ void computeCentralForceGPU(size_t first, size_t last, const Tpos* x, const Tpos
     checkGpuErrors(cudaDeviceSynchronize());
 }
 
-template void computeCentralForceGPU(size_t, size_t, const double*, const double*, const double*, float*, float*,
-                                     float*, const float*, const double*, double, double*, double*, double, double);
-template void computeCentralForceGPU(size_t, size_t, const double*, const double*, const double*, double*, double*,
-                                     double*, const double*, const double*, double, double*, double*, double, double);
+template void computeCentralForceGPU(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&, StarData&);
+} // namespace planet

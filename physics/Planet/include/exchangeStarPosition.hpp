@@ -14,6 +14,7 @@ namespace planet
 template<typename StarData>
 void computeAndExchangeStarPosition(StarData& star, double dt, double dt_m1, int rank)
 {
+    if (star.fixed_star == 1) { return; }
     std::array<double, 3> global_force{};
 
     MPI_Reduce(star.force_local.data(), global_force.data(), 3, MpiType<double>{}, MPI_SUM, 0, MPI_COMM_WORLD);

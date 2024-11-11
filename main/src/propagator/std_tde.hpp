@@ -16,6 +16,7 @@
 #include "star_data.hpp"
 #include "accretion.hpp"
 #include "betaCooling.hpp"
+#include "eos_polytropic.hpp"
 #include "io/arg_parser.hpp"
 #include "ipropagator.hpp"
 #include "gravity_wrapper.hpp"
@@ -117,6 +118,12 @@ public:
         d.treeView = domain.octreeProperties();
     }
 
+    void eosSwitch(size_t first, size_t last, DataType& simData, const StarData& star)
+    {
+        if (star.use_polytropic_eos) { planet::computePolytropicEOS_HydroStd(first, last, simData.hydro, star); }
+        else { computeEOS_HydroStd(first, last, simData.hydro); }
+    }
+
     void computeForces(DomainType& domain, DataType& simData) override
     {
         timer.start();
@@ -139,7 +146,7 @@ public:
 
         computeDensity(groups_.view(), d, domain.box());
         timer.step("Density");
-        computePolytropicEOS_HydroStd(first, last, d, star);
+        eosSwitch(first, last, simData, star);
         timer.step("EquationOfState");
 
         domain.exchangeHalos(get<"vx", "vy", "vz", "rho", "p", "c">(d), get<"ax">(d), get<"ay">(d));
@@ -165,7 +172,7 @@ public:
         }
 
         printf("last: %zu\t first: %zu\t rank: %d\n", last, first, Base::rank_);
-        planet::computeCentralForce(simData.hydro, first, last, star);
+        planet::computeCentralForce(first, last, simData.hydro, star);
         timer.step("computeCentralForce");
     }
 

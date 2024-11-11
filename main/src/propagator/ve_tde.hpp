@@ -198,7 +198,7 @@ public:
            pmReader.step();
        }
 
-       planet::computeCentralForce(simData.hydro, first, last, star);
+       planet::computeCentralForce(first, last, simData.hydro, star);
        timer.step("computeCentralForce");
    }
 

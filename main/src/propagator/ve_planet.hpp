@@ -222,12 +222,12 @@ public:
             timer.step("Gravity");
             pmReader.step();
         }
-        planet::betaCooling(d, first, last, star);
+        planet::betaCooling(first, last, d, star);
         timer.step("betaCooling");
 
-        planet::duTimestepAndTempFloor(simData.hydro, first, last, star);
+        planet::duTimestep(first, last, d, star);
 
-        planet::computeCentralForce(simData.hydro, first, last, star);
+        planet::computeCentralForce(first, last, d, star);
         timer.step("computeCentralForce");
     }
 

@@ -21,58 +21,54 @@
 namespace planet
 {
 
-template<typename Tpos, typename Ta, typename Tm, typename Ts>
-void computeCentralForceImpl(size_t first, size_t last, const Tpos* x, const Tpos* y, const Tpos* z, Ta* ax, Ta* ay,
-                             Ta* az, const Tm* m, const Ts* star_pos, Ts star_mass, Ts* star_force_local,
-                             Ts* star_pot_local, Tpos g, Ts inner_size)
+template<typename Dataset, typename StarData>
+void computeCentralForceImpl(size_t first, size_t last, Dataset& d, StarData& star)
 {
-    star_force_local[0]      = 0.;
-    star_force_local[1]      = 0.;
-    star_force_local[2]      = 0.;
-    *star_pot_local          = 0.;
-    const double inner_size2 = inner_size * inner_size;
+    using Tf    = decltype(star.force_local)::value_type;
+    Tf force[3] = {};
 
-#pragma omp parallel for reduction(+ : star_force_local[ : 3]) reduction(+ : star_pot_local[ : 1])
+    using Tp = std::decay_t<decltype(star.potential_local)>;
+    Tp potential{0.};
+
+    const double inner_size2 = star.inner_size * star.inner_size;
+
+#pragma omp parallel for reduction(+ : force[ : 3]) reduction(+ : potential)
     for (size_t i = first; i < last; i++)
     {
-        const double dx    = x[i] - star_pos[0];
-        const double dy    = y[i] - star_pos[1];
-        const double dz    = z[i] - star_pos[2];
+        const double dx    = d.x[i] - star.position[0];
+        const double dy    = d.y[i] - star.position[1];
+        const double dz    = d.z[i] - star.position[2];
         const double dist2 = std::max(inner_size2, dx * dx + dy * dy + dz * dz);
         const double dist  = std::sqrt(dist2);
         const double dist3 = dist2 * dist;
 
-        const double a_strength = 1. / dist3 * star_mass * g;
+        const double a_strength = 1. / dist3 * star.m * d.g;
         const double ax_i       = -dx * a_strength;
         const double ay_i       = -dy * a_strength;
         const double az_i       = -dz * a_strength;
-        ax[i] += ax_i;
-        ay[i] += ay_i;
-        az[i] += az_i;
+        d.ax[i] += ax_i;
+        d.ay[i] += ay_i;
+        d.az[i] += az_i;
 
-        star_force_local[0] -= ax_i * m[i];
-        star_force_local[1] -= ay_i * m[i];
-        star_force_local[2] -= az_i * m[i];
-        *star_pot_local -= g * m[i] / dist;
+        force[0] -= ax_i * d.m[i];
+        force[1] -= ay_i * d.m[i];
+        force[2] -= az_i * d.m[i];
+        potential -= d.g * d.m[i] / dist;
     }
+
+    star.force_local[0] = force[0];
+    star.force_local[1] = force[1];
+    star.force_local[2] = force[2];
 }
 
 template<typename Dataset, typename StarData>
-void computeCentralForce(Dataset& d, size_t startIndex, size_t endIndex, StarData& star)
+void computeCentralForce(size_t startIndex, size_t endIndex, Dataset& d, StarData& star)
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        computeCentralForceGPU(startIndex, endIndex, rawPtr(d.devData.x), rawPtr(d.devData.y), rawPtr(d.devData.z),
-                               rawPtr(d.devData.ax), rawPtr(d.devData.ay), rawPtr(d.devData.az), rawPtr(d.devData.m),
-                               star.position.data(), star.m, star.force_local.data(), &star.potential_local, d.g,
-                               star.inner_size);
+        computeCentralForceGPU(startIndex, endIndex, d, star);
     }
-    else
-    {
-        computeCentralForceImpl(startIndex, endIndex, d.x.data(), d.y.data(), d.z.data(), d.ax.data(), d.ay.data(),
-                                d.az.data(), d.m.data(), star.position.data(), star.m, star.force_local.data(),
-                                &star.potential_local, d.g, star.inner_size);
-    }
+    else { computeCentralForceImpl(startIndex, endIndex, d, star); }
 }
 
 } // namespace planet

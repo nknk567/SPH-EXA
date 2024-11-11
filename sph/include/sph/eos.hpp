@@ -96,19 +96,4 @@ void computeEOS_Polytropic_neutronstar(size_t startIndex, size_t endIndex, Datas
     }
 }
 
-/*! @brief general polytropic equation of state
- *
- * @param rho SPH density
- */
-template<typename T1, typename T2, typename T3, typename T4>
-HOST_DEVICE_FUN auto polytropicEOS(T1 Kpoly, T2 exp_poly, T3 gamma, T4 rho)
-{
-    using Tc = std::common_type_t<T1, T2, T3, T4>;
-
-    Tc p = Kpoly * std::pow(rho, exp_poly);
-    Tc c = std::sqrt(gamma * p / rho);
-
-    return util::tuple<Tc, Tc>{p, c};
-}
-
 } // namespace sph

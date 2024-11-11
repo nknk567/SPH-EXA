@@ -33,18 +33,15 @@
 #include "cstone/primitives/math.hpp"
 #include "cstone/util/tuple.hpp"
 
-#include "sph/sph_gpu.hpp"
-#include "sph/eos.hpp"
+#include "eos_polytropic_loop.hpp"
 #include "sph/particles_data.hpp"
 #include "star_data.hpp"
 
-namespace sph
-{
-namespace cuda
+namespace planet
 {
 
 template<typename T1, typename T2, typename T3, typename Trho, typename Tp, typename Tc>
-__global__ void cudaEOS_Polytropic_HydroStd(size_t firstParticle, size_t lastParticle, T1 Kpoly, T2 exp_poly, T3 gamma,
+__global__ void computePolytropicEOS_HydroStdKernel(size_t firstParticle, size_t lastParticle, T1 Kpoly, T2 exp_poly, T3 gamma,
                                             const Trho* rho, Tp* p, Tc* c)
 {
     unsigned i = firstParticle + blockDim.x * blockIdx.x + threadIdx.x;
@@ -54,7 +51,7 @@ __global__ void cudaEOS_Polytropic_HydroStd(size_t firstParticle, size_t lastPar
 }
 
 template<typename Dataset, typename StarData>
-void computePolytropicEOS_HydroStd(size_t firstParticle, size_t lastParticle, Dataset& d, const StarData& star)
+void computePolytropicEOS_HydroStdGPU(size_t firstParticle, size_t lastParticle, Dataset& d, const StarData& star)
 {
     if (firstParticle == lastParticle) { return; }
     unsigned numThreads = 256;
@@ -66,7 +63,5 @@ void computePolytropicEOS_HydroStd(size_t firstParticle, size_t lastParticle, Da
     checkGpuErrors(cudaDeviceSynchronize());
 }
 
-template void computePolytropicEOS_HydroStd(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&, const StarData&);
-
-} // namespace cuda
-} // namespace sph
+template void computePolytropicEOS_HydroStdGPU(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&, const StarData&);
+} // namespace planet

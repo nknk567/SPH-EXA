@@ -93,7 +93,7 @@ void computeCentralForceGPU(size_t first, size_t last, Dataset& d, StarData& sta
     constexpr unsigned numThreads   = 256;
     unsigned           numBlocks    = (numParticles + numThreads - 1) / numThreads;
 
-    using Tf    = decltype(star.force_local)::value_type;
+    using Tf    = typename decltype(star.force_local)::value_type;
     Tf force[3] = {};
 
     using Tp = std::decay_t<decltype(star.potential_local)>;

@@ -28,10 +28,10 @@ using namespace sph;
 using util::FieldList;
 
 template<class DomainType, class DataType>
-class PlanetProp : public HydroProp<DomainType, DataType>
+class PlanetProp : public Propagator<DomainType, DataType>
 {
 protected:
-    using Base = HydroProp<DomainType, DataType>; // Propagator<DomainType, DataType>;
+    using Base = Propagator<DomainType, DataType>;
     using Base::timer;
 
     using T             = typename DataType::RealType;

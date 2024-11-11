@@ -24,7 +24,7 @@ namespace planet
 template<typename Dataset, typename StarData>
 void computeCentralForceImpl(size_t first, size_t last, Dataset& d, StarData& star)
 {
-    using Tf    = decltype(star.force_local)::value_type;
+    using Tf    = typename decltype(star.force_local)::value_type;
     Tf force[3] = {};
 
     using Tp = std::decay_t<decltype(star.potential_local)>;

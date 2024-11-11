@@ -61,7 +61,7 @@ void computePolytropicEOS_HydroStd(size_t startIndex, size_t endIndex, Dataset& 
 {
     if constexpr (cstone::HaveGpu<typename Dataset::AcceleratorType>{})
     {
-        cuda::computePolytropicEOS_HydroStd(startIndex, endIndex, star.Kpoly, star.exp_poly, d.gamma,
+        computePolytropicEOS_HydroStdGPU(startIndex, endIndex, star.Kpoly, star.exp_poly, d.gamma,
                                             rawPtr(d.devData.rho), rawPtr(d.devData.p), rawPtr(d.devData.c));
     }
     else { computePolytropic_HydroStdImpl(startIndex, endIndex, d, star); }

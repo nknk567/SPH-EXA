@@ -22,19 +22,19 @@
 
 struct RemovalProperties
 {
-    double            mass        = 0.;
-    double            momentum[3] = {0.};
-    unsigned          count       = 0;
-//    RemovalProperties operator+(const RemovalProperties& b) const
-//    {
-//        return RemovalProperties{mass + b.mass,
-//                                 {
-//                                     momentum[0] + b.momentum[0],
-//                                     momentum[1] + b.momentum[1],
-//                                     momentum[2] + b.momentum[2],
-//                                 },
-//                                 count + b.count};
-//    }
+    double   mass        = 0.;
+    double   momentum[3] = {0.};
+    unsigned count       = 0;
+    //    RemovalProperties operator+(const RemovalProperties& b) const
+    //    {
+    //        return RemovalProperties{mass + b.mass,
+    //                                 {
+    //                                     momentum[0] + b.momentum[0],
+    //                                     momentum[1] + b.momentum[1],
+    //                                     momentum[2] + b.momentum[2],
+    //                                 },
+    //                                 count + b.count};
+    //    }
 };
 
 __device__ void atomicAdd(RemovalProperties* x, const RemovalProperties& y)
@@ -92,13 +92,12 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         }
     }
 
-    typedef cub::BlockReduce<RemovalProperties, TravConfig::numThreads> BlockReduce_t;
-    __shared__ typename BlockReduce_t::TempStorage                      temp_accreted, temp_removed;
+    typedef cub::BlockReduce<RemovalProperties, TravConfig::numThreads> BlockReduce;
+    __shared__ typename BlockReduce::TempStorage                        temp_accreted, temp_removed;
 
     struct Sum
     {
         __device__ RemovalProperties operator()(const RemovalProperties& a, const RemovalProperties& b) const
-
         {
             return RemovalProperties{a.mass + b.mass,
                                      {
@@ -110,9 +109,8 @@ __global__ void computeAccretionConditionKernel(size_t first, size_t last, const
         }
     };
 
-    RemovalProperties block_accreted = BlockReduce_t(temp_accreted).Reduce(accreted, Sum{});
-    RemovalProperties block_removed  = BlockReduce_t(temp_removed).Reduce(removed, Sum{});
-
+    RemovalProperties block_accreted = BlockReduce(temp_accreted).Reduce(accreted, Sum{});
+    RemovalProperties block_removed  = BlockReduce(temp_removed).Reduce(removed, Sum{});
 
     __syncthreads();
 
@@ -156,7 +154,6 @@ void computeAccretionConditionGPU(size_t first, size_t last, Dataset& d, StarDat
     star.p_removed_local[1] = removed_local.momentum[1];
     star.p_removed_local[2] = removed_local.momentum[2];
     star.n_removed_local    = removed_local.count;
-
 }
 
 template void computeAccretionConditionGPU(size_t, size_t, sphexa::ParticlesData<cstone::GpuTag>&, StarData&);

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "cstone/sfc/box.hpp"
+#include "cstone/primitives/primitives_gpu.h"
 #include "sph/sph_gpu.hpp"
 
 namespace sph
@@ -23,8 +24,11 @@ void computeGroups(size_t startIndex, size_t endIndex, Dataset& d, const cstone:
     }
     else
     {
-        groups.firstBody = startIndex;
-        groups.lastBody  = endIndex;
+        groups.firstBody  = startIndex;
+        groups.lastBody   = endIndex;
+        groups.numGroups  = 1;
+        groups.groupStart = &groups.firstBody;
+        groups.groupEnd   = &groups.lastBody;
     }
 }
 

@@ -95,7 +95,11 @@ void initTurbulenceHydroFields(Dataset& d, const std::map<std::string, double>& 
     std::fill(d.x_m1.begin(), d.x_m1.end(), 0.);
     std::fill(d.y_m1.begin(), d.y_m1.end(), 0.);
     std::fill(d.z_m1.begin(), d.z_m1.end(), 0.);
+
     std::fill(d.c.begin(), d.c.end(), constants.at("soundSpeed"));
+
+
+    generateParticleIDs(d.id);
 }
 
 template<class Dataset>

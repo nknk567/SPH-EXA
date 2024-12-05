@@ -7,6 +7,11 @@
 #include <array>
 #include <iostream>
 
+#include "removalStatistics.hpp"
+
+namespace disk
+{
+
 struct StarData
 {
     //! @brief position of the central star
@@ -97,18 +102,24 @@ struct StarData
     std::array<double, 3> force_local{};
     //! @brief Potential from interaction between star and particles (local to rank)
     double potential_local{};
-    //! @brief Count of accreted particles (local to rank)
-    size_t n_accreted_local{};
-    //! @brief Count of removed particles (local to rank)
-    size_t n_removed_local{};
-    //! @brief Accreted mass (local to rank)
-    double m_accreted_local{};
-    //! @brief Removed mass (local to rank)
-    double m_removed_local{};
-    //! @brief Accreted momentum (local to rank)
-    std::array<double, 3> p_accreted_local{};
-    //! @brief Removed momentum (local to rank)
-    std::array<double, 3> p_removed_local{};
-    //! @brief du-timestep (local to rank)
+
+    //    //! @brief Count of accreted particles (local to rank)
+    //    size_t n_accreted_local{};
+    //    //! @brief Count of removed particles (local to rank)
+    //    size_t n_removed_local{};
+    //    //! @brief Accreted mass (local to rank)
+    //    double m_accreted_local{};
+    //    //! @brief Removed mass (local to rank)
+    //    double m_removed_local{};
+    //    //! @brief Accreted momentum (local to rank)
+    //    std::array<double, 3> p_accreted_local{};
+    //    //! @brief Removed momentum (local to rank)
+    //    std::array<double, 3> p_removed_local{};
+    //    //! @brief du-timestep (local to rank)
+
+    RemovalStatistics accreted_local;
+    RemovalStatistics removed_local;
+
     double t_du{};
 };
+} // namespace disk

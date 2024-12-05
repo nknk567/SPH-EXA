@@ -18,7 +18,7 @@
 #include "accretion_impl.hpp"
 #include "sph/particles_data.hpp"
 
-namespace planet
+namespace disk
 {
 
 template<typename Dataset, typename StarData>

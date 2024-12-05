@@ -7,7 +7,7 @@
 #include <mpi.h>
 #include "cstone/primitives/mpi_wrappers.hpp"
 
-namespace planet
+namespace disk
 {
 
 //! @brief Compute the new star position by exchanging the force between the nodes and integrating the acceleration
@@ -48,4 +48,4 @@ void computeAndExchangeStarPosition(StarData& star, double dt, double dt_m1, int
     MPI_Bcast(star.position.data(), 3, MpiType<double>{}, 0, MPI_COMM_WORLD);
     MPI_Bcast(star.position_m1.data(), 3, MpiType<double>{}, 0, MPI_COMM_WORLD);
 }
-} // namespace planet
+} // namespace disk

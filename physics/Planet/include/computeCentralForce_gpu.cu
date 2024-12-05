@@ -18,7 +18,7 @@
 #include "computeCentralForce_gpu.hpp"
 #include "cuda_runtime.h"
 
-namespace planet
+namespace disk
 {
 template<size_t numThreads, typename Tpos, typename Ta, typename Tm, typename Tsp, typename Tsm, typename Tg,
          typename Tis, typename Tf, typename Tp>

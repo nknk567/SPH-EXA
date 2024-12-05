@@ -18,7 +18,7 @@
 
 #include <cmath>
 
-namespace planet
+namespace disk
 {
 
 template<typename Tpos, typename Tu, typename Ts, typename Tdu, typename Trho, typename Trho2>

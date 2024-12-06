@@ -80,9 +80,9 @@ __global__ void computeCentralForceGPUKernel(size_t first, size_t last, const Tp
     typedef cub::BlockReduce<Tf, numThreads>     BlockReduce;
     __shared__ typename BlockReduce::TempStorage temp_storage;
 
-    RemovalStatistics block_accreted = BlockReduce(temp_storage).Sum(force);
+    Tf force_block = BlockReduce(temp_storage).Sum(force);
     __syncthreads();
-    if (threadIdx.x == 0) { atomicAddVec4(force_device, block_accreted); }
+    if (threadIdx.x == 0) { atomicAddVec4(force_device, force_block); }
 
     //    __syncthreads();
     //

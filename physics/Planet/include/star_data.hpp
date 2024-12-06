@@ -98,10 +98,11 @@ struct StarData
     double potential{};
 
     //! @brief Values local to each rank
-    //! @brief Total force acting on the star (local to rank)
-    std::array<double, 3> force_local{};
-    //! @brief Potential from interaction between star and particles (local to rank)
-    double potential_local{};
+    //! @brief Total potential [0] and force [1..3] acting on the star (local to rank)
+    cstone::Vec4<double> force_local{};
+
+//    //! @brief Potential from interaction between star and particles (local to rank)
+//    double potential_local{};
 
     //! @brief Statistics of accreted particles
     RemovalStatistics accreted_local;

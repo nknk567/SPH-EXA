@@ -2,14 +2,11 @@
 // Created by Noah Kubli on 12.03.2024.
 //
 #include <cub/cub.cuh>
-#include <thrust/device_vector.h>
-#include <thrust/partition.h>
-#include <thrust/sequence.h>
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/findneighbors.hpp"
 #include "cstone/traversal/find_neighbors.cuh"
-#include "sph/util/device_math.cuh"
+//#include "sph/util/device_math.cuh"
 
 #include "cstone/sfc/box.hpp"
 #include "cstone/tree/definitions.h"
@@ -33,7 +30,7 @@ __device__ void atomicAddRS(RemovalStatistics* x, const RemovalStatistics& y)
     atomicAdd(&(x->count), y.count);
 }
 
-template <typename Tkeys>
+template<typename Tkeys>
 __device__ void markForRemovalAndAdd(RemovalStatistics& statistics, size_t i, Tkeys* keys, const auto* m,
                                      const auto* vx, const auto* vy, const auto* vz)
 {

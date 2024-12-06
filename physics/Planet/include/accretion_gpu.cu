@@ -2,13 +2,12 @@
 // Created by Noah Kubli on 12.03.2024.
 //
 #include <cub/cub.cuh>
+#include "cuda_runtime.h"
 
 #include "cstone/cuda/cuda_utils.cuh"
 #include "cstone/findneighbors.hpp"
-#include "cstone/traversal/find_neighbors.cuh"
-//#include "sph/util/device_math.cuh"
-
 #include "cstone/sfc/box.hpp"
+#include "cstone/traversal/find_neighbors.cuh"
 #include "cstone/tree/definitions.h"
 
 #include "sph/particles_data.hpp"
@@ -16,7 +15,6 @@
 #include "accretion_gpu.hpp"
 #include "star_data.hpp"
 #include "removalStatistics.hpp"
-#include "cuda_runtime.h"
 
 namespace disk
 {

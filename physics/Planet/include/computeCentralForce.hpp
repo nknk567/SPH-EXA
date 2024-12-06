@@ -25,12 +25,6 @@ template<typename Dataset, typename StarData>
 void computeCentralForceImpl(size_t first, size_t last, Dataset& d, StarData& star)
 {
     cstone::Vec4<double> force_local{};
-    //    using Tf    = typename decltype(star.force_local)::value_type;
-    //    Tf force[3] = {};
-    //
-    //    using Tp = std::decay_t<decltype(star.potential_local)>;
-    //    Tp potential{0.};
-
     const double inner_size2 = star.inner_size * star.inner_size;
 
 #pragma omp declare reduction(add_force : cstone::Vec4<double> : omp_out = omp_out + omp_in) initializer(omp_priv = {})
@@ -60,10 +54,6 @@ void computeCentralForceImpl(size_t first, size_t last, Dataset& d, StarData& st
     }
 
     star.force_local = force_local;
-//    star.force_local[0] = force_local[0];
-//    star.force_local[1] = force_local[1];
-//    star.force_local[2] = force_local[2];
-//    star.force_local[3] = force_local[3];
 }
 
 template<typename Dataset, typename StarData>

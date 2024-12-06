@@ -23,10 +23,10 @@ namespace disk
 template<typename T>
 __device__ void atomicAddVec4(cstone::Vec4<T>* x, const cstone::Vec4<T>& y)
 {
-    atomicAdd(&x[0], y[0]);
-    atomicAdd(&x[1], y[1]);
-    atomicAdd(&x[2], y[2]);
-    atomicAdd(&x[3], y[3]);
+    atomicAdd(&(*x[0]), y[0]);
+    atomicAdd(&(*x[1]), y[1]);
+    atomicAdd(&(*x[2]), y[2]);
+    atomicAdd(&(*x[3]), y[3]);
 }
 
 template<size_t numThreads, typename Tpos, typename Ta, typename Tm, typename Tsp, typename Tsm, typename Tg,

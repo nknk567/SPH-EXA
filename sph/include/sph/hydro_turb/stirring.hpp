@@ -120,9 +120,9 @@ void computeStirring(cstone::GroupView grp, size_t numDim, const Tc* x, const Tc
     }
 }
 
-template<class Tc, class Ta, class T>
+template<class Tc, class Ta, class T, typename Th>
 extern void computeStirringGpu(cstone::GroupView grp, size_t numDim, const Tc* x, const Tc* y, const Tc* z, Ta* ax,
-                               Ta* ay, Ta* az, size_t numModes, const T* modes, const T* phaseReal, const T* phaseImag,
+                               Ta* ay, Ta* az, const Th* h, size_t numModes, const T* modes, const T* phaseReal, const T* phaseImag,
                                const T* amplitudes, T solWeightNorm);
 
 } // namespace sph

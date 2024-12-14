@@ -39,9 +39,9 @@ using cstone::GpuConfig;
 using cstone::GroupView;
 using cstone::LocalIndex;
 
-template<class Tc, class Ta, class T>
+template<class Tc, class Ta, class T, typename Th>
 __global__ void computeStirringKernel(GroupView grp, size_t numDim, const Tc* x, const Tc* y, const Tc* z, Ta* ax,
-                                      Ta* ay, Ta* az, size_t numModes, const T* modes, const T* phaseReal,
+                                      Ta* ay, Ta* az, const Th* h, size_t numModes, const T* modes, const T* phaseReal,
                                       const T* phaseImag, const T* amplitudes, T solWeightNorm)
 {
     LocalIndex laneIdx = threadIdx.x & (GpuConfig::warpSize - 1);
@@ -54,40 +54,43 @@ __global__ void computeStirringKernel(GroupView grp, size_t numDim, const Tc* x,
     auto [turbAx, turbAy, turbAz] =
         stirParticle<Tc, Ta, T>(numDim, x[i], y[i], z[i], numModes, modes, phaseReal, phaseImag, amplitudes);
 
-    ax[i] += solWeightNorm * turbAx;
-    ay[i] += solWeightNorm * turbAy;
-    az[i] += solWeightNorm * turbAz;
+    const Th factor = h[i] < 0.005 ? 0. : 1.;
+    ax[i] += factor * solWeightNorm * turbAx;
+    ay[i] += factor * solWeightNorm * turbAy;
+    az[i] += factor * solWeightNorm * turbAz;
 }
 
 //! @brief Add stirring accelerations on the GPU, see CPU version for documentation
-template<class Tc, class Ta, class T>
+template<class Tc, class Ta, class T, typename Th>
 void computeStirringGpu(GroupView grp, size_t numDim, const Tc* x, const Tc* y, const Tc* z, Ta* ax, Ta* ay, Ta* az,
-                        size_t numModes, const T* modes, const T* st_aka, const T* st_akb, const T* amplitudes,
-                        T solWeightNorm)
+                        const Th* h, size_t numModes, const T* modes, const T* st_aka, const T* st_akb,
+                        const T* amplitudes, T solWeightNorm)
 {
     unsigned numThreads       = 256;
     unsigned numWarpsPerBlock = numThreads / GpuConfig::warpSize;
     unsigned numBlocks        = (grp.numGroups + numWarpsPerBlock - 1) / numWarpsPerBlock;
 
     if (numBlocks == 0) { return; }
-    computeStirringKernel<<<numBlocks, numThreads>>>(grp, numDim, x, y, z, ax, ay, az, numModes, modes, st_aka, st_akb,
-                                                     amplitudes, solWeightNorm);
+    computeStirringKernel<<<numBlocks, numThreads>>>(grp, numDim, x, y, z, ax, ay, az, h, numModes, modes, st_aka,
+                                                     st_akb, amplitudes, solWeightNorm);
 }
 
 // all double
 template void computeStirringGpu(GroupView, size_t, const double*, const double*, const double*, double*, double*,
-                                 double*, size_t, const double*, const double*, const double*, const double*, double);
+                                 double*, const double*, size_t, const double*, const double*, const double*,
+                                 const double*, double);
 
 // accelerations in single
 template void computeStirringGpu(GroupView, size_t, const double*, const double*, const double*, float*, float*, float*,
-                                 size_t, const double*, const double*, const double*, const double*, double);
+                                 const float*, size_t, const double*, const double*, const double*, const double*,
+                                 double);
 
 // accelerations and modes in single
 template void computeStirringGpu(GroupView, size_t, const double*, const double*, const double*, float*, float*, float*,
-                                 size_t, const float*, const float*, const float*, const float*, float);
+                                 const float*, size_t, const float*, const float*, const float*, const float*, float);
 
 // all single
 template void computeStirringGpu(GroupView, size_t, const float*, const float*, const float*, float*, float*, float*,
-                                 size_t, const float*, const float*, const float*, const float*, float);
+                                 const float*, size_t, const float*, const float*, const float*, const float*, float);
 
 } // namespace sph

@@ -9,6 +9,13 @@
 namespace sph
 {
 
+enum EosType : int
+{
+    idealGas = 0,
+    isothermal = 1,
+    polytropic = 2
+};
+
 //! @brief returns the heat capacity for given mean molecular weight
 template<class T1, class T2>
 HOST_DEVICE_FUN constexpr T1 idealGasCv(T1 mui, T2 gamma)
@@ -79,31 +86,6 @@ HOST_DEVICE_FUN auto polytropicEOS(T1 K_poly, T2 gamma_poly, T3 rho)
     Tc c = std::sqrt(gamma_poly * p / rho);
 
     return util::tuple<Tc, Tc>{p, c};
-}
-
-/*! @brief Polytropic EOS interface for SPH where rho is computed on-the-fly
- *
- * @tparam Dataset
- * @param startIndex  index of first locally owned particle
- * @param endIndex    index of last locally owned particle
- * @param d           the dataset with the particle buffers
- */
-template<typename Dataset>
-void computeEOS_Polytropic(size_t startIndex, size_t endIndex, Dataset& d)
-{
-    const auto* kx = d.kx.data();
-    const auto* xm = d.xm.data();
-    const auto* m  = d.m.data();
-
-    auto* p = d.p.data();
-    auto* c = d.c.data();
-
-#pragma omp parallel for schedule(static)
-    for (size_t i = startIndex; i < endIndex; ++i)
-    {
-        auto rho             = kx[i] * m[i] / xm[i];
-        std::tie(p[i], c[i]) = polytropicEOS(rho);
-    }
 }
 
 } // namespace sph

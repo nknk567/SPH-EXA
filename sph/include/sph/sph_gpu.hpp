@@ -39,17 +39,23 @@ extern void computeAVswitches(const GroupView&, Dataset& d, const cstone::Box<ty
 template<bool avClean, class Dataset>
 extern void computeMomentumEnergy(const GroupView&, float*, Dataset&, const cstone::Box<typename Dataset::RealType>&);
 
-template<class Tt, class Tm, class Thydro>
-extern void computeEOS_HydroStd(size_t firstParticle, size_t lastParticle, Tm mui, Tt gamma, const Tt* temp,
-                                const Tt* u, const Tm* m, Thydro* rho, Thydro* p, Thydro* c);
+template<class Dataset>
+extern void computeIdealGasEOS_HydroStd(size_t firstParticle, size_t lastParticle, Dataset& d);
 
-template<class Tt, class Tm, class Thydro>
-extern void computeEOS(size_t firstParticle, size_t lastParticle, Tm mui, Tt gamma, const Tt* temp, const Tt* u,
-                       const Tm* m, const Thydro* kx, const Thydro* xm, const Thydro* gradh, Thydro* prho, Thydro* c,
-                       Thydro* rho, Thydro* p);
+template<class Dataset>
+extern void computeIdealGasEOS(size_t firstParticle, size_t lastParticle, Dataset& d);
 
 template<typename Dataset>
-extern void computeIsothermalEOS(size_t, size_t, Dataset& d);
+extern void computeIsothermalEOS_HydroStd(size_t firstParticle, size_t lastParticle, Dataset& d);
+
+template<typename Dataset>
+extern void computeIsothermalEOS(size_t firstParticle, size_t lastParticle, Dataset& d);
+
+template<typename Dataset>
+extern void computePolytropicEOS_HydroStd(size_t firstParticle, size_t lastParticle, Dataset& d);
+
+template<typename Dataset>
+extern void computePolytropicEOS(size_t firstParticle, size_t lastParticle, Dataset& d);
 
 } // namespace cuda
 
